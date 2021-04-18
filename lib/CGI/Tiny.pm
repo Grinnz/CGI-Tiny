@@ -114,6 +114,8 @@ sub request_body_limit {
     ($_[0]{request_body_limit} = defined $ENV{CGI_TINY_REQUEST_BODY_LIMIT} ? $ENV{CGI_TINY_REQUEST_BODY_LIMIT} : 16777216);
 }
 sub set_request_body_limit { $_[0]{request_body_limit} = $_[1]; $_[0] }
+sub set_input_handle       { $_[0]{input_handle} = $_[1]; $_[0] }
+sub set_output_handle      { $_[0]{output_handle} = $_[1]; $_[0] }
 
 sub headers_rendered { $_[0]{headers_rendered} }
 
@@ -198,11 +200,12 @@ sub body {
     }
     $_[0]{content} = '';
     my $offset = 0;
-    binmode *STDIN;
+    my $in_fh = defined $self->{input_handle} ? $self->{input_handle} : *STDIN;
+    binmode $in_fh;
     while ($length > 0) {
       my $chunk = 131072;
       $chunk = $length if $length and $length < $chunk;
-      last unless my $read = read *STDIN, $_[0]{content}, $chunk, $offset;
+      last unless my $read = read $in_fh, $_[0]{content}, $chunk, $offset;
       $offset += $read;
       $length -= $read;
     }
@@ -292,6 +295,7 @@ sub render {
   my ($self, $type, $data) = @_;
   $type = '' unless defined $type;
   my $charset = $self->response_charset;
+  my $out_fh = defined $self->{output_handle} ? $self->{output_handle} : *STDOUT;
   if (!$self->{headers_rendered}) {
     my %headers = %{$self->{response_headers} || {}};
     my $headers_str = '';
@@ -322,20 +326,20 @@ sub render {
       }
     }
     $headers_str .= "\r\n";
-    binmode *STDOUT;
-    print {*STDOUT} $headers_str;
+    binmode $out_fh;
+    print $out_fh $headers_str;
     $self->{headers_rendered} = 1;
   } elsif ($type eq 'redirect') {
     Carp::carp "Attempted to render a redirect but headers have already been rendered";
   }
   if ($type eq 'json') {
-    print {*STDOUT} $self->_json->encode($data);
+    print $out_fh $self->_json->encode($data);
   } elsif ($type eq 'html') {
-    print {*STDOUT} Encode::encode $charset, "$data";
+    print $out_fh Encode::encode $charset, "$data";
   } elsif ($type eq 'text') {
-    print {*STDOUT} Encode::encode $charset, "$data";
+    print $out_fh Encode::encode $charset, "$data";
   } elsif ($type eq 'data') {
-    print {*STDOUT} $data;
+    print $out_fh $data;
   }
 }
 
@@ -489,6 +493,22 @@ limit (not recommended unless you have other safeguards on memory usage).
   $cgi = $cgi->set_request_body_limit(16*1024*1024);
 
 Sets L</"request_body_limit">.
+
+=head2 set_input_handle
+
+  $cgi = $cgi->set_input_handle($fh);
+
+Sets the input handle to read the request body from. If not set, reads from
+C<STDIN>. The handle will have C<binmode> applied before reading to remove any
+translation layers.
+
+=head2 set_output_handle
+
+  $cgi = $cgi->set_output_handle($fh);
+
+Sets the output handle to print the response to. If not set, prints to
+C<STDOUT>. The handle will have C<binmode> applied before printing to remove
+any translation layers.
 
 =head2 headers_rendered
 

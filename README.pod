@@ -134,6 +134,22 @@ limit (not recommended unless you have other safeguards on memory usage).
 
 Sets L</"request_body_limit">.
 
+=head2 set_input_handle
+
+  $cgi = $cgi->set_input_handle($fh);
+
+Sets the input handle to read the request body from. If not set, reads from
+C<STDIN>. The handle will have C<binmode> applied before reading to remove any
+translation layers.
+
+=head2 set_output_handle
+
+  $cgi = $cgi->set_output_handle($fh);
+
+Sets the output handle to print the response to. If not set, prints to
+C<STDOUT>. The handle will have C<binmode> applied before printing to remove
+any translation layers.
+
 =head2 headers_rendered
 
   my $bool = $cgi->headers_rendered;
