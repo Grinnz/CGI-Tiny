@@ -348,6 +348,7 @@ Sets L</"response_charset">.
   $cgi->render(text => $text);
   $cgi->render(data => $bytes);
   $cgi->render(json => $ref);
+  $cgi->render(redirect => $url);
 
 Renders response data of a type indicated by the first parameter. The first
 time it is called will render response headers, and it may be called additional
@@ -361,6 +362,12 @@ there is no more appropriate value.
 C<html> or C<text> data is expected to be decoded characters, and will be
 encoded according to L</"response_charset">. C<json> data will be encoded to
 UTF-8.
+
+C<redirect> will print a redirection header if response headers have not yet
+been rendered, and will set a response status of 302 if none has been set by
+L</"set_response_status">. It will not autodetect a C<Content-Type> response
+header. If response headers have already been rendered a warning will be
+emitted.
 
 =head1 CAVEATS
 
