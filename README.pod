@@ -77,7 +77,7 @@ rendering output.
 
 =for Pod::Coverage cgi
 
-CGI::Tiny's DSL is a regular function called C<cgi> exported by default.
+CGI::Tiny's interface is a regular function called C<cgi> exported by default.
 
   cgi {
     my ($cgi) = @_;
