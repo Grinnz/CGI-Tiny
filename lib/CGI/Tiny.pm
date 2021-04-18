@@ -289,7 +289,8 @@ sub response_charset     { defined $_[0]{response_charset} ? $_[0]{response_char
 sub set_response_charset { $_[0]{response_charset} = $_[1]; $_[0] }
 
 sub render {
-  my ($self, %args) = @_;
+  my ($self, $type, $data) = @_;
+  $type = '' unless defined $type;
   my $charset = $self->response_charset;
   if (!$self->{headers_rendered}) {
     my %headers = %{$self->{response_headers} || {}};
@@ -300,15 +301,15 @@ sub render {
       $headers_str .= "$name: $_\r\n" for grep { defined } @values;
       $headers_set{lc $name} = 1;
     }
-    if (!$headers_set{location} and exists $args{redirect}) {
-      $headers_str = "Location: $args{redirect}\r\n$headers_str";
+    if (!$headers_set{location} and $type eq 'redirect') {
+      $headers_str = "Location: $data\r\n$headers_str";
     }
-    if (!$headers_set{'content-type'} and !exists $args{redirect}) {
+    if (!$headers_set{'content-type'} and $type ne 'redirect') {
       my $content_type = $self->{response_content_type};
       $content_type =
-          exists $args{json} ? 'application/json;charset=UTF-8'
-        : exists $args{html} ? "text/html;charset=$charset"
-        : exists $args{text} ? "text/plain;charset=$charset"
+          $type eq 'json' ? 'application/json;charset=UTF-8'
+        : $type eq 'html' ? "text/html;charset=$charset"
+        : $type eq 'text' ? "text/plain;charset=$charset"
         : 'application/octet-stream'
         unless defined $content_type;
       $headers_str = "Content-Type: $content_type\r\n$headers_str";
@@ -316,7 +317,7 @@ sub render {
     if (!$headers_set{status}) {
       if (defined(my $status = $self->{response_status})) {
         $headers_str = "Status: $status\r\n$headers_str";
-      } elsif (exists $args{redirect}) {
+      } elsif ($type eq 'redirect') {
         $headers_str = "Status: 302 $HTTP_STATUS{302}\r\n$headers_str";
       }
     }
@@ -324,18 +325,17 @@ sub render {
     binmode *STDOUT;
     print {*STDOUT} $headers_str;
     $self->{headers_rendered} = 1;
-  } elsif (exists $args{redirect}) {
+  } elsif ($type eq 'redirect') {
     Carp::carp "Attempted to render a redirect but headers have already been rendered";
   }
-  if (exists $args{json}) {
-    my $json = $self->_json->encode($args{json});
-    print {*STDOUT} $self->_json->encode($args{json});
-  } elsif (exists $args{html}) {
-    print {*STDOUT} Encode::encode $charset, "$args{html}";
-  } elsif (exists $args{text}) {
-    print {*STDOUT} Encode::encode $charset, "$args{text}";
-  } elsif (exists $args{data}) {
-    print {*STDOUT} $args{data};
+  if ($type eq 'json') {
+    print {*STDOUT} $self->_json->encode($data);
+  } elsif ($type eq 'html') {
+    print {*STDOUT} Encode::encode $charset, "$data";
+  } elsif ($type eq 'text') {
+    print {*STDOUT} Encode::encode $charset, "$data";
+  } elsif ($type eq 'data') {
+    print {*STDOUT} $data;
   }
 }
 
