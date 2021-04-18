@@ -300,6 +300,9 @@ sub render {
       $headers_str .= "$name: $_\r\n" for grep { defined } @values;
       $headers_set{lc $name} = 1;
     }
+    if (!$headers_set{location} and exists $args{redirect}) {
+      $headers_str = "Location: $args{redirect}\r\n$headers_str";
+    }
     if (!$headers_set{'content-type'} and !exists $args{redirect}) {
       my $content_type = $self->{response_content_type};
       $content_type =
