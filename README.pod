@@ -344,15 +344,16 @@ Sets L</"response_charset">.
 
 =head2 render
 
+  $cgi->render;
   $cgi->render(html => $html);
   $cgi->render(text => $text);
   $cgi->render(data => $bytes);
   $cgi->render(json => $ref);
   $cgi->render(redirect => $url);
 
-Renders response data of a type indicated by the first parameter. The first
-time it is called will render response headers, and it may be called additional
-times with more response data.
+Renders response data of a type indicated by the first parameter, if any. The
+first time it is called will render response headers, and it may be called
+additional times with more response data.
 
 The C<Content-Type> response header will be set according to
 L</"set_response_content_type">, or autodetected depending on the data type
