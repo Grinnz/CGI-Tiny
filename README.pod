@@ -1,0 +1,365 @@
+=pod
+
+=head1 NAME
+
+CGI::Tiny - Common Gateway Interface, with no frills
+
+=head1 SYNOPSIS
+
+  use strict;
+  use warnings;
+  use CGI::Tiny;
+
+  cgi_on_error {
+    my ($cgi, $error) = @_;
+    warn $error;
+    $cgi->render(json => {error => 'Internal Error'}) unless $cgi->headers_rendered;
+  };
+
+  cgi {
+    my ($cgi) = @_;
+    my $method = $cgi->method;
+    my $fribble;
+    if ($method eq 'GET') {
+      $fribble = $cgi->query_param('fribble');
+    } elsif ($method eq 'POST') {
+      $fribble = $cgi->body_param('fribble');
+    } else {
+      $cgi->set_status(405);
+      return $cgi->render;
+    }
+    die "Invalid fribble parameter" unless length $fribble;
+    $cgi->render(json => {fribble => $fribble});
+  };
+
+=head1 DESCRIPTION
+
+CGI::Tiny provides a modern interface to write
+L<CGI|https://en.wikipedia.org/wiki/Common_Gateway_Interface> scripts to
+dynamically respond to HTTP requests. It is intended to be:
+
+=over
+
+=item * Minimal
+
+CGI::Tiny contains a small amount of code and (on modern Perls) no non-core
+requirements. No framework needed.
+
+=item * Simple
+
+CGI::Tiny is straightforward to use, avoids anything magical or surprising, and
+provides easy access to the most commonly needed features.
+
+=item * Robust
+
+CGI::Tiny's interface is designed to help the developer avoid common pitfalls
+and vulnerabilities by default.
+
+=item * Lazy
+
+CGI::Tiny only loads code or processes information once it is needed, so simple
+requests can be handled without unnecessary overhead.
+
+=item * Restrained
+
+CGI::Tiny is designed for the CGI protocol which executes the program again for
+every request. It is not suitable for persistent protocols like FastCGI or
+PSGI.
+
+=item * Flexible
+
+CGI::Tiny can be used with other modules to handle tasks like routing and
+templating, and doesn't impose unnecessary constraints to reading input or
+rendering output.
+
+=back
+
+=head1 FUNCTIONS
+
+CGI::Tiny's DSL is a set of regular functions exported by default.
+
+=head2 cgi
+
+  cgi {
+    my ($cgi) = @_;
+    ...
+  };
+
+The primary interface to CGI::Tiny. The code block is immediately run and
+passed a CGI::Tiny object which L</"METHODS"> can be called on.
+
+If an exception is thrown within the code block, or the code block does not
+render a response, it will run the handler set by L</"cgi_on_error"> if any, or
+by default warn the error to STDERR and (if nothing has been rendered yet)
+render a 500 Internal Server Error.
+
+Affected by L</"cgi_on_error"> and L</"cgi_request_body_limit"> called from the
+same package.
+
+=head2 cgi_on_error
+
+  cgi_on_error {
+    my ($cgi, $error) = @_;
+    ...
+  };
+
+Sets an error handler to run in the event of an exception. Must be set up
+before calling L</"cgi">. The response status defaults to 500 when this handler
+is called but can be overridden by the handler.
+
+The error value can be any exception thrown by Perl or user code. It should
+generally not be included in any response rendered to the client, but instead
+warned or logged.
+
+Exceptions may occur before or after response headers have been rendered, so
+error handlers should render some response if L</"headers_rendered"> is
+false. If no response has been rendered after the error handler completes, the
+default 500 Internal Server Error response will be rendered.
+
+=head2 cgi_request_body_limit
+
+  cgi_request_body_limit 16*1024*1024;
+
+Sets the limit in bytes for parsing a request body, defaults to the value of
+the C<CGI_TINY_REQUEST_BODY_LIMIT> environment variable or 16777216 (16 MiB).
+Since the request body is not read until needed, reaching the limit while
+parsing the request body will throw an exception. A value of 0 will remove the
+limit (not recommended unless you have other safeguards on memory usage).
+
+=head1 METHODS
+
+The following methods can be called on the CGI::Tiny object provided to the DSL
+functions.
+
+=head2 headers_rendered
+
+  my $bool = $cgi->headers_rendered;
+
+Returns true if response headers have been rendered, such as by the first call
+to L</"render">.
+
+=head2 request_method
+
+=head2 server_protocol
+
+=head2 server_port
+
+=head2 path_info
+
+=head2 script_name
+
+=head2 query_string
+
+=head2 remote_addr
+
+=head2 content_type
+
+=head2 content_length
+
+  my $method = $cgi->request_method; # REQUEST_METHOD
+  my $port   = $cgi->server_port;    # SERVER_PORT
+  my $type   = $cgi->content_type;   # CONTENT_TYPE
+
+Access to L<request meta-variables|https://tools.ietf.org/html/rfc3875#section-4.1>
+of the equivalent uppercase names.
+
+=head2 method
+
+=head2 path
+
+=head2 query
+
+  my $method = $cgi->method; # REQUEST_METHOD
+  my $path   = $cgi->path;   # PATH_INFO
+  my $query  = $cgi->query;  # QUERY_STRING
+
+Short aliases for a few request meta-variables.
+
+=head2 header
+
+  my $value = $cgi->header('Accept');
+
+Retrieve the value of a request header by name (case insensitive). CGI request
+headers can only contain a single value, which may be combined from multiple
+values.
+
+=head2 header_names
+
+  my $arrayref = $cgi->header_names;
+
+Array reference of available request header names, in lowercase.
+
+=head2 headers
+
+  my $hashref = $cgi->headers;
+
+Hash reference of available request header names and values. Header names are
+represented in lowercase.
+
+=head2 query_pairs
+
+  my $pairs = $cgi->query_pairs;
+
+Retrieve URL query string parameters as an array reference of two-element array
+references.
+
+=head2 query_params
+
+  my $params = $cgi->query_params;
+
+Retrieve URL query string parameters as a hash reference. If a parameter name
+is passed multiple times, its value will be an array reference.
+
+=head2 query_param
+
+  my $value = $cgi->query_param('foo');
+
+Retrieve value of a named URL query string parameter. If the parameter name is
+passed multiple times, returns the last value. Use L</"every_query_param"> to
+get multiple values of a parameter.
+
+=head2 every_query_param
+
+  my $arrayref = $cgi->every_query_param('foo');
+
+Retrieve values of a named URL query string parameter as an array reference.
+
+=head2 body
+
+  my $bytes = $cgi->body;
+
+Retrieve the request body as bytes.
+
+Note that this will read the whole request body into memory, so make sure the
+L</"cgi_request_body_limit"> can fit well within the available memory.
+
+=head2 body_pairs
+
+  my $pairs = $cgi->body_pairs;
+
+Retrieve C<x-www-form-urlencoded> body parameters as an array reference of
+two-element array references.
+
+Note that this will read the whole request body into memory, so make sure the
+L</"cgi_request_body_limit"> can fit well within the available memory.
+
+=head2 body_params
+
+  my $params = $cgi->body_params;
+
+Retrieve C<x-www-form-urlencoded> body parameters as a hash reference. If a
+parameter name is passed multiple times, its value will be an array reference.
+
+Note that this will read the whole request body into memory, so make sure the
+L</"cgi_request_body_limit"> can fit well within the available memory.
+
+=head2 body_param
+
+  my $value = $cgi->body_param('foo');
+
+Retrieve value of a named C<x-www-form-urlencoded> body parameter. If the
+parameter name is passed multiple times, returns the last value. Use
+L</"every_body_param"> to get multiple values of a parameter.
+
+Note that this will read the whole request body into memory, so make sure the
+L</"cgi_request_body_limit"> can fit well within the available memory.
+
+=head2 every_body_param
+
+  my $arrayref = $cgi->every_body_param('foo');
+
+Retrieve values of a named C<x-www-form-urlencoded> body parameter as an array
+reference.
+
+Note that this will read the whole request body into memory, so make sure the
+L</"cgi_request_body_limit"> can fit well within the available memory.
+
+=head2 body_json
+
+  my $data = $cgi->body_json;
+
+Decode a C<application/json> request body from JSON.
+
+Note that this will read the whole request body into memory, so make sure the
+L</"cgi_request_body_limit"> can fit well within the available memory.
+
+=head2 set_status
+
+  $cgi = $cgi->set_status(404);
+
+Sets the response HTTP status code. No effect after response headers have been
+rendered. The CGI protocol assumes a status of C<200 OK> if no response status
+is set.
+
+=head2 set_content_type
+
+  $cgi = $cgi->set_content_type('application/xml');
+
+Sets the response Content-Type header. No effect after response headers have
+been rendered.
+
+=head2 set_header
+
+  $cgi = $cgi->set_header('Content-Disposition' => 'attachment');
+
+Sets a response header. No effect after response headers have been rendered. An
+array reference value will set the header once for each value. Note that header
+names are case insensitive and CGI::Tiny does not attempt to deduplicate or
+munge headers that have been set manually.
+
+=head2 set_charset
+
+  $cgi = $cgi->set_charset('UTF-8');
+
+Sets the charset to use when rendering C<text> or C<html> response data.
+
+=head2 render
+
+  $cgi->render(html => $html);
+  $cgi->render(text => $text);
+  $cgi->render(data => $bytes);
+  $cgi->render(json => $ref);
+
+Renders response data. The first time it is called will render response
+headers, and it may be called additional times with more response data.
+
+The C<Content-Type> response header will be set according to
+L</"set_content_type"> or the type of data passed with the first call to
+C<render>, or to C<application/octet-stream> if there is no more appropriate
+value. C<html> or C<text> data is expected to be decoded characters, and will
+be encoded according to L</"set_charset">. C<json> data will be encoded to
+UTF-8.
+
+=head1 CAVEATS
+
+CGI is an extremely simplistic protocol and relies particularly on environment
+variables and the C<STDIN> and C<STDOUT> standard filehandles. CGI::Tiny does
+not prevent you from messing with these interfaces directly, but it may result
+in confusion.
+
+Most applications are better written in a L<PSGI>-compatible framework (e.g.
+L<Dancer2> or L<Mojolicious>) and deployed in a persistent application server
+so that the application does not have to start up every time it receives a
+request.
+
+=head1 BUGS
+
+Report any issues on the public bugtracker.
+
+=head1 AUTHOR
+
+Dan Book <dbook@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2021 by Dan Book.
+
+This is free software, licensed under:
+
+  The Artistic License 2.0 (GPL Compatible)
+
+=head1 SEE ALSO
+
+L<CGI::Alternatives>, L<Mojolicious>, L<Dancer2>
+
+=cut
