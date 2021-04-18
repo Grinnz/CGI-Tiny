@@ -365,9 +365,8 @@ UTF-8.
 
 C<redirect> will print a redirection header if response headers have not yet
 been rendered, and will set a response status of 302 if none has been set by
-L</"set_response_status">. It will not autodetect a C<Content-Type> response
-header. If response headers have already been rendered a warning will be
-emitted.
+L</"set_response_status">. It will not set a C<Content-Type> response header.
+If response headers have already been rendered a warning will be emitted.
 
 =head1 CAVEATS
 
