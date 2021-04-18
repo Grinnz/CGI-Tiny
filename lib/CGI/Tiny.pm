@@ -178,7 +178,7 @@ sub _query_params {
     foreach my $pair (split /[&;]/, $self->query) {
       my ($key, $value) = split /=/, $pair, 2;
       $value = '' unless defined $value;
-      do { s/%([0-9a-fA-F]{2})/chr hex $1/ge; utf8::decode $_ } for $key, $value;
+      do { tr/+/ /; s/%([0-9a-fA-F]{2})/chr hex $1/ge; utf8::decode $_ } for $key, $value;
       push @ordered, [$key, $value];
       push @{$keyed{$key}}, $value;
     }
@@ -233,7 +233,7 @@ sub _body_params {
       foreach my $pair (split /&/, $self->body) {
         my ($key, $value) = split /=/, $pair, 2;
         $value = '' unless defined $value;
-        do { s/%([0-9a-fA-F]{2})/chr hex $1/ge; utf8::decode $_ } for $key, $value;
+        do { tr/+/ /; s/%([0-9a-fA-F]{2})/chr hex $1/ge; utf8::decode $_ } for $key, $value;
         push @ordered, [$key, $value];
         push @{$keyed{$key}}, $value;
       }
