@@ -89,7 +89,7 @@ sub cgi (&) {
   }
   if ($errored) {
     my $caller = caller;
-    $cgi->set_status(500) unless $cgi->{headers_rendered} or defined $cgi->{response_status};
+    $cgi->set_response_status(500) unless $cgi->{headers_rendered} or defined $cgi->{response_status};
     if (defined $cgi->{on_error}) {
       my ($error_error, $error_errored);
       {
@@ -111,8 +111,9 @@ sub cgi (&) {
 sub set_on_error           { $_[0]{on_error} = $_[1]; $_[0] }
 sub set_request_body_limit { $_[0]{request_body_limit} = $_[1]; $_[0] }
 sub request_body_limit     {
-  defined $_[0]{request_body_limit} ? $_[0]{request_body_limit} :
-    defined $ENV{CGI_TINY_REQUEST_BODY_LIMIT} ? $ENV{CGI_TINY_REQUEST_BODY_LIMIT} : 16777216;
+  $_[0]{request_body_limit} = defined $ENV{CGI_TINY_REQUEST_BODY_LIMIT} ? $ENV{CGI_TINY_REQUEST_BODY_LIMIT} : 16777216
+    unless defined $_[0]{request_body_limit};
+  $_[0]{request_body_limit};
 }
 
 sub headers_rendered { $_[0]{headers_rendered} }
@@ -193,7 +194,7 @@ sub body {
     my $limit = $self->request_body_limit;
     my $length = $ENV{CONTENT_LENGTH} || 0;
     if ($limit and $length > $limit) {
-      $self->set_status(413);
+      $self->set_response_status(413);
       die "Request body limit exceeded\n";
     }
     $_[0]{content} = '';
@@ -229,7 +230,7 @@ sub _body_params {
   unless (exists $self->{body_params}) {
     my (@ordered, %keyed);
     my $content_type = $self->content_type;
-    if (defined $content_type and $content_type =~ m/^application\/x-www-form-urlencoded/) {
+    if (defined $content_type and $content_type =~ m/^application\/x-www-form-urlencoded/i) {
       foreach my $pair (split /&/, $self->body) {
         my ($key, $value) = split /=/, $pair, 2;
         $value = '' unless defined $value;
@@ -247,14 +248,14 @@ sub body_json {
   my ($self) = @_;
   unless (exists $self->{body_json}) {
     my $content_type = $self->content_type;
-    if (defined $content_type and $content_type =~ m/^application\/json/) {
+    if (defined $content_type and $content_type =~ m/^application\/json/i) {
       $self->{body_json} = $self->_json->decode($self->body);
     }
   }
   return $self->{body_json};
 }
 
-sub set_status {
+sub set_response_status {
   my ($self, $status) = @_;
   if ($self->{headers_rendered}) {
     Carp::carp "Attempted to set HTTP response status but headers have already been rendered";
@@ -265,7 +266,7 @@ sub set_status {
   return $self;
 }
 
-sub set_content_type {
+sub set_response_content_type {
   my ($self, $content_type) = @_;
   if ($self->{headers_rendered}) {
     Carp::carp "Attempted to set HTTP response content type but headers have already been rendered";
@@ -275,7 +276,7 @@ sub set_content_type {
   return $self;
 }
 
-sub set_header {
+sub set_response_header {
   my ($self, $name, $value) = @_;
   if ($self->{headers_rendered}) {
     Carp::carp "Attempted to set HTTP response header '$name' but headers have already been rendered";
@@ -285,11 +286,12 @@ sub set_header {
   return $self;
 }
 
-sub set_charset { $_[0]{response_charset} = $_[1]; $_[0] }
+sub set_response_charset { $_[0]{response_charset} = $_[1]; $_[0] }
+sub response_charset     { $_[0]{response_charset} = 'UTF-8' unless defined $_[0]{response_charset}; $_[0]{response_charset} }
 
 sub render {
   my ($self, %args) = @_;
-  my $charset = $self->{response_charset} || 'UTF-8';
+  my $charset = $self->response_charset;
   unless ($self->{headers_rendered}) {
     my %headers = %{$self->{response_headers} || {}};
     my $headers_str = '';
@@ -370,7 +372,7 @@ CGI::Tiny - Common Gateway Interface, with no frills
     } elsif ($method eq 'POST') {
       $fribble = $cgi->body_param('fribble');
     } else {
-      $cgi->set_status(405);
+      $cgi->set_response_status(405);
       return $cgi->render;
     }
     die "Invalid fribble parameter" unless length $fribble;
@@ -647,35 +649,44 @@ Decode a C<application/json> request body from JSON.
 Note that this will read the whole request body into memory, so make sure the
 L</"request_body_limit"> can fit well within the available memory.
 
-=head2 set_status
+=head2 set_response_status
 
-  $cgi = $cgi->set_status(404);
+  $cgi = $cgi->set_response_status(404);
 
 Sets the response HTTP status code. No effect after response headers have been
 rendered. The CGI protocol assumes a status of C<200 OK> if no response status
 is set.
 
-=head2 set_content_type
+=head2 set_response_content_type
 
-  $cgi = $cgi->set_content_type('application/xml');
+  $cgi = $cgi->set_response_content_type('application/xml');
 
 Sets the response Content-Type header. No effect after response headers have
 been rendered.
 
-=head2 set_header
+=head2 set_response_header
 
-  $cgi = $cgi->set_header('Content-Disposition' => 'attachment');
+  $cgi = $cgi->set_response_header('Content-Disposition' => 'attachment');
 
-Sets a response header. No effect after response headers have been rendered. An
-array reference value will set the header once for each value. Note that header
-names are case insensitive and CGI::Tiny does not attempt to deduplicate or
-munge headers that have been set manually.
+Sets a response header. No effect after response headers have been rendered.
 
-=head2 set_charset
+An array reference value will set the header once for each value.
 
-  $cgi = $cgi->set_charset('UTF-8');
+Note that header names are case insensitive and CGI::Tiny does not attempt to
+deduplicate or munge headers that have been set manually.
 
-Sets the charset to use when rendering C<text> or C<html> response data.
+=head2 response_charset
+
+  my $charset = $cgi->response_charset;
+
+Charset to use when rendering C<text> or C<html> response data, defaults to
+C<UTF-8>.
+
+=head2 set_response_charset
+
+  $cgi = $cgi->set_response_charset('UTF-8');
+
+Sets L</"response_charset">.
 
 =head2 render
 
@@ -688,10 +699,12 @@ Renders response data. The first time it is called will render response
 headers, and it may be called additional times with more response data.
 
 The C<Content-Type> response header will be set according to
-L</"set_content_type"> or the type of data passed with the first call to
-C<render>, or to C<application/octet-stream> if there is no more appropriate
-value. C<html> or C<text> data is expected to be decoded characters, and will
-be encoded according to L</"set_charset">. C<json> data will be encoded to
+L</"set_response_content_type"> or the type of data passed with the first call
+to C<render>, or to C<application/octet-stream> if there is no more appropriate
+value.
+
+C<html> or C<text> data is expected to be decoded characters, and will be
+encoded according to L</"response_charset">. C<json> data will be encoded to
 UTF-8.
 
 =head1 CAVEATS

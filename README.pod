@@ -24,7 +24,7 @@ CGI::Tiny - Common Gateway Interface, with no frills
     } elsif ($method eq 'POST') {
       $fribble = $cgi->body_param('fribble');
     } else {
-      $cgi->set_status(405);
+      $cgi->set_response_status(405);
       return $cgi->render;
     }
     die "Invalid fribble parameter" unless length $fribble;
@@ -301,35 +301,44 @@ Decode a C<application/json> request body from JSON.
 Note that this will read the whole request body into memory, so make sure the
 L</"request_body_limit"> can fit well within the available memory.
 
-=head2 set_status
+=head2 set_response_status
 
-  $cgi = $cgi->set_status(404);
+  $cgi = $cgi->set_response_status(404);
 
 Sets the response HTTP status code. No effect after response headers have been
 rendered. The CGI protocol assumes a status of C<200 OK> if no response status
 is set.
 
-=head2 set_content_type
+=head2 set_response_content_type
 
-  $cgi = $cgi->set_content_type('application/xml');
+  $cgi = $cgi->set_response_content_type('application/xml');
 
 Sets the response Content-Type header. No effect after response headers have
 been rendered.
 
-=head2 set_header
+=head2 set_response_header
 
-  $cgi = $cgi->set_header('Content-Disposition' => 'attachment');
+  $cgi = $cgi->set_response_header('Content-Disposition' => 'attachment');
 
-Sets a response header. No effect after response headers have been rendered. An
-array reference value will set the header once for each value. Note that header
-names are case insensitive and CGI::Tiny does not attempt to deduplicate or
-munge headers that have been set manually.
+Sets a response header. No effect after response headers have been rendered.
 
-=head2 set_charset
+An array reference value will set the header once for each value.
 
-  $cgi = $cgi->set_charset('UTF-8');
+Note that header names are case insensitive and CGI::Tiny does not attempt to
+deduplicate or munge headers that have been set manually.
 
-Sets the charset to use when rendering C<text> or C<html> response data.
+=head2 response_charset
+
+  my $charset = $cgi->response_charset;
+
+Charset to use when rendering C<text> or C<html> response data, defaults to
+C<UTF-8>.
+
+=head2 set_response_charset
+
+  $cgi = $cgi->set_response_charset('UTF-8');
+
+Sets L</"response_charset">.
 
 =head2 render
 
@@ -342,10 +351,12 @@ Renders response data. The first time it is called will render response
 headers, and it may be called additional times with more response data.
 
 The C<Content-Type> response header will be set according to
-L</"set_content_type"> or the type of data passed with the first call to
-C<render>, or to C<application/octet-stream> if there is no more appropriate
-value. C<html> or C<text> data is expected to be decoded characters, and will
-be encoded according to L</"set_charset">. C<json> data will be encoded to
+L</"set_response_content_type"> or the type of data passed with the first call
+to C<render>, or to C<application/octet-stream> if there is no more appropriate
+value.
+
+C<html> or C<text> data is expected to be decoded characters, and will be
+encoded according to L</"response_charset">. C<json> data will be encoded to
 UTF-8.
 
 =head1 CAVEATS
