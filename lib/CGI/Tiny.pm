@@ -8,7 +8,7 @@ use Exporter 'import';
 
 our $VERSION = '0.001';
 
-our @EXPORT = qw(cgi cgi_on_error cgi_request_body_limit);
+our @EXPORT = 'cgi';
 
 # List from HTTP::Status
 # Unmarked codes are from RFC 7231 (2017-12-20)
@@ -78,9 +78,6 @@ my %HTTP_STATUS = (
     511 => 'Network Authentication Required', # RFC 6585: Additional Codes
 );
 
-my %ON_ERROR;
-my %BODY_LIMIT;
-
 sub cgi (&) {
   my ($handler) = @_;
   my $cgi = bless {}, __PACKAGE__;
@@ -93,14 +90,14 @@ sub cgi (&) {
   if ($errored) {
     my $caller = caller;
     $cgi->set_status(500) unless $cgi->{headers_rendered} or defined $cgi->{response_status};
-    if (exists $ON_ERROR{$caller}) {
+    if (defined $cgi->{on_error}) {
       my ($error_error, $error_errored);
       {
         local $@;
-        eval { $ON_ERROR{$caller}->($cgi, $error); 1 } or do { $error_error = $@; $error_errored = 1 };
+        eval { $cgi->{on_error}->($cgi, $error); 1 } or do { $error_error = $@; $error_errored = 1 };
       }
       if ($error_errored) {
-        warn "Exception in cgi_on_error: $error_error";
+        warn "Exception in on_error handler: $error_error";
         warn "Original error: $error";
       }
     } else {
@@ -111,8 +108,12 @@ sub cgi (&) {
   1;
 }
 
-sub cgi_on_error (&) { $ON_ERROR{scalar caller} = $_[0] }
-sub cgi_request_body_limit { $BODY_LIMIT{scalar caller} = $_[0] }
+sub set_on_error           { $_[0]{on_error} = $_[1]; $_[0] }
+sub set_request_body_limit { $_[0]{request_body_limit} = $_[1]; $_[0] }
+sub request_body_limit     {
+  defined $_[0]{request_body_limit} ? $_[0]{request_body_limit} :
+    defined $ENV{CGI_TINY_REQUEST_BODY_LIMIT} ? $ENV{CGI_TINY_REQUEST_BODY_LIMIT} : 16777216;
+}
 
 sub headers_rendered { $_[0]{headers_rendered} }
 
@@ -181,9 +182,7 @@ sub _query_params {
 sub body {
   my ($self) = @_;
   unless (exists $self->{content}) {
-    my $limit = $BODY_LIMIT{scalar caller};
-    $limit = $ENV{CGI_TINY_REQUEST_BODY_LIMIT} unless defined $limit;
-    $limit = 16777216 unless defined $limit;
+    my $limit = $self->request_body_limit;
     my $length = $ENV{CONTENT_LENGTH} || 0;
     if ($limit and $length > $limit) {
       $self->set_status(413);
@@ -349,14 +348,13 @@ CGI::Tiny - Common Gateway Interface, with no frills
   use warnings;
   use CGI::Tiny;
 
-  cgi_on_error {
-    my ($cgi, $error) = @_;
-    warn $error;
-    $cgi->render(json => {error => 'Internal Error'}) unless $cgi->headers_rendered;
-  };
-
   cgi {
     my ($cgi) = @_;
+    $cgi->set_on_error(sub {
+      my ($cgi, $error) = @_;
+      warn $error;
+      $cgi->render(json => {error => 'Internal Error'}) unless $cgi->headers_rendered;
+    });
     my $method = $cgi->method;
     my $fribble;
     if ($method eq 'GET') {
@@ -428,23 +426,25 @@ The primary interface to CGI::Tiny. The code block is immediately run and
 passed a CGI::Tiny object which L</"METHODS"> can be called on.
 
 If an exception is thrown within the code block, or the code block does not
-render a response, it will run the handler set by L</"cgi_on_error"> if any, or
+render a response, it will run the handler set by L</"set_on_error"> if any, or
 by default warn the error to STDERR and (if nothing has been rendered yet)
 render a 500 Internal Server Error.
 
-Affected by L</"cgi_on_error"> and L</"cgi_request_body_limit"> called from the
-same package.
+=head1 METHODS
 
-=head2 cgi_on_error
+The following methods can be called on the CGI::Tiny object provided to the DSL
+functions.
 
-  cgi_on_error {
+=head2 set_on_error
+
+  $cgi = $cgi->set_on_error(sub {
     my ($cgi, $error) = @_;
     ...
-  };
+  });
 
-Sets an error handler to run in the event of an exception. Must be set up
-before calling L</"cgi">. The response status defaults to 500 when this handler
-is called but can be overridden by the handler.
+Sets an error handler to run in the event of an exception. The response status
+defaults to 500 when this handler is called but can be overridden by the
+handler.
 
 The error value can be any exception thrown by Perl or user code. It should
 generally not be included in any response rendered to the client, but instead
@@ -455,20 +455,21 @@ error handlers should render some response if L</"headers_rendered"> is
 false. If no response has been rendered after the error handler completes, the
 default 500 Internal Server Error response will be rendered.
 
-=head2 cgi_request_body_limit
+=head2 request_body_limit
 
-  cgi_request_body_limit 16*1024*1024;
+  my $limit = $cgi->request_body_limit;
 
-Sets the limit in bytes for parsing a request body, defaults to the value of
+Limit in bytes for parsing a request body into memory, defaults to the value of
 the C<CGI_TINY_REQUEST_BODY_LIMIT> environment variable or 16777216 (16 MiB).
 Since the request body is not read until needed, reaching the limit while
 parsing the request body will throw an exception. A value of 0 will remove the
 limit (not recommended unless you have other safeguards on memory usage).
 
-=head1 METHODS
+=head2 set_request_body_limit
 
-The following methods can be called on the CGI::Tiny object provided to the DSL
-functions.
+  $cgi = $cgi->set_request_body_limit(16*1024*1024);
+
+Sets L</"request_body_limit">.
 
 =head2 headers_rendered
 
@@ -570,7 +571,7 @@ Retrieve values of a named URL query string parameter as an array reference.
 Retrieve the request body as bytes.
 
 Note that this will read the whole request body into memory, so make sure the
-L</"cgi_request_body_limit"> can fit well within the available memory.
+L</"request_body_limit"> can fit well within the available memory.
 
 =head2 body_pairs
 
@@ -580,7 +581,7 @@ Retrieve C<x-www-form-urlencoded> body parameters as an array reference of
 two-element array references.
 
 Note that this will read the whole request body into memory, so make sure the
-L</"cgi_request_body_limit"> can fit well within the available memory.
+L</"request_body_limit"> can fit well within the available memory.
 
 =head2 body_params
 
@@ -590,7 +591,7 @@ Retrieve C<x-www-form-urlencoded> body parameters as a hash reference. If a
 parameter name is passed multiple times, its value will be an array reference.
 
 Note that this will read the whole request body into memory, so make sure the
-L</"cgi_request_body_limit"> can fit well within the available memory.
+L</"request_body_limit"> can fit well within the available memory.
 
 =head2 body_param
 
@@ -601,7 +602,7 @@ parameter name is passed multiple times, returns the last value. Use
 L</"every_body_param"> to get multiple values of a parameter.
 
 Note that this will read the whole request body into memory, so make sure the
-L</"cgi_request_body_limit"> can fit well within the available memory.
+L</"request_body_limit"> can fit well within the available memory.
 
 =head2 every_body_param
 
@@ -611,7 +612,7 @@ Retrieve values of a named C<x-www-form-urlencoded> body parameter as an array
 reference.
 
 Note that this will read the whole request body into memory, so make sure the
-L</"cgi_request_body_limit"> can fit well within the available memory.
+L</"request_body_limit"> can fit well within the available memory.
 
 =head2 body_json
 
@@ -620,7 +621,7 @@ L</"cgi_request_body_limit"> can fit well within the available memory.
 Decode a C<application/json> request body from JSON.
 
 Note that this will read the whole request body into memory, so make sure the
-L</"cgi_request_body_limit"> can fit well within the available memory.
+L</"request_body_limit"> can fit well within the available memory.
 
 =head2 set_status
 
