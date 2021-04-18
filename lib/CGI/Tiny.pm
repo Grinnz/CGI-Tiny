@@ -291,7 +291,7 @@ sub set_response_charset { $_[0]{response_charset} = $_[1]; $_[0] }
 sub render {
   my ($self, %args) = @_;
   my $charset = $self->response_charset;
-  unless ($self->{headers_rendered}) {
+  if (!$self->{headers_rendered}) {
     my %headers = %{$self->{response_headers} || {}};
     my $headers_str = '';
     my %headers_set;
@@ -300,7 +300,7 @@ sub render {
       $headers_str .= "$name: $_\r\n" for grep { defined } @values;
       $headers_set{lc $name} = 1;
     }
-    if (!$headers_set{'content-type'}) {
+    if (!$headers_set{'content-type'} and !exists $args{redirect}) {
       my $content_type = $self->{response_content_type};
       $content_type =
           exists $args{json} ? 'application/json;charset=UTF-8'
@@ -310,13 +310,19 @@ sub render {
         unless defined $content_type;
       $headers_str = "Content-Type: $content_type\r\n$headers_str";
     }
-    if (!$headers_set{status} and defined(my $status = $self->{response_status})) {
-      $headers_str = "Status: $status\r\n$headers_str";
+    if (!$headers_set{status}) {
+      if (defined(my $status = $self->{response_status})) {
+        $headers_str = "Status: $status\r\n$headers_str";
+      } elsif (exists $args{redirect}) {
+        $headers_str = "Status: 302 $HTTP_STATUS{302}\r\n$headers_str";
+      }
     }
     $headers_str .= "\r\n";
     binmode *STDOUT;
     print {*STDOUT} $headers_str;
     $self->{headers_rendered} = 1;
+  } elsif (exists $args{redirect}) {
+    Carp::carp "Attempted to render a redirect but headers have already been rendered";
   }
   if (exists $args{json}) {
     my $json = $self->_json->encode($args{json});
@@ -695,6 +701,7 @@ Sets L</"response_charset">.
   $cgi->render(text => $text);
   $cgi->render(data => $bytes);
   $cgi->render(json => $ref);
+  $cgi->render(redirect => $url);
 
 Renders response data of a type indicated by the first parameter. The first
 time it is called will render response headers, and it may be called additional
@@ -708,6 +715,12 @@ there is no more appropriate value.
 C<html> or C<text> data is expected to be decoded characters, and will be
 encoded according to L</"response_charset">. C<json> data will be encoded to
 UTF-8.
+
+C<redirect> will print a redirection header if response headers have not yet
+been rendered, and will set a response status of 302 if none has been set by
+L</"set_response_status">. It will not autodetect a C<Content-Type> response
+header. If response headers have already been rendered a warning will be
+emitted.
 
 =head1 CAVEATS
 
