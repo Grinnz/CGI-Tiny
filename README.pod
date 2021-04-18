@@ -180,7 +180,8 @@ to L</"render">.
   my $port   = $cgi->server_port;    # SERVER_PORT
 
 Access to L<request meta-variables|https://tools.ietf.org/html/rfc3875#section-4.1>
-of the equivalent uppercase names.
+of the equivalent uppercase names. Since CGI does not distinguish between
+missing and empty values, missing values will be normalized to an empty string.
 
 =head2 method
 
@@ -372,6 +373,16 @@ Most applications are better written in a L<PSGI>-compatible framework (e.g.
 L<Dancer2> or L<Mojolicious>) and deployed in a persistent application server
 so that the application does not have to start up again every time it receives
 a request.
+
+=head1 TODO
+
+=over
+
+=item * Uploads/multipart request
+
+=item * Cookies
+
+=back
 
 =head1 BUGS
 

@@ -117,23 +117,23 @@ sub set_request_body_limit { $_[0]{request_body_limit} = $_[1]; $_[0] }
 
 sub headers_rendered { $_[0]{headers_rendered} }
 
-sub auth_type         { $ENV{AUTH_TYPE} }
-sub content_length    { $ENV{CONTENT_LENGTH} }
-sub content_type      { $ENV{CONTENT_TYPE} }
-sub gateway_interface { $ENV{GATEWAY_INTERFACE} }
-sub path_info         { $ENV{PATH_INFO} }
-sub path_translated   { $ENV{PATH_TRANSLATED} }
-sub query_string      { $ENV{QUERY_STRING} }
-sub remote_addr       { $ENV{REMOTE_ADDR} }
-sub remote_host       { $ENV{REMOTE_HOST} }
-sub remote_ident      { $ENV{REMOTE_IDENT} }
-sub remote_user       { $ENV{REMOTE_USER} }
-sub request_method    { $ENV{REQUEST_METHOD} }
-sub script_name       { $ENV{SCRIPT_NAME} }
-sub server_name       { $ENV{SERVER_NAME} }
-sub server_port       { $ENV{SERVER_PORT} }
-sub server_protocol   { $ENV{SERVER_PROTOCOL} }
-sub server_software   { $ENV{SERVER_SOFTWARE} }
+sub auth_type         { defined $ENV{AUTH_TYPE} ? $ENV{AUTH_TYPE} : '' }
+sub content_length    { defined $ENV{CONTENT_LENGTH} ? $ENV{CONTENT_LENGTH} : '' }
+sub content_type      { defined $ENV{CONTENT_TYPE} ? $ENV{CONTENT_TYPE} : '' }
+sub gateway_interface { defined $ENV{GATEWAY_INTERFACE} ? $ENV{GATEWAY_INTERFACE} : '' }
+sub path_info         { defined $ENV{PATH_INFO} ? $ENV{PATH_INFO} : '' }
+sub path_translated   { defined $ENV{PATH_TRANSLATED} ? $ENV{PATH_TRANSLATED} : '' }
+sub query_string      { defined $ENV{QUERY_STRING} ? $ENV{QUERY_STRING} : '' }
+sub remote_addr       { defined $ENV{REMOTE_ADDR} ? $ENV{REMOTE_ADDR} : '' }
+sub remote_host       { defined $ENV{REMOTE_HOST} ? $ENV{REMOTE_HOST} : '' }
+sub remote_ident      { defined $ENV{REMOTE_IDENT} ? $ENV{REMOTE_IDENT} : '' }
+sub remote_user       { defined $ENV{REMOTE_USER} ? $ENV{REMOTE_USER} : '' }
+sub request_method    { defined $ENV{REQUEST_METHOD} ? $ENV{REQUEST_METHOD} : '' }
+sub script_name       { defined $ENV{SCRIPT_NAME} ? $ENV{SCRIPT_NAME} : '' }
+sub server_name       { defined $ENV{SERVER_NAME} ? $ENV{SERVER_NAME} : '' }
+sub server_port       { defined $ENV{SERVER_PORT} ? $ENV{SERVER_PORT} : '' }
+sub server_protocol   { defined $ENV{SERVER_PROTOCOL} ? $ENV{SERVER_PROTOCOL} : '' }
+sub server_software   { defined $ENV{SERVER_SOFTWARE} ? $ENV{SERVER_SOFTWARE} : '' }
 *method = \&request_method;
 *path = \&path_info;
 *query = \&query_string;
@@ -527,7 +527,8 @@ to L</"render">.
   my $port   = $cgi->server_port;    # SERVER_PORT
 
 Access to L<request meta-variables|https://tools.ietf.org/html/rfc3875#section-4.1>
-of the equivalent uppercase names.
+of the equivalent uppercase names. Since CGI does not distinguish between
+missing and empty values, missing values will be normalized to an empty string.
 
 =head2 method
 
@@ -719,6 +720,16 @@ Most applications are better written in a L<PSGI>-compatible framework (e.g.
 L<Dancer2> or L<Mojolicious>) and deployed in a persistent application server
 so that the application does not have to start up again every time it receives
 a request.
+
+=head1 TODO
+
+=over
+
+=item * Uploads/multipart request
+
+=item * Cookies
+
+=back
 
 =head1 BUGS
 
