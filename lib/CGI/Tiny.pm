@@ -446,8 +446,8 @@ response.
 
 If an exception is thrown within the code block, or the code block does not
 render a response, it will run the handler set by L</"set_error_handler"> if
-any, or by default C<warn> the error and (if nothing has been rendered yet)
-render a 500 Internal Server Error.
+any, or by default emit the error as a warning and (if nothing has been
+rendered yet) render a 500 Internal Server Error.
 
 =head1 METHODS
 
