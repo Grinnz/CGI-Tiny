@@ -10,7 +10,7 @@ our $VERSION = '0.001';
 
 our @EXPORT = 'cgi';
 
-# List from HTTP::Status
+# List from HTTP::Status 6.29
 # Unmarked codes are from RFC 7231 (2017-12-20)
 my %HTTP_STATUS = (
     100 => 'Continue',
@@ -97,7 +97,7 @@ sub cgi (&) {
         eval { $cgi->{on_error}->($cgi, $error); 1 } or do { $error_error = $@; $error_errored = 1 };
       }
       if ($error_errored) {
-        warn "Exception in on_error handler: $error_error";
+        warn "Exception in error handler: $error_error";
         warn "Original error: $error";
       }
     } else {
@@ -108,7 +108,7 @@ sub cgi (&) {
   1;
 }
 
-sub set_on_error { $_[0]{on_error} = $_[1]; $_[0] }
+sub set_error_handler { $_[0]{on_error} = $_[1]; $_[0] }
 sub request_body_limit {
   return defined $_[0]{request_body_limit} ? $_[0]{request_body_limit} :
     ($_[0]{request_body_limit} = defined $ENV{CGI_TINY_REQUEST_BODY_LIMIT} ? $ENV{CGI_TINY_REQUEST_BODY_LIMIT} : 16777216);
@@ -359,7 +359,7 @@ CGI::Tiny - Common Gateway Interface, with no frills
 
   cgi {
     my ($cgi) = @_;
-    $cgi->set_on_error(sub {
+    $cgi->set_error_handler(sub {
       my ($cgi, $error) = @_;
       warn $error;
       $cgi->render(json => {error => 'Internal Error'}) unless $cgi->headers_rendered;
@@ -436,25 +436,25 @@ L</"METHODS"> can be called on to read request information and render a
 response.
 
 If an exception is thrown within the code block, or the code block does not
-render a response, it will run the handler set by L</"set_on_error"> if any, or
-by default C<warn> the error and (if nothing has been rendered yet) render a
-500 Internal Server Error.
+render a response, it will run the handler set by L</"set_error_handler"> if
+any, or by default C<warn> the error and (if nothing has been rendered yet)
+render a 500 Internal Server Error.
 
 =head1 METHODS
 
 The following methods can be called on the CGI::Tiny object provided to the
 C<cgi> code block.
 
-=head2 set_on_error
+=head2 set_error_handler
 
-  $cgi = $cgi->set_on_error(sub {
+  $cgi = $cgi->set_error_handler(sub {
     my ($cgi, $error) = @_;
     ...
   });
 
-Sets an error handler to run in the event of an exception. The response status
-defaults to 500 when this handler is called but can be overridden by the
-handler.
+Sets an error handler to run in the event of an exception. If the response
+status has not been set by L</"set_response_status"> or rendering headers, it
+will default to 500 when this handler is called.
 
 The error value can be any exception thrown by Perl or user code. It should
 generally not be included in any response rendered to the client, but instead
