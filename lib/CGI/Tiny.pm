@@ -108,13 +108,12 @@ sub cgi (&) {
   1;
 }
 
-sub set_on_error           { $_[0]{on_error} = $_[1]; $_[0] }
-sub set_request_body_limit { $_[0]{request_body_limit} = $_[1]; $_[0] }
-sub request_body_limit     {
-  $_[0]{request_body_limit} = defined $ENV{CGI_TINY_REQUEST_BODY_LIMIT} ? $ENV{CGI_TINY_REQUEST_BODY_LIMIT} : 16777216
-    unless defined $_[0]{request_body_limit};
-  $_[0]{request_body_limit};
+sub set_on_error { $_[0]{on_error} = $_[1]; $_[0] }
+sub request_body_limit {
+  return defined $_[0]{request_body_limit} ? $_[0]{request_body_limit} :
+    ($_[0]{request_body_limit} = defined $ENV{CGI_TINY_REQUEST_BODY_LIMIT} ? $ENV{CGI_TINY_REQUEST_BODY_LIMIT} : 16777216);
 }
+sub set_request_body_limit { $_[0]{request_body_limit} = $_[1]; $_[0] }
 
 sub headers_rendered { $_[0]{headers_rendered} }
 
@@ -169,8 +168,8 @@ sub query_params {
   }
   return \%params;
 }
-sub query_param { my $p = $_[0]->_query_params->{keyed}; exists $p->{$_[1]} ? $p->{$_[1]}[-1] : undef }
-sub every_query_param { my $p = $_[0]->_query_params->{keyed}; exists $p->{$_[1]} ? [@{$p->{$_[1]}}] : [] }
+sub query_param       { my $p = $_[0]->_query_params->{keyed}; exists $p->{$_[1]} ? $p->{$_[1]}[-1] : undef }
+sub query_param_array { my $p = $_[0]->_query_params->{keyed}; exists $p->{$_[1]} ? [@{$p->{$_[1]}}] : [] }
 
 sub _query_params {
   my ($self) = @_;
@@ -222,8 +221,8 @@ sub body_params {
   }
   return \%params;
 }
-sub body_param { my $p = $_[0]->_body_params->{keyed}; exists $p->{$_[1]} ? $p->{$_[1]}[-1] : undef }
-sub every_body_param { my $p = $_[0]->_body_params->{keyed}; exists $p->{$_[1]} ? [@{$p->{$_[1]}}] : [] }
+sub body_param       { my $p = $_[0]->_body_params->{keyed}; exists $p->{$_[1]} ? $p->{$_[1]}[-1] : undef }
+sub body_param_array { my $p = $_[0]->_body_params->{keyed}; exists $p->{$_[1]} ? [@{$p->{$_[1]}}] : [] }
 
 sub _body_params {
   my ($self) = @_;
@@ -286,8 +285,8 @@ sub set_response_header {
   return $self;
 }
 
+sub response_charset     { defined $_[0]{response_charset} ? $_[0]{response_charset} : ($_[0]{response_charset} = 'UTF-8') }
 sub set_response_charset { $_[0]{response_charset} = $_[1]; $_[0] }
-sub response_charset     { $_[0]{response_charset} = 'UTF-8' unless defined $_[0]{response_charset}; $_[0]{response_charset} }
 
 sub render {
   my ($self, %args) = @_;
@@ -421,24 +420,25 @@ rendering output.
 
 =back
 
-=head1 FUNCTIONS
+=head1 USAGE
 
-CGI::Tiny's DSL is a set of regular functions exported by default.
+=for Pod::Coverage cgi
 
-=head2 cgi
+CGI::Tiny's DSL is a regular function called C<cgi> exported by default.
 
   cgi {
     my ($cgi) = @_;
     ...
   };
 
-The primary interface to CGI::Tiny. The code block is immediately run and
-passed a CGI::Tiny object which L</"METHODS"> can be called on.
+The code block is immediately run and passed a CGI::Tiny object, which
+L</"METHODS"> can be called on to read request information and render a
+response.
 
 If an exception is thrown within the code block, or the code block does not
 render a response, it will run the handler set by L</"set_on_error"> if any, or
-by default warn the error to STDERR and (if nothing has been rendered yet)
-render a 500 Internal Server Error.
+by default C<warn> the error and (if nothing has been rendered yet) render a
+500 Internal Server Error.
 
 =head1 METHODS
 
@@ -581,12 +581,12 @@ is passed multiple times, its value will be an array reference.
   my $value = $cgi->query_param('foo');
 
 Retrieve value of a named URL query string parameter. If the parameter name is
-passed multiple times, returns the last value. Use L</"every_query_param"> to
+passed multiple times, returns the last value. Use L</"query_param_array"> to
 get multiple values of a parameter.
 
-=head2 every_query_param
+=head2 query_param_array
 
-  my $arrayref = $cgi->every_query_param('foo');
+  my $arrayref = $cgi->query_param_array('foo');
 
 Retrieve values of a named URL query string parameter as an array reference.
 
@@ -625,14 +625,14 @@ L</"request_body_limit"> can fit well within the available memory.
 
 Retrieve value of a named C<x-www-form-urlencoded> body parameter. If the
 parameter name is passed multiple times, returns the last value. Use
-L</"every_body_param"> to get multiple values of a parameter.
+L</"body_param_array"> to get multiple values of a parameter.
 
 Note that this will read the whole request body into memory, so make sure the
 L</"request_body_limit"> can fit well within the available memory.
 
-=head2 every_body_param
+=head2 body_param_array
 
-  my $arrayref = $cgi->every_body_param('foo');
+  my $arrayref = $cgi->body_param_array('foo');
 
 Retrieve values of a named C<x-www-form-urlencoded> body parameter as an array
 reference.
@@ -644,7 +644,7 @@ L</"request_body_limit"> can fit well within the available memory.
 
   my $data = $cgi->body_json;
 
-Decode a C<application/json> request body from JSON.
+Decode an C<application/json> request body from UTF-8-encoded JSON.
 
 Note that this will read the whole request body into memory, so make sure the
 L</"request_body_limit"> can fit well within the available memory.
@@ -661,8 +661,8 @@ is set.
 
   $cgi = $cgi->set_response_content_type('application/xml');
 
-Sets the response Content-Type header. No effect after response headers have
-been rendered.
+Sets the response Content-Type header, to override autodetection. No effect
+after response headers have been rendered.
 
 =head2 set_response_header
 
@@ -695,13 +695,14 @@ Sets L</"response_charset">.
   $cgi->render(data => $bytes);
   $cgi->render(json => $ref);
 
-Renders response data. The first time it is called will render response
-headers, and it may be called additional times with more response data.
+Renders response data of a type indicated by the first parameter. The first
+time it is called will render response headers, and it may be called additional
+times with more response data.
 
 The C<Content-Type> response header will be set according to
-L</"set_response_content_type"> or the type of data passed with the first call
-to C<render>, or to C<application/octet-stream> if there is no more appropriate
-value.
+L</"set_response_content_type">, or autodetected depending on the data type
+passed in the first call to C<render>, or to C<application/octet-stream> if
+there is no more appropriate value.
 
 C<html> or C<text> data is expected to be decoded characters, and will be
 encoded according to L</"response_charset">. C<json> data will be encoded to
@@ -709,15 +710,15 @@ UTF-8.
 
 =head1 CAVEATS
 
-CGI is an extremely simplistic protocol and relies particularly on environment
-variables and the C<STDIN> and C<STDOUT> standard filehandles. CGI::Tiny does
-not prevent you from messing with these interfaces directly, but it may result
-in confusion.
+CGI is an extremely simplistic protocol and relies particularly on the global
+state of environment variables and the C<STDIN> and C<STDOUT> standard
+filehandles. CGI::Tiny does not prevent you from messing with these interfaces
+directly, but it may result in confusion.
 
 Most applications are better written in a L<PSGI>-compatible framework (e.g.
 L<Dancer2> or L<Mojolicious>) and deployed in a persistent application server
-so that the application does not have to start up every time it receives a
-request.
+so that the application does not have to start up again every time it receives
+a request.
 
 =head1 BUGS
 
