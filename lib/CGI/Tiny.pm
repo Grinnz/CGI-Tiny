@@ -442,8 +442,8 @@ by default C<warn> the error and (if nothing has been rendered yet) render a
 
 =head1 METHODS
 
-The following methods can be called on the CGI::Tiny object provided to the DSL
-functions.
+The following methods can be called on the CGI::Tiny object provided to the
+C<cgi> code block.
 
 =head2 set_on_error
 
