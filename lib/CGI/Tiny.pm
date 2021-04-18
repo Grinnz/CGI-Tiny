@@ -117,18 +117,26 @@ sub request_body_limit     {
 
 sub headers_rendered { $_[0]{headers_rendered} }
 
-sub request_method  { $ENV{REQUEST_METHOD} }
+sub auth_type         { $ENV{AUTH_TYPE} }
+sub content_length    { $ENV{CONTENT_LENGTH} }
+sub content_type      { $ENV{CONTENT_TYPE} }
+sub gateway_interface { $ENV{GATEWAY_INTERFACE} }
+sub path_info         { $ENV{PATH_INFO} }
+sub path_translated   { $ENV{PATH_TRANSLATED} }
+sub query_string      { $ENV{QUERY_STRING} }
+sub remote_addr       { $ENV{REMOTE_ADDR} }
+sub remote_host       { $ENV{REMOTE_HOST} }
+sub remote_ident      { $ENV{REMOTE_IDENT} }
+sub remote_user       { $ENV{REMOTE_USER} }
+sub request_method    { $ENV{REQUEST_METHOD} }
+sub script_name       { $ENV{SCRIPT_NAME} }
+sub server_name       { $ENV{SERVER_NAME} }
+sub server_port       { $ENV{SERVER_PORT} }
+sub server_protocol   { $ENV{SERVER_PROTOCOL} }
+sub server_software   { $ENV{SERVER_SOFTWARE} }
 *method = \&request_method;
-sub server_protocol { $ENV{SERVER_PROTOCOL} }
-sub server_port     { $ENV{SERVER_PORT} }
-sub path_info       { $ENV{PATH_INFO} }
 *path = \&path_info;
-sub script_name     { $ENV{SCRIPT_NAME} }
-sub query_string    { $ENV{QUERY_STRING} }
 *query = \&query_string;
-sub remote_addr     { $ENV{REMOTE_ADDR} }
-sub content_type    { $ENV{CONTENT_TYPE} }
-sub content_length  { $ENV{CONTENT_LENGTH} }
 
 sub header { (my $name = $_[1]) =~ tr/-/_/; $ENV{"HTTP_\U$name"} }
 sub header_names { [sort keys %{$_[0]->_headers}] }
@@ -478,27 +486,43 @@ Sets L</"request_body_limit">.
 Returns true if response headers have been rendered, such as by the first call
 to L</"render">.
 
-=head2 request_method
+=head2 auth_type
 
-=head2 server_protocol
+=head2 content_length
 
-=head2 server_port
+=head2 content_type
+
+=head2 gateway_interface
 
 =head2 path_info
 
-=head2 script_name
+=head2 path_translated
 
 =head2 query_string
 
 =head2 remote_addr
 
-=head2 content_type
+=head2 remote_host
 
-=head2 content_length
+=head2 remote_ident
 
+=head2 remote_user
+
+=head2 request_method
+
+=head2 script_name
+
+=head2 server_name
+
+=head2 server_port
+
+=head2 server_protocol
+
+=head2 server_software
+
+  my $type   = $cgi->content_type;   # CONTENT_TYPE
   my $method = $cgi->request_method; # REQUEST_METHOD
   my $port   = $cgi->server_port;    # SERVER_PORT
-  my $type   = $cgi->content_type;   # CONTENT_TYPE
 
 Access to L<request meta-variables|https://tools.ietf.org/html/rfc3875#section-4.1>
 of the equivalent uppercase names.
