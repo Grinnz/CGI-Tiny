@@ -164,7 +164,7 @@ sub query_params {
   my ($self) = @_;
   my %params;
   my $keyed = $self->_query_params->{keyed};
-  foreach my $key (%$keyed) {
+  foreach my $key (keys %$keyed) {
     my @values = @{$keyed->{$key}};
     $params{$key} = @values > 1 ? \@values : $values[0];
   }
@@ -218,7 +218,7 @@ sub body_params {
   my ($self) = @_;
   my %params;
   my $keyed = $self->_body_params->{keyed};
-  foreach my $key (%$keyed) {
+  foreach my $key (keys %$keyed) {
     my @values = @{$keyed->{$key}};
     $params{$key} = @values > 1 ? \@values : $values[0];
   }
