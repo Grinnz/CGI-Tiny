@@ -142,7 +142,7 @@ sub server_software   { defined $ENV{SERVER_SOFTWARE} ? $ENV{SERVER_SOFTWARE} : 
 
 sub header { (my $name = $_[1]) =~ tr/-/_/; $ENV{"HTTP_\U$name"} }
 sub header_names { [sort keys %{$_[0]->_headers}] }
-sub headers { {%{$_[0]->_headers}} }
+sub headers { +{%{$_[0]->_headers}} }
 
 sub _headers {
   my ($self) = @_;
@@ -278,12 +278,12 @@ sub set_response_content_type {
   return $self;
 }
 
-sub set_response_header {
+sub add_response_header {
   my ($self, $name, $value) = @_;
   if ($self->{headers_rendered}) {
-    Carp::carp "Attempted to set HTTP response header '$name' but headers have already been rendered";
+    Carp::carp "Attempted to add HTTP response header '$name' but headers have already been rendered";
   } else {
-    $self->{response_headers}{$name} = $value;
+    push @{$self->{response_headers}}, [$name, $value];
   }
   return $self;
 }
@@ -297,12 +297,12 @@ sub render {
   my $charset = $self->response_charset;
   my $out_fh = defined $self->{output_handle} ? $self->{output_handle} : *STDOUT;
   if (!$self->{headers_rendered}) {
-    my %headers = %{$self->{response_headers} || {}};
+    my @headers = @{$self->{response_headers} || []};
     my $headers_str = '';
     my %headers_set;
-    foreach my $name (sort keys %headers) {
-      my @values = ref $headers{$name} eq 'ARRAY' ? @{$headers{$name}} : $headers{$name};
-      $headers_str .= "$name: $_\r\n" for grep { defined } @values;
+    foreach my $header (@headers) {
+      my ($name, $value) = @$header;
+      $headers_str .= "$name: $value\r\n";
       $headers_set{lc $name} = 1;
     }
     if (!$headers_set{location} and $type eq 'redirect') {
@@ -694,16 +694,16 @@ is set.
 Sets the response Content-Type header, to override autodetection. No effect
 after response headers have been rendered.
 
-=head2 set_response_header
+=head2 add_response_header
 
-  $cgi = $cgi->set_response_header('Content-Disposition' => 'attachment');
+  $cgi = $cgi->add_response_header('Content-Disposition' => 'attachment');
 
-Sets a response header. No effect after response headers have been rendered.
-
-An array reference value will set the header once for each value.
+Adds a response header. No effect after response headers have been rendered.
 
 Note that header names are case insensitive and CGI::Tiny does not attempt to
-deduplicate or munge headers that have been set manually.
+deduplicate or munge headers that have been added manually. Headers are printed
+in the response in the same order added, and adding the same header multiple
+times will result in multiple instances of that response header.
 
 =head2 response_charset
 

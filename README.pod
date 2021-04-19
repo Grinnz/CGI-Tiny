@@ -334,16 +334,16 @@ is set.
 Sets the response Content-Type header, to override autodetection. No effect
 after response headers have been rendered.
 
-=head2 set_response_header
+=head2 add_response_header
 
-  $cgi = $cgi->set_response_header('Content-Disposition' => 'attachment');
+  $cgi = $cgi->add_response_header('Content-Disposition' => 'attachment');
 
-Sets a response header. No effect after response headers have been rendered.
-
-An array reference value will set the header once for each value.
+Adds a response header. No effect after response headers have been rendered.
 
 Note that header names are case insensitive and CGI::Tiny does not attempt to
-deduplicate or munge headers that have been set manually.
+deduplicate or munge headers that have been added manually. Headers are printed
+in the response in the same order added, and adding the same header multiple
+times will result in multiple instances of that response header.
 
 =head2 response_charset
 

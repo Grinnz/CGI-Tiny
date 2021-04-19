@@ -10,3 +10,4 @@ runtime:
 test:
   requires:
     Test::More: '0.96'
+    MIME::Base64: 0

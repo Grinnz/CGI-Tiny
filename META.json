@@ -55,6 +55,7 @@
          "requires" : {
             "ExtUtils::MakeMaker" : "0",
             "File::Spec" : "0",
+            "MIME::Base64" : "0",
             "Test::More" : "0.96"
          }
       }

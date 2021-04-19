@@ -25,6 +25,7 @@ my %WriteMakefileArgs = (
   "TEST_REQUIRES" => {
     "ExtUtils::MakeMaker" => 0,
     "File::Spec" => 0,
+    "MIME::Base64" => 0,
     "Test::More" => "0.96"
   },
   "VERSION" => "0.001",
@@ -41,6 +42,7 @@ my %FallbackPrereqs = (
   "ExtUtils::MakeMaker" => 0,
   "File::Spec" => 0,
   "JSON::PP" => 0,
+  "MIME::Base64" => 0,
   "Test::More" => "0.96"
 );
 
