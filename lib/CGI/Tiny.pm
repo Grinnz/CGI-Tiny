@@ -482,19 +482,6 @@ L<Text::Xslate> is an efficient template engine designed for HTML/XML.
   #!/usr/bin/perl
   use strict;
   use warnings;
-  use CGI::Tiny;
-  use Text::Xslate;
-
-  cgi {
-    my ($cgi) = @_;
-    my $foo = $cgi->query_param('foo');
-    my $tx = Text::Xslate->new(path => ['templates'], cache => 0);
-    $cgi->render(html => $tx->render('index.tx', {foo => $foo}));
-  };
-
-  #!/usr/bin/perl
-  use strict;
-  use warnings;
   use utf8;
   use CGI::Tiny;
   use Text::Xslate;
@@ -504,6 +491,11 @@ L<Text::Xslate> is an efficient template engine designed for HTML/XML.
     my ($cgi) = @_;
     my $foo = $cgi->query_param('foo');
     my $tx = Text::Xslate->new(path => ['templates'], cache => 0);
+
+    # from templates/
+    $cgi->render(html => $tx->render('index.tx', {foo => $foo}));
+
+    # from __DATA__
     my $template = get_data_section 'index.tx';
     $cgi->render(html => $tx->render_string($template, {foo => $foo}));
   };
@@ -518,30 +510,22 @@ toolkit.
   #!/usr/bin/perl
   use strict;
   use warnings;
-  use CGI::Tiny;
-  use Mojo::Template;
-  use Mojo::File 'curfile';
-
-  cgi {
-    my ($cgi) = @_;
-    my $foo = $cgi->query_param('foo');
-    my $mt = Mojo::Template->new(auto_escape => 1, vars => 1);
-    my $template_path = curfile->sibling('templates', 'index.html.ep');
-    $cgi->render(html => $mt->render_file($template_path, {foo => $foo}));
-  };
-
-  #!/usr/bin/perl
-  use strict;
-  use warnings;
   use utf8;
   use CGI::Tiny;
   use Mojo::Template;
+  use Mojo::File 'curfile';
   use Mojo::Loader 'data_section';
 
   cgi {
     my ($cgi) = @_;
     my $foo = $cgi->query_param('foo');
     my $mt = Mojo::Template->new(auto_escape => 1, vars => 1);
+
+    # from templates/
+    my $template_path = curfile->sibling('templates', 'index.html.ep');
+    $cgi->render(html => $mt->render_file($template_path, {foo => $foo}));
+
+    # from __DATA__
     my $template = data_section __PACKAGE__, 'index.html.ep';
     $cgi->render(html => $mt->render($template, {foo => $foo}));
   };
