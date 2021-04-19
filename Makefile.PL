@@ -20,6 +20,7 @@ my %WriteMakefileArgs = (
     "Carp" => 0,
     "Encode" => 0,
     "Exporter" => "5.57",
+    "IO::Handle" => 0,
     "JSON::PP" => 0
   },
   "TEST_REQUIRES" => {
@@ -41,6 +42,7 @@ my %FallbackPrereqs = (
   "Exporter" => "5.57",
   "ExtUtils::MakeMaker" => 0,
   "File::Spec" => 0,
+  "IO::Handle" => 0,
   "JSON::PP" => 0,
   "MIME::Base64" => 0,
   "Test::More" => "0.96"
