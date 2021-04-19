@@ -7,7 +7,7 @@ use Encode ();
 use Exporter 'import';
 use IO::Handle ();
 
-our $VERSION = '0.001';
+our $VERSION = '0.002';
 
 our @EXPORT = 'cgi';
 
