@@ -117,8 +117,6 @@ sub set_request_body_limit { $_[0]{request_body_limit} = $_[1]; $_[0] }
 sub set_input_handle       { $_[0]{input_handle} = $_[1]; $_[0] }
 sub set_output_handle      { $_[0]{output_handle} = $_[1]; $_[0] }
 
-sub headers_rendered { $_[0]{headers_rendered} }
-
 sub auth_type         { defined $ENV{AUTH_TYPE} ? $ENV{AUTH_TYPE} : '' }
 sub content_length    { defined $ENV{CONTENT_LENGTH} ? $ENV{CONTENT_LENGTH} : '' }
 sub content_type      { defined $ENV{CONTENT_TYPE} ? $ENV{CONTENT_TYPE} : '' }
@@ -290,6 +288,8 @@ sub add_response_header {
 
 sub response_charset     { defined $_[0]{response_charset} ? $_[0]{response_charset} : ($_[0]{response_charset} = 'UTF-8') }
 sub set_response_charset { $_[0]{response_charset} = $_[1]; $_[0] }
+
+sub headers_rendered { $_[0]{headers_rendered} }
 
 sub render {
   my ($self, $type, $data) = @_;
@@ -632,13 +632,6 @@ Sets the output handle to print the response to. If not set, prints to
 C<STDOUT>. The handle will have C<binmode> applied before printing to remove
 any translation layers.
 
-=head2 headers_rendered
-
-  my $bool = $cgi->headers_rendered;
-
-Returns true if response headers have been rendered, such as by the first call
-to L</"render">.
-
 =head2 auth_type
 
 =head2 content_length
@@ -840,6 +833,13 @@ C<UTF-8>.
 
 Sets L</"response_charset">.
 
+=head2 headers_rendered
+
+  my $bool = $cgi->headers_rendered;
+
+Returns true if response headers have been rendered, such as by the first call
+to L</"render">.
+
 =head2 render
 
   $cgi->render;
@@ -850,8 +850,9 @@ Sets L</"response_charset">.
   $cgi->render(redirect => $url);
 
 Renders response data of a type indicated by the first parameter, if any. The
-first time it is called will render response headers, and it may be called
-additional times with more response data.
+first time it is called will render response headers and set
+L</"headers_rendered">, and it may be called additional times with more
+response data.
 
 The C<Content-Type> response header will be set according to
 L</"set_response_content_type">, or autodetected depending on the data type
