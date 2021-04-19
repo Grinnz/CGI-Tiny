@@ -488,9 +488,11 @@ default 500 Internal Server Error response will be rendered.
 
 Limit in bytes for parsing a request body into memory, defaults to the value of
 the C<CGI_TINY_REQUEST_BODY_LIMIT> environment variable or 16777216 (16 MiB).
-Since the request body is not read until needed, reaching the limit while
-parsing the request body will throw an exception. A value of 0 will remove the
-limit (not recommended unless you have other safeguards on memory usage).
+Since the request body is not parsed until needed, methods that parse the whole
+request body into memory like L</"body"> will set the response status to
+C<413 Payload Too Large> and throw an exception if the content length is over
+the limit. A value of 0 will remove the limit (not recommended unless you have
+other safeguards on memory usage).
 
 =head2 set_request_body_limit
 
@@ -748,6 +750,15 @@ C<redirect> will print a redirection header if response headers have not yet
 been rendered, and will set a response status of 302 if none has been set by
 L</"set_response_status">. It will not set a C<Content-Type> response header.
 If response headers have already been rendered a warning will be emitted.
+
+=head1 ENVIRONMENT
+
+CGI::Tiny recognizes the following environment variables, in addition to the
+standard CGI environment variables.
+
+=head2 CGI_TINY_REQUEST_BODY_LIMIT
+
+Default value for L</"request_body_limit">.
 
 =head1 CAVEATS
 
