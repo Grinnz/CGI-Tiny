@@ -587,7 +587,9 @@ name).
 The following methods can be called on the CGI::Tiny object provided to the
 C<cgi> code block.
 
-=head2 set_error_handler
+=head2 Setup
+
+=head3 set_error_handler
 
   $cgi = $cgi->set_error_handler(sub {
     my ($cgi, $error) = @_;
@@ -607,7 +609,7 @@ error handlers should render some response if L</"headers_rendered"> is
 false. If no response has been rendered after the error handler completes, the
 default 500 Internal Server Error response will be rendered.
 
-=head2 request_body_limit
+=head3 request_body_limit
 
   my $limit = $cgi->request_body_limit;
 
@@ -619,13 +621,13 @@ C<413 Payload Too Large> and throw an exception if the content length is over
 the limit. A value of 0 will remove the limit (not recommended unless you have
 other safeguards on memory usage).
 
-=head2 set_request_body_limit
+=head3 set_request_body_limit
 
   $cgi = $cgi->set_request_body_limit(16*1024*1024);
 
 Sets L</"request_body_limit">.
 
-=head2 set_input_handle
+=head3 set_input_handle
 
   $cgi = $cgi->set_input_handle($fh);
 
@@ -633,7 +635,7 @@ Sets the input handle to read the request body from. If not set, reads from
 C<STDIN>. The handle will have C<binmode> applied before reading to remove any
 translation layers.
 
-=head2 set_output_handle
+=head3 set_output_handle
 
   $cgi = $cgi->set_output_handle($fh);
 
@@ -641,39 +643,41 @@ Sets the output handle to print the response to. If not set, prints to
 C<STDOUT>. The handle will have C<binmode> applied before printing to remove
 any translation layers.
 
-=head2 auth_type
+=head2 Request Parsing
 
-=head2 content_length
+=head3 auth_type
 
-=head2 content_type
+=head3 content_length
 
-=head2 gateway_interface
+=head3 content_type
 
-=head2 path_info
+=head3 gateway_interface
 
-=head2 path_translated
+=head3 path_info
 
-=head2 query_string
+=head3 path_translated
 
-=head2 remote_addr
+=head3 query_string
 
-=head2 remote_host
+=head3 remote_addr
 
-=head2 remote_ident
+=head3 remote_host
 
-=head2 remote_user
+=head3 remote_ident
 
-=head2 request_method
+=head3 remote_user
 
-=head2 script_name
+=head3 request_method
 
-=head2 server_name
+=head3 script_name
 
-=head2 server_port
+=head3 server_name
 
-=head2 server_protocol
+=head3 server_port
 
-=head2 server_software
+=head3 server_protocol
+
+=head3 server_software
 
   my $type   = $cgi->content_type;   # CONTENT_TYPE
   my $method = $cgi->request_method; # REQUEST_METHOD
@@ -683,11 +687,11 @@ Access to L<request meta-variables|https://tools.ietf.org/html/rfc3875#section-4
 of the equivalent uppercase names. Since CGI does not distinguish between
 missing and empty values, missing values will be normalized to an empty string.
 
-=head2 method
+=head3 method
 
-=head2 path
+=head3 path
 
-=head2 query
+=head3 query
 
   my $method = $cgi->method; # REQUEST_METHOD
   my $path   = $cgi->path;   # PATH_INFO
@@ -695,21 +699,21 @@ missing and empty values, missing values will be normalized to an empty string.
 
 Short aliases for a few request meta-variables.
 
-=head2 query_pairs
+=head3 query_pairs
 
   my $pairs = $cgi->query_pairs;
 
 Retrieve URL query string parameters as an array reference of two-element array
 references.
 
-=head2 query_params
+=head3 query_params
 
   my $params = $cgi->query_params;
 
 Retrieve URL query string parameters as a hash reference. If a parameter name
 is passed multiple times, its value will be an array reference.
 
-=head2 query_param
+=head3 query_param
 
   my $value = $cgi->query_param('foo');
 
@@ -717,20 +721,20 @@ Retrieve value of a named URL query string parameter. If the parameter name is
 passed multiple times, returns the last value. Use L</"query_param_array"> to
 get multiple values of a parameter.
 
-=head2 query_param_array
+=head3 query_param_array
 
   my $arrayref = $cgi->query_param_array('foo');
 
 Retrieve values of a named URL query string parameter as an array reference.
 
-=head2 headers
+=head3 headers
 
   my $hashref = $cgi->headers;
 
 Hash reference of available request header names and values. Header names are
 represented in lowercase.
 
-=head2 header
+=head3 header
 
   my $value = $cgi->header('Accept');
 
@@ -738,7 +742,7 @@ Retrieve the value of a request header by name (case insensitive). CGI request
 headers can only contain a single value, which may be combined from multiple
 values.
 
-=head2 body
+=head3 body
 
   my $bytes = $cgi->body;
 
@@ -747,7 +751,7 @@ Retrieve the request body as bytes.
 Note that this will read the whole request body into memory, so make sure the
 L</"request_body_limit"> can fit well within the available memory.
 
-=head2 body_pairs
+=head3 body_pairs
 
   my $pairs = $cgi->body_pairs;
 
@@ -757,7 +761,7 @@ two-element array references.
 Note that this will read the whole request body into memory, so make sure the
 L</"request_body_limit"> can fit well within the available memory.
 
-=head2 body_params
+=head3 body_params
 
   my $params = $cgi->body_params;
 
@@ -767,7 +771,7 @@ parameter name is passed multiple times, its value will be an array reference.
 Note that this will read the whole request body into memory, so make sure the
 L</"request_body_limit"> can fit well within the available memory.
 
-=head2 body_param
+=head3 body_param
 
   my $value = $cgi->body_param('foo');
 
@@ -778,7 +782,7 @@ L</"body_param_array"> to get multiple values of a parameter.
 Note that this will read the whole request body into memory, so make sure the
 L</"request_body_limit"> can fit well within the available memory.
 
-=head2 body_param_array
+=head3 body_param_array
 
   my $arrayref = $cgi->body_param_array('foo');
 
@@ -788,7 +792,7 @@ reference.
 Note that this will read the whole request body into memory, so make sure the
 L</"request_body_limit"> can fit well within the available memory.
 
-=head2 body_json
+=head3 body_json
 
   my $data = $cgi->body_json;
 
@@ -797,7 +801,9 @@ Decode an C<application/json> request body from UTF-8-encoded JSON.
 Note that this will read the whole request body into memory, so make sure the
 L</"request_body_limit"> can fit well within the available memory.
 
-=head2 set_response_status
+=head2 Response Generation
+
+=head3 set_response_status
 
   $cgi = $cgi->set_response_status(404);
 
@@ -805,14 +811,14 @@ Sets the response HTTP status code. No effect after response headers have been
 rendered. The CGI protocol assumes a status of C<200 OK> if no response status
 is set.
 
-=head2 set_response_content_type
+=head3 set_response_content_type
 
   $cgi = $cgi->set_response_content_type('application/xml');
 
 Sets the response Content-Type header, to override autodetection. No effect
 after response headers have been rendered.
 
-=head2 add_response_header
+=head3 add_response_header
 
   $cgi = $cgi->add_response_header('Content-Disposition' => 'attachment');
 
@@ -823,27 +829,27 @@ deduplicate or munge headers that have been added manually. Headers are printed
 in the response in the same order added, and adding the same header multiple
 times will result in multiple instances of that response header.
 
-=head2 response_charset
+=head3 response_charset
 
   my $charset = $cgi->response_charset;
 
 Charset to use when rendering C<text>, C<html>, or C<xml> response data,
 defaults to C<UTF-8>.
 
-=head2 set_response_charset
+=head3 set_response_charset
 
   $cgi = $cgi->set_response_charset('UTF-8');
 
 Sets L</"response_charset">.
 
-=head2 headers_rendered
+=head3 headers_rendered
 
   my $bool = $cgi->headers_rendered;
 
 Returns true if response headers have been rendered, such as by the first call
 to L</"render">.
 
-=head2 render
+=head3 render
 
   $cgi->render;
   $cgi->render(html => $html);
