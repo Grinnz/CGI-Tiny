@@ -6,6 +6,7 @@ CGI::Tiny - Common Gateway Interface, with no frills
 
 =head1 SYNOPSIS
 
+  #!/usr/bin/perl
   use strict;
   use warnings;
   use CGI::Tiny;
@@ -72,6 +73,9 @@ templating, and doesn't impose unnecessary constraints to reading input or
 rendering output.
 
 =back
+
+This module's interface is currently I<EXPERIMENTAL> and may be changed
+incompatibly if needed.
 
 =head1 USAGE
 
