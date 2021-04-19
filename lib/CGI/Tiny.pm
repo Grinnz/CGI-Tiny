@@ -169,8 +169,8 @@ sub _query_params {
   return $self->{query_params};
 }
 
-sub header { (my $name = $_[1]) =~ tr/-/_/; $ENV{"HTTP_\U$name"} }
 sub headers { +{%{$_[0]->_headers}} }
+sub header { (my $name = $_[1]) =~ tr/-/_/; $ENV{"HTTP_\U$name"} }
 
 sub _headers {
   my ($self) = @_;
@@ -695,21 +695,6 @@ missing and empty values, missing values will be normalized to an empty string.
 
 Short aliases for a few request meta-variables.
 
-=head2 header
-
-  my $value = $cgi->header('Accept');
-
-Retrieve the value of a request header by name (case insensitive). CGI request
-headers can only contain a single value, which may be combined from multiple
-values.
-
-=head2 headers
-
-  my $hashref = $cgi->headers;
-
-Hash reference of available request header names and values. Header names are
-represented in lowercase.
-
 =head2 query_pairs
 
   my $pairs = $cgi->query_pairs;
@@ -737,6 +722,21 @@ get multiple values of a parameter.
   my $arrayref = $cgi->query_param_array('foo');
 
 Retrieve values of a named URL query string parameter as an array reference.
+
+=head2 headers
+
+  my $hashref = $cgi->headers;
+
+Hash reference of available request header names and values. Header names are
+represented in lowercase.
+
+=head2 header
+
+  my $value = $cgi->header('Accept');
+
+Retrieve the value of a request header by name (case insensitive). CGI request
+headers can only contain a single value, which may be combined from multiple
+values.
 
 =head2 body
 
