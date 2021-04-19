@@ -105,6 +105,13 @@ rendered yet) render a 500 Internal Server Error.
 CGI::Tiny is a minimal interface to the CGI protocol, but can be extended with
 the use of other CPAN modules.
 
+=head2 JSON
+
+CGI::Tiny has built in support for parsing and rendering JSON content with
+L<JSON::PP>. CGI scripts that deal with JSON content will greatly benefit from
+installing L<Cpanel::JSON::XS> version C<4.09> or newer for efficient encoding
+and decoding, which will be used automatically if available.
+
 =head2 Templating
 
 HTML and XML responses are most easily managed with templating. A number of
