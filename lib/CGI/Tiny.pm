@@ -90,11 +90,11 @@ sub cgi (&) {
   if ($errored) {
     my $caller = caller;
     $cgi->set_response_status(500) unless $cgi->{headers_rendered} or defined $cgi->{response_status};
-    if (defined $cgi->{on_error}) {
+    if (defined(my $handler = $cgi->{on_error})) {
       my ($error_error, $error_errored);
       {
         local $@;
-        eval { $cgi->{on_error}->($cgi, $error); 1 } or do { $error_error = $@; $error_errored = 1 };
+        eval { $handler->($cgi, $error); 1 } or do { $error_error = $@; $error_errored = 1 };
       }
       if ($error_errored) {
         warn "Exception in error handler: $error_error";
