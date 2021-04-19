@@ -3,9 +3,8 @@ package CGI::Tiny;
 use strict;
 use warnings;
 use Carp ();
-use Encode ();
-use Exporter 'import';
 use IO::Handle ();
+use Exporter 'import';
 
 our $VERSION = '0.002';
 
@@ -339,7 +338,8 @@ sub render {
   if ($type eq 'json') {
     $out_fh->printflush($self->_json->encode($data));
   } elsif ($type eq 'html' or $type eq 'xml' or $type eq 'text') {
-    $out_fh->printflush(Encode::encode $charset, "$data");
+    require Encode;
+    $out_fh->printflush(Encode::encode($charset, "$data"));
   } elsif ($type eq 'data') {
     $out_fh->printflush($data);
   }
