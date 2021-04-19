@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.002     2021-04-19 03:59:16 EDT
   - Remove header_names method
   - Throw an exception if render is called with an unknown type
 
