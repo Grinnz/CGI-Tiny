@@ -128,12 +128,32 @@ L<Text::Xslate> is an efficient template engine designed for HTML/XML.
   cgi {
     my ($cgi) = @_;
     my $foo = $cgi->query_param('foo');
-    my $tx = Text::Xslate->new(path => ['templates']);
+    my $tx = Text::Xslate->new(path => ['templates'], cache => 0);
     $cgi->render(html => $tx->render('index.tx', {foo => $foo}));
   };
 
+  #!/usr/bin/perl
+  use strict;
+  use warnings;
+  use utf8;
+  use CGI::Tiny;
+  use Text::Xslate;
+  use Data::Section::Simple 'get_data_section';
+
+  cgi {
+    my ($cgi) = @_;
+    my $foo = $cgi->query_param('foo');
+    my $tx = Text::Xslate->new(path => ['templates'], cache => 0);
+    my $template = get_data_section 'index.tx';
+    $cgi->render(html => $tx->render_string($template, {foo => $foo}));
+  };
+
+  __DATA__
+  @@ index.tx
+  <html><body><h1><: $foo :></h1></body></html>
+
 L<Mojo::Template> is a lightweight HTML/XML template engine in the L<Mojo>
-toolkit. It can render templates from files or strings.
+toolkit.
 
   #!/usr/bin/perl
   use strict;
