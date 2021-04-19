@@ -643,7 +643,7 @@ Sets the output handle to print the response to. If not set, prints to
 C<STDOUT>. The handle will have C<binmode> applied before printing to remove
 any translation layers.
 
-=head2 Request Parsing
+=head2 Request
 
 =head3 auth_type
 
@@ -801,7 +801,7 @@ Decode an C<application/json> request body from UTF-8-encoded JSON.
 Note that this will read the whole request body into memory, so make sure the
 L</"request_body_limit"> can fit well within the available memory.
 
-=head2 Response Generation
+=head2 Response
 
 =head3 set_response_status
 
