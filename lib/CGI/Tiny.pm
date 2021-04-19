@@ -537,6 +537,24 @@ name).
   use CGI::Tiny;
   use Routes::Tiny;
 
+  my %dispatch = (
+    foos => sub {
+      my ($cgi) = @_;
+      my $method = $cgi->method;
+      ...
+    },
+    get_foo => sub {
+      my ($cgi, $captures) = @_;
+      my $id = $captures->{id};
+      ...
+    },
+    put_foo => sub {
+      my ($cgi, $captures) = @_;
+      my $id = $captures->{id};
+      ...
+    },
+  );
+
   cgi {
     my ($cgi) = @_;
 
@@ -547,11 +565,6 @@ name).
     $routes->add_route('/foo/:id', method => 'GET', name => 'get_foo');
     $routes->add_route('/foo/:id', method => 'PUT', name => 'put_foo');
 
-    my %dispatch = (
-      foos    => \&foos,
-      get_foo => \&get_foo,
-      put_foo => \&put_foo,
-    );
     if (defined(my $match = $routes->match($cgi->path, method => $cgi->method))) {
       $dispatch{$match->name}->($cgi, $match->captures);
     } else {
@@ -559,24 +572,6 @@ name).
       $cgi->render(text => 'Not Found');
     }
   };
-
-  sub foos {
-    my ($cgi) = @_;
-    my $method = $cgi->method;
-    ...
-  }
-
-  sub get_foo {
-    my ($cgi, $captures) = @_;
-    my $id = $captures->{id};
-    ...
-  }
-
-  sub put_foo {
-    my ($cgi, $captures) = @_;
-    my $id = $captures->{id};
-    ...
-  }
 
 =head1 METHODS
 
