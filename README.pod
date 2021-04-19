@@ -85,7 +85,10 @@ CGI::Tiny's interface is a regular function called C<cgi> exported by default.
 
   cgi {
     my ($cgi) = @_;
-    ...
+    # set up error handling on $cgi
+    # inspect request data via $cgi
+    # set response headers if needed via $cgi
+    # render response data with $cgi->render
   };
 
 The code block is immediately run and passed a CGI::Tiny object, which
@@ -96,6 +99,124 @@ If an exception is thrown within the code block, or the code block does not
 render a response, it will run the handler set by L</"set_error_handler"> if
 any, or by default emit the error as a warning and (if nothing has been
 rendered yet) render a 500 Internal Server Error.
+
+=head1 EXTENDING
+
+CGI::Tiny is a minimal interface to the CGI protocol, but can be extended with
+the use of other CPAN modules.
+
+=head2 Templating
+
+HTML and XML responses are most easily managed with templating. A number of
+CPAN modules provide this capability.
+
+L<Text::Xslate> is a lightweight and efficient template engine designed for
+HTML/XML.
+
+  #!/usr/bin/perl
+  use strict;
+  use warnings;
+  use CGI::Tiny;
+  use Text::Xslate;
+
+  cgi {
+    my ($cgi) = @_;
+    my $foo = $cgi->query_param('foo');
+    my $tx = Text::Xslate->new(path => ['templates']);
+    $cgi->render(html => $tx->render('index.tx', {foo => $foo}));
+  };
+
+L<Mojo::Template> is another lightweight HTML template engine in the L<Mojo>
+toolkit. It can render templates from files or strings.
+
+  #!/usr/bin/perl
+  use strict;
+  use warnings;
+  use CGI::Tiny;
+  use Mojo::Template;
+  use Mojo::File 'curfile';
+
+  cgi {
+    my ($cgi) = @_;
+    my $foo = $cgi->query_param('foo');
+    my $mt = Mojo::Template->new(auto_escape => 1, vars => 1);
+    my $template_path = curfile->sibling('templates', 'index.html.ep');
+    $cgi->render(html => $mt->render_file($template_path, {foo => $foo});
+  };
+
+  #!/usr/bin/perl
+  use strict;
+  use warnings;
+  use utf8;
+  use CGI::Tiny;
+  use Mojo::Template;
+  use Mojo::Loader 'data_section';
+
+  cgi {
+    my ($cgi) = @_;
+    my $foo = $cgi->query_param('foo');
+    my $mt = Mojo::Template->new(auto_escape => 1, vars => 1);
+    my $template = data_section __PACKAGE__, 'index.html.ep';
+    $cgi->render(html => $mt->render($template, {foo => $foo});
+  };
+
+  __DATA__
+  @@ index.html.ep
+  <html><body><h1><%= $foo %></h1></body></html>
+
+=head2 Routing
+
+Web applications use routing to serve multiple types of requests from one
+application. L<Routes::Tiny> can be used to organize this with CGI::Tiny, using
+C<REQUEST_METHOD> and C<PATH_INFO> (which is the URL path after the CGI script
+name).
+
+  #!/usr/bin/perl
+  use strict;
+  use warnings;
+  use CGI::Tiny;
+  use Routes::Tiny;
+
+  cgi {
+    my ($cgi) = @_;
+
+    my $routes = Routes::Tiny->new;
+    # /script.cgi/foo
+    $routes->add_route('/foo', name => 'foos');
+    # /script.cgi/foo/42
+    $routes->add_route('/foo/:id', method => 'GET', name => 'get_foo');
+    $routes->add_route('/foo/:id', method => 'PUT', name => 'put_foo');
+
+    my %dispatch = (
+      foos    => \&foos,
+      get_foo => \&get_foo,
+      put_foo => \&put_foo,
+    );
+    if (defined(my $match = $routes->match($cgi->path, method => $cgi->method))) {
+      $dispatch{$match->name}->($cgi, $match->captures);
+    } else {
+      $cgi->set_response_status(404);
+      $cgi->render(text => 'Not Found');
+    }
+  };
+
+  sub foos {
+    my ($cgi) = @_;
+    my $method = $cgi->method;
+    ...
+  }
+
+  sub get_foo {
+    my ($cgi, $captures) = @_;
+    my $id = $captures->{id};
+    ...
+  }
+
+  sub put_foo {
+    my ($cgi, $captures) = @_;
+    my $id = $captures->{id};
+    ...
+  }
 
 =head1 METHODS
 
