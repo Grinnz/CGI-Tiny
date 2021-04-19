@@ -527,6 +527,9 @@ subtest 'Request meta-variables and headers' => sub {
   is $vars{server_port}, '80', 'right SERVER_PORT';
   is $vars{server_protocol}, 'HTTP/1.0', 'right SERVER_PROTOCOL';
   is $vars{server_software}, "CGI::Tiny/$CGI::Tiny::VERSION", 'right SERVER_SOFTWARE';
+  is $vars{method}, 'GET', 'right method';
+  is $vars{path}, '/foo', 'right path';
+  is $vars{query}, 'foo=bar', 'right query';
   is $headers->{authorization}, "Basic $auth_str", 'right Authorization header';
   is $headers->{'content-length'}, length($text), 'right Content-Length header';
   is $headers->{'content-type'}, 'text/plain;charset=UTF-8', 'right Content-Type header';
