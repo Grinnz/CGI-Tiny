@@ -470,8 +470,7 @@ the use of other CPAN modules.
 HTML and XML responses are most easily managed with templating. A number of
 CPAN modules provide this capability.
 
-L<Text::Xslate> is a lightweight and efficient template engine designed for
-HTML/XML.
+L<Text::Xslate> is an efficient template engine designed for HTML/XML.
 
   #!/usr/bin/perl
   use strict;
@@ -486,8 +485,8 @@ HTML/XML.
     $cgi->render(html => $tx->render('index.tx', {foo => $foo}));
   };
 
-L<Mojo::Template> is another lightweight HTML template engine in the L<Mojo>
-toolkit. It can render templates from files or strings.
+L<Mojo::Template> is a lightweight HTML template engine in the L<Mojo> toolkit.
+It can render templates from files or strings.
 
   #!/usr/bin/perl
   use strict;
