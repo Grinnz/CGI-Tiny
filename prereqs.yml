@@ -9,4 +9,4 @@ runtime:
     Cpanel::JSON::XS: '4.09'
 test:
   requires:
-    Test::More: '0.88'
+    Test::More: '0.96'
