@@ -139,25 +139,6 @@ sub server_software   { defined $ENV{SERVER_SOFTWARE} ? $ENV{SERVER_SOFTWARE} : 
 *path = \&path_info;
 *query = \&query_string;
 
-sub header { (my $name = $_[1]) =~ tr/-/_/; $ENV{"HTTP_\U$name"} }
-sub header_names { [sort keys %{$_[0]->_headers}] }
-sub headers { +{%{$_[0]->_headers}} }
-
-sub _headers {
-  my ($self) = @_;
-  unless (exists $self->{request_headers}) {
-    my %headers;
-    foreach my $key (sort keys %ENV) {
-      my $name = $key;
-      next unless $name =~ s/^HTTP_//;
-      $name =~ tr/_/-/;
-      $headers{lc $name} = $ENV{$key};
-    }
-    $self->{request_headers} = \%headers;
-  }
-  return $self->{request_headers};
-}
-
 sub query_pairs { [@{$_[0]->_query_params->{ordered}}] }
 sub query_params {
   my ($self) = @_;
@@ -186,6 +167,24 @@ sub _query_params {
     $self->{query_params} = {ordered => \@ordered, keyed => \%keyed};
   }
   return $self->{query_params};
+}
+
+sub header { (my $name = $_[1]) =~ tr/-/_/; $ENV{"HTTP_\U$name"} }
+sub headers { +{%{$_[0]->_headers}} }
+
+sub _headers {
+  my ($self) = @_;
+  unless (exists $self->{request_headers}) {
+    my %headers;
+    foreach my $key (keys %ENV) {
+      my $name = $key;
+      next unless $name =~ s/^HTTP_//;
+      $name =~ tr/_/-/;
+      $headers{lc $name} = $ENV{$key};
+    }
+    $self->{request_headers} = \%headers;
+  }
+  return $self->{request_headers};
 }
 
 sub body {
@@ -703,12 +702,6 @@ Short aliases for a few request meta-variables.
 Retrieve the value of a request header by name (case insensitive). CGI request
 headers can only contain a single value, which may be combined from multiple
 values.
-
-=head2 header_names
-
-  my $arrayref = $cgi->header_names;
-
-Array reference of available request header names, in lowercase.
 
 =head2 headers
 
