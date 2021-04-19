@@ -5,6 +5,7 @@ use warnings;
 use Carp ();
 use Encode ();
 use Exporter 'import';
+use IO::Handle ();
 
 our $VERSION = '0.001';
 
@@ -328,17 +329,17 @@ sub render {
     }
     $headers_str .= "\r\n";
     binmode $out_fh;
-    print $out_fh $headers_str;
+    $out_fh->printflush($headers_str);
     $self->{headers_rendered} = 1;
   } elsif ($type eq 'redirect') {
     Carp::carp "Attempted to render a redirect but headers have already been rendered";
   }
   if ($type eq 'json') {
-    print $out_fh $self->_json->encode($data);
+    $out_fh->printflush($self->_json->encode($data));
   } elsif ($type eq 'html' or $type eq 'xml' or $type eq 'text') {
-    print $out_fh Encode::encode $charset, "$data";
+    $out_fh->printflush(Encode::encode $charset, "$data");
   } elsif ($type eq 'data') {
-    print $out_fh $data;
+    $out_fh->printflush($data);
   }
 }
 
