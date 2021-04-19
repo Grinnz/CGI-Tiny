@@ -765,6 +765,8 @@ a request.
 
 =item * Cookies
 
+=item * NPH
+
 =back
 
 =head1 BUGS
