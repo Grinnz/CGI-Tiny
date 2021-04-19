@@ -141,7 +141,7 @@ toolkit. It can render templates from files or strings.
     my $foo = $cgi->query_param('foo');
     my $mt = Mojo::Template->new(auto_escape => 1, vars => 1);
     my $template_path = curfile->sibling('templates', 'index.html.ep');
-    $cgi->render(html => $mt->render_file($template_path, {foo => $foo});
+    $cgi->render(html => $mt->render_file($template_path, {foo => $foo}));
   };
 
   #!/usr/bin/perl
@@ -157,7 +157,7 @@ toolkit. It can render templates from files or strings.
     my $foo = $cgi->query_param('foo');
     my $mt = Mojo::Template->new(auto_escape => 1, vars => 1);
     my $template = data_section __PACKAGE__, 'index.html.ep';
-    $cgi->render(html => $mt->render($template, {foo => $foo});
+    $cgi->render(html => $mt->render($template, {foo => $foo}));
   };
 
   __DATA__
