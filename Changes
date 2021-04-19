@@ -1,5 +1,6 @@
 {{$NEXT}}
   - Remove header_names method
+  - Throw an exception if render is called with an unknown type
 
 0.001     2021-04-19 00:43:20 EDT
   - First release

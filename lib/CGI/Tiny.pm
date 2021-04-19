@@ -291,9 +291,12 @@ sub set_response_charset { $_[0]{response_charset} = $_[1]; $_[0] }
 
 sub headers_rendered { $_[0]{headers_rendered} }
 
+my %known_types = (json => 1, html => 1, xml => 1, text => 1, data => 1, redirect => 1);
+
 sub render {
   my ($self, $type, $data) = @_;
   $type = '' unless defined $type;
+  Carp::croak "Don't know how to render '$type'" if length $type and !exists $known_types{$type};
   my $charset = $self->response_charset;
   my $out_fh = defined $self->{output_handle} ? $self->{output_handle} : *STDOUT;
   if (!$self->{headers_rendered}) {
