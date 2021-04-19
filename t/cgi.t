@@ -286,6 +286,31 @@ subtest 'HTML response' => sub {
   is decode('UTF-8', $response->{body}), $html, 'right response body';
 };
 
+subtest 'XML response' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my $xml = "<items><item>♥</item><item>☃&nbsp;&amp;</item></items>";
+  cgi {
+    my ($cgi) = @_;
+    $cgi->set_input_handle($in_fh);
+    $cgi->set_output_handle($out_fh);
+    $cgi->render(xml => $xml);
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  like $response->{headers}{'content-type'}, qr/^application\/xml.*UTF-8/i, 'right content type';
+  like $response->{status}, qr/^200\b/, '200 response status';
+  is decode('UTF-8', $response->{body}), $xml, 'right response body';
+};
+
 subtest 'JSON response' => sub {
   local @ENV{@env_keys} = ('')x@env_keys;
   local $ENV{PATH_INFO} = '/';

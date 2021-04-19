@@ -313,6 +313,7 @@ sub render {
       $content_type =
           $type eq 'json' ? 'application/json;charset=UTF-8'
         : $type eq 'html' ? "text/html;charset=$charset"
+        : $type eq 'xml'  ? "application/xml;charset=$charset"
         : $type eq 'text' ? "text/plain;charset=$charset"
         : 'application/octet-stream'
         unless defined $content_type;
@@ -334,9 +335,7 @@ sub render {
   }
   if ($type eq 'json') {
     print $out_fh $self->_json->encode($data);
-  } elsif ($type eq 'html') {
-    print $out_fh Encode::encode $charset, "$data";
-  } elsif ($type eq 'text') {
+  } elsif ($type eq 'html' or $type eq 'xml' or $type eq 'text') {
     print $out_fh Encode::encode $charset, "$data";
   } elsif ($type eq 'data') {
     print $out_fh $data;
@@ -485,8 +484,8 @@ L<Text::Xslate> is an efficient template engine designed for HTML/XML.
     $cgi->render(html => $tx->render('index.tx', {foo => $foo}));
   };
 
-L<Mojo::Template> is a lightweight HTML template engine in the L<Mojo> toolkit.
-It can render templates from files or strings.
+L<Mojo::Template> is a lightweight HTML/XML template engine in the L<Mojo>
+toolkit. It can render templates from files or strings.
 
   #!/usr/bin/perl
   use strict;
@@ -823,8 +822,8 @@ times will result in multiple instances of that response header.
 
   my $charset = $cgi->response_charset;
 
-Charset to use when rendering C<text> or C<html> response data, defaults to
-C<UTF-8>.
+Charset to use when rendering C<text>, C<html>, or C<xml> response data,
+defaults to C<UTF-8>.
 
 =head2 set_response_charset
 
@@ -843,6 +842,7 @@ to L</"render">.
 
   $cgi->render;
   $cgi->render(html => $html);
+  $cgi->render(xml  => $xml);
   $cgi->render(text => $text);
   $cgi->render(data => $bytes);
   $cgi->render(json => $ref);
@@ -858,8 +858,8 @@ L</"set_response_content_type">, or autodetected depending on the data type
 passed in the first call to C<render>, or to C<application/octet-stream> if
 there is no more appropriate value.
 
-C<html> or C<text> data is expected to be decoded characters, and will be
-encoded according to L</"response_charset">. C<json> data will be encoded to
+C<html>, C<xml>, or C<text> data is expected to be decoded characters, and will
+be encoded according to L</"response_charset">. C<json> data will be encoded to
 UTF-8.
 
 C<redirect> will print a redirection header if response headers have not yet
