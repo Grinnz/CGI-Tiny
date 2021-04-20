@@ -922,6 +922,10 @@ state of environment variables and the C<STDIN> and C<STDOUT> standard
 filehandles. CGI::Tiny does not prevent you from messing with these interfaces
 directly, but it may result in confusion.
 
+CGI::Tiny eschews certain sanity checking for performance reasons. For example,
+Content-Type and other header values set for the response should only contain
+ASCII text with no control characters, but CGI::Tiny does not verify this.
+
 Most applications are better written in a L<PSGI>-compatible framework (e.g.
 L<Dancer2> or L<Mojolicious>) and deployed in a persistent application server
 so that the application does not have to start up again every time it receives
