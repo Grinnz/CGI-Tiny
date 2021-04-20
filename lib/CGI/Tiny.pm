@@ -288,6 +288,16 @@ sub add_response_header {
 sub response_charset     { defined $_[0]{response_charset} ? $_[0]{response_charset} : ($_[0]{response_charset} = 'UTF-8') }
 sub set_response_charset { $_[0]{response_charset} = $_[1]; $_[0] }
 
+sub set_nph {
+  my ($self, $value) = @_;
+  if ($self->{headers_rendered}) {
+    Carp::carp "Attempted to set NPH response mode but headers have already been rendered";
+  } else {
+    $self->{nph} = $value;
+  }
+  return $self;
+}
+
 sub headers_rendered { $_[0]{headers_rendered} }
 
 my %known_types = (json => 1, html => 1, xml => 1, text => 1, data => 1, redirect => 1);
@@ -321,12 +331,16 @@ sub render {
         unless defined $content_type;
       $headers_str = "Content-Type: $content_type\r\n$headers_str";
     }
-    if (!$headers_set{status}) {
-      if (defined(my $status = $self->{response_status})) {
-        $headers_str = "Status: $status\r\n$headers_str";
-      } elsif ($type eq 'redirect') {
-        $headers_str = "Status: 302 $HTTP_STATUS{302}\r\n$headers_str";
-      }
+    my $status = $self->{response_status};
+    $status = "302 $HTTP_STATUS{302}" if !defined $status and $type eq 'redirect';
+    if ($self->{nph}) {
+      $status = "200 $HTTP_STATUS{200}" unless defined $status;
+      my $protocol = $ENV{SERVER_PROTOCOL} || 'HTTP/1.0';
+      my $server = $ENV{SERVER_SOFTWARE};
+      $headers_str = "$protocol $status\r\n$headers_str";
+      $headers_str .= "Server: $server\r\n" if defined $server;
+    } elsif (!$headers_set{status} and defined $status) {
+      $headers_str = "Status: $status\r\n$headers_str";
     }
     $headers_str .= "\r\n";
     binmode $out_fh;
@@ -845,6 +859,18 @@ defaults to C<UTF-8>.
 
 Sets L</"response_charset">.
 
+=head3 set_nph
+
+  $cgi = $cgi->set_nph(1);
+
+If set to a true value before rendering response headers, CGI::Tiny will act as
+a L<NPH (Non-Parsed Header)|https://tools.ietf.org/html/rfc3875#section-5>
+script and render full HTTP response headers. This may be required for some CGI
+servers, or enable unbuffered responses or HTTP extensions not supported by the
+CGI server.
+
+No effect after response headers have been rendered.
+
 =head3 headers_rendered
 
   my $bool = $cgi->headers_rendered;
@@ -909,8 +935,6 @@ a request.
 =item * Uploads/multipart request
 
 =item * Cookies
-
-=item * NPH
 
 =back
 

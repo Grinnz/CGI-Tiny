@@ -16,16 +16,22 @@ my @env_keys = qw(
 );
 
 sub _parse_response {
-  my ($response) = @_;
+  my ($response, $nph) = @_;
   my ($headers_str, $body) = split /\r\n\r\n/, $response, 2;
-  my %headers;
+  my (%headers, $start_line, $response_status);
   foreach my $header (split /\r\n/, $headers_str) {
-    my ($name, $value) = split /:\s*/, $header;
+    if ($nph and !defined $start_line) {
+      $start_line = $header;
+      ($response_status) = $start_line =~ m/^\S+\s+([0-9]+.*)$/;
+      next;
+    }
+    my ($name, $value) = split /:\s*/, $header, 2;
+    $response_status = $value if !$nph and lc $name eq 'status';
     push @{$headers{lc $name}}, $value;
   }
   $_ = $_->[0] for grep { @$_ == 1 } values %headers;
-  my $response_status = defined $headers{status} ? $headers{status} : '200 OK';
-  return {headers => \%headers, body => $body, status => $response_status};
+  $response_status = '200 OK' if !$nph and !defined $response_status;
+  return {start_line => $start_line, headers => \%headers, body => $body, status => $response_status};
 }
 
 subtest 'Empty response' => sub {
@@ -560,6 +566,62 @@ subtest 'Request meta-variables and headers' => sub {
   is $headers->{'content-type'}, 'text/plain;charset=UTF-8', 'right Content-Type header';
   is $auth_header, "Basic $auth_str", 'right Authorization header';
   is $content_length_header, length($text), 'right Content-Length header';
+};
+
+subtest 'NPH response' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  local $ENV{SERVER_SOFTWARE} = "CGI::Tiny/$CGI::Tiny::VERSION";
+  open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  cgi {
+    my ($cgi) = @_;
+    $cgi->set_input_handle($in_fh);
+    $cgi->set_output_handle($out_fh);
+    $cgi->set_nph(1);
+    $cgi->render;
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data, 1);
+  like $response->{start_line}, qr/^HTTP\/1.0\b/, 'right start line';
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  is $response->{headers}{'content-type'}, 'application/octet-stream', 'right content type';
+  is $response->{headers}{server}, "CGI::Tiny/$CGI::Tiny::VERSION", 'right Server header';
+  like $response->{status}, qr/^200\b/, '200 response status';
+  ok !length($response->{body}), 'empty response body';
+};
+
+subtest 'NPH error response' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  cgi {
+    my ($cgi) = @_;
+    $cgi->set_input_handle($in_fh);
+    $cgi->set_output_handle($out_fh);
+    $cgi->set_nph(1);
+    $cgi->set_response_status(404);
+    $cgi->set_response_content_type('text/plain');
+    $cgi->render;
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data, 1);
+  like $response->{start_line}, qr/^HTTP\/1.0\b/, 'right start line';
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  is $response->{headers}{'content-type'}, 'text/plain', 'right content type';
+  like $response->{status}, qr/^404\b/, '404 response status';
+  ok !length($response->{body}), 'empty response body';
 };
 
 done_testing;

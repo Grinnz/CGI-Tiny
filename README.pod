@@ -483,6 +483,18 @@ defaults to C<UTF-8>.
 
 Sets L</"response_charset">.
 
+=head3 set_nph
+
+  $cgi = $cgi->set_nph(1);
+
+If set to a true value before rendering response headers, CGI::Tiny will act as
+a L<NPH (Non-Parsed Header)|https://tools.ietf.org/html/rfc3875#section-5>
+script and render full HTTP response headers. This may be required for some CGI
+servers, or enable unbuffered responses or HTTP extensions not supported by the
+CGI server.
+
+No effect after response headers have been rendered.
+
 =head3 headers_rendered
 
   my $bool = $cgi->headers_rendered;
@@ -547,8 +559,6 @@ a request.
 =item * Uploads/multipart request
 
 =item * Cookies
-
-=item * NPH
 
 =back
 
