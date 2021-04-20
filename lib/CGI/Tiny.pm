@@ -186,6 +186,25 @@ sub _headers {
   return $self->{request_headers};
 }
 
+sub cookies { +{%{$_[0]->_cookies}} }
+sub cookie { $_[0]->_cookies->{$_[1]} }
+
+sub _cookies {
+  my ($self) = @_;
+  unless (exists $self->{request_cookies}) {
+    $self->{request_cookies} = {};
+    if (defined $ENV{HTTP_COOKIE}) {
+      foreach my $pair (split /\s*;\s*/, $ENV{HTTP_COOKIE}) {
+        next unless length $pair;
+        my ($name, $value) = split /=/, $pair, 2;
+        $value = '' unless defined $value;
+        $self->{request_cookies}{$name} = $value;
+      }
+    }
+  }
+  return $self->{request_cookies};
+}
+
 sub body {
   my ($self) = @_;
   unless (exists $self->{content}) {
@@ -757,6 +776,18 @@ represented in lowercase.
 Retrieve the value of a request header by name (case insensitive). CGI request
 headers can only contain a single value, which may be combined from multiple
 values.
+
+=head3 cookies
+
+  my $hashref = $cgi->cookies;
+
+Hash reference of request cookie names and values.
+
+=head3 cookie
+
+  my $value = $cgi->cookie('foo');
+
+Retrieve the value of a request cookie by name.
 
 =head3 body
 

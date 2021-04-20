@@ -568,6 +568,36 @@ subtest 'Request meta-variables and headers' => sub {
   is $content_length_header, length($text), 'right Content-Length header';
 };
 
+subtest 'Cookies' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  local $ENV{HTTP_COOKIE} = 'a=b; c=42; x=';
+  open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my ($cookies, $a_cookie, $b_cookie);
+  cgi {
+    my ($cgi) = @_;
+    $cgi->set_input_handle($in_fh);
+    $cgi->set_output_handle($out_fh);
+    $cookies = $cgi->cookies;
+    $a_cookie = $cgi->cookie('a');
+    $b_cookie = $cgi->cookie('b');
+    $cgi->render;
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  like $response->{status}, qr/^200\b/, '200 response status';
+  is_deeply $cookies, {a => 'b', c => '42', x => ''}, 'right cookies';
+  is $a_cookie, 'b', 'right cookie value';
+  ok !defined $b_cookie, 'no cookie value';
+};
+
 subtest 'NPH response' => sub {
   local @ENV{@env_keys} = ('')x@env_keys;
   local $ENV{PATH_INFO} = '/';
