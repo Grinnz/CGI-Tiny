@@ -380,11 +380,16 @@ subtest 'Response headers' => sub {
     ['X-Test', 'some value'],
     ['X-test', 'another value'],
   );
+  my @cookies = (
+    ['foo', 'bar', Domain => 'example.com', HttpOnly => 1, 'Max-Age' => 3600, Path => '/test', SameSite => 'Strict', Secure => 1],
+    ['x', '', Expires => 'Sun, 06 Nov 1994 08:49:37 GMT', HttpOnly => 0, SameSite => 'Lax', Secure => 0],
+  );
   cgi {
     my ($cgi) = @_;
     $cgi->set_input_handle($in_fh);
     $cgi->set_output_handle($out_fh);
     $cgi->add_response_header(@$_) for @headers;
+    $cgi->add_response_cookie(@$_) for @cookies;
     $cgi->set_response_content_type('image/gif');
     $cgi->set_response_status(202);
     $cgi->render;
@@ -396,6 +401,9 @@ subtest 'Response headers' => sub {
   is $response->{headers}{'content-type'}, 'image/gif', 'right content type';
   like $response->{status}, qr/^202\b/, '202 response status';
   is_deeply $response->{headers}{'x-test'}, ['some value', 'another value'], 'right custom headers';
+  is_deeply $response->{headers}{'set-cookie'},
+    ['foo=bar; Domain=example.com; HttpOnly; Max-Age=3600; Path=/test; SameSite=Strict; Secure',
+     'x=; Expires=Sun, 06 Nov 1994 08:49:37 GMT; SameSite=Lax'], 'right Set-Cookie headers';
 };
 
 subtest 'Query parameters' => sub {

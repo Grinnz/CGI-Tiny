@@ -197,8 +197,7 @@ sub _cookies {
       foreach my $pair (split /\s*;\s*/, $ENV{HTTP_COOKIE}) {
         next unless length $pair;
         my ($name, $value) = split /=/, $pair, 2;
-        $value = '' unless defined $value;
-        $self->{request_cookies}{$name} = $value;
+        $self->{request_cookies}{$name} = $value if defined $value;
       }
     }
   }
@@ -298,6 +297,32 @@ sub add_response_header {
     Carp::carp "Attempted to add HTTP response header '$name' but headers have already been rendered";
   } else {
     push @{$self->{response_headers}}, [$name, $value];
+  }
+  return $self;
+}
+
+my %COOKIE_ATTR_VALUE = (expires => 1, domain => 1, path => 1, secure => 0, httponly => 0, samesite => 1, 'max-age' => 1);
+sub add_response_cookie {
+  my ($self, $name, $value, @attrs) = @_;
+  if ($self->{headers_rendered}) {
+    Carp::carp "Attempted to add HTTP response cookie '$name' but headers have already been rendered";
+  } else {
+    my $cookie_str = "$name=$value";
+    my $i = 0;
+    while ($i <= $#attrs) {
+      my ($key, $val) = @attrs[$i, $i+1];
+      my $has_value = $COOKIE_ATTR_VALUE{lc $key};
+      if (!defined $has_value) {
+        Carp::carp "Attempted to set unknown cookie attribute '$key'";
+      } elsif ($has_value) {
+        $cookie_str .= "; $key=$val" if defined $val;
+      } else {
+        $cookie_str .= "; $key" if $val;
+      }
+    } continue {
+      $i += 2;
+    }
+    push @{$self->{response_headers}}, ['Set-Cookie', $cookie_str];
   }
   return $self;
 }
@@ -505,6 +530,12 @@ CGI::Tiny has built in support for parsing and rendering JSON content with
 L<JSON::PP>. CGI scripts that deal with JSON content will greatly benefit from
 installing L<Cpanel::JSON::XS> version C<4.09> or newer for efficient encoding
 and decoding, which will be used automatically if available.
+
+=head2 Dates
+
+Dates used in HTTP headers (e.g. C<Date>, C<Expires>, and the C<Expires>
+attribute for cookies) are expected in RFC 1123 format in GMT. L<HTTP::Date> or
+L<Mojo::Date> can be used to parse or render this date format.
 
 =head2 Templating
 
@@ -876,6 +907,58 @@ deduplicate or munge headers that have been added manually. Headers are printed
 in the response in the same order added, and adding the same header multiple
 times will result in multiple instances of that response header.
 
+=head3 add_response_cookie
+
+  $cgi = $cgi->add_response_cookie($name => $value,
+    Expires   => 'Sun, 06 Nov 1994 08:49:37 GMT',
+    HttpOnly  => 1,
+    'Max-Age' => 3600,
+    Path      => '/foo',
+    SameSite  => 'Strict',
+    Secure    => 1,
+  );
+
+Adds a response cookie. No effect after response headers have been rendered.
+
+Optional cookie attributes are specified in key-value pairs after the cookie
+name and value. Cookie attribute names are case-insensitive.
+
+=over
+
+=item Domain
+
+Domain for which cookie is valid.
+
+=item Expires
+
+Expiration date string for cookie. L<HTTP::Date/time2str> or
+L<Mojo::Date/to_string> can be used to generate the appropriate date string
+format.
+
+=item HttpOnly
+
+If set to a true value, the cookie will be restricted from client-side scripts.
+
+=item Max-Age
+
+Max age of cookie before it expires, in seconds, as an alternative to
+specifying C<Expires>.
+
+=item Path
+
+URL path for which cookie is valid.
+
+=item SameSite
+
+C<Strict> to restrict the cookie to requests from the same site, C<Lax> to
+allow it additionally in certain cross-site requests.
+
+=item Secure
+
+If set to a true value, the cookie will be restricted to HTTPS requests.
+
+=back
+
 =head3 response_charset
 
   my $charset = $cgi->response_charset;
@@ -967,8 +1050,6 @@ a request.
 =over
 
 =item * Uploads/multipart request
-
-=item * Cookies
 
 =back
 

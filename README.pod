@@ -112,6 +112,12 @@ L<JSON::PP>. CGI scripts that deal with JSON content will greatly benefit from
 installing L<Cpanel::JSON::XS> version C<4.09> or newer for efficient encoding
 and decoding, which will be used automatically if available.
 
+=head2 Dates
+
+Dates used in HTTP headers (e.g. C<Date>, C<Expires>, and the C<Expires>
+attribute for cookies) are expected in RFC 1123 format in GMT. L<HTTP::Date> or
+L<Mojo::Date> can be used to parse or render this date format.
+
 =head2 Templating
 
 HTML and XML responses are most easily managed with templating. A number of
@@ -482,6 +488,58 @@ deduplicate or munge headers that have been added manually. Headers are printed
 in the response in the same order added, and adding the same header multiple
 times will result in multiple instances of that response header.
 
+=head3 add_response_cookie
+
+  $cgi = $cgi->add_response_cookie($name => $value,
+    Expires   => 'Sun, 06 Nov 1994 08:49:37 GMT',
+    HttpOnly  => 1,
+    'Max-Age' => 3600,
+    Path      => '/foo',
+    SameSite  => 'Strict',
+    Secure    => 1,
+  );
+
+Adds a response cookie. No effect after response headers have been rendered.
+
+Optional cookie attributes are specified in key-value pairs after the cookie
+name and value. Cookie attribute names are case-insensitive.
+
+=over
+
+=item Domain
+
+Domain for which cookie is valid.
+
+=item Expires
+
+Expiration date string for cookie. L<HTTP::Date/time2str> or
+L<Mojo::Date/to_string> can be used to generate the appropriate date string
+format.
+
+=item HttpOnly
+
+If set to a true value, the cookie will be restricted from client-side scripts.
+
+=item Max-Age
+
+Max age of cookie before it expires, in seconds, as an alternative to
+specifying C<Expires>.
+
+=item Path
+
+URL path for which cookie is valid.
+
+=item SameSite
+
+C<Strict> to restrict the cookie to requests from the same site, C<Lax> to
+allow it additionally in certain cross-site requests.
+
+=item Secure
+
+If set to a true value, the cookie will be restricted to HTTPS requests.
+
+=back
+
 =head3 response_charset
 
   my $charset = $cgi->response_charset;
@@ -573,8 +631,6 @@ a request.
 =over
 
 =item * Uploads/multipart request
-
-=item * Cookies
 
 =back
 
