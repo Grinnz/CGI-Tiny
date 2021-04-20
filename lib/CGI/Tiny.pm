@@ -89,7 +89,7 @@ sub cgi (&) {
   }
   if ($errored) {
     my $caller = caller;
-    $cgi->set_response_status(500) unless $cgi->{headers_rendered} or defined $cgi->{response_status};
+    $cgi->{response_status} = "500 $HTTP_STATUS{500}" unless $cgi->{headers_rendered} or defined $cgi->{response_status};
     if (defined(my $handler = $cgi->{on_error})) {
       my ($error_error, $error_errored);
       {
@@ -192,7 +192,7 @@ sub body {
     my $limit = $self->request_body_limit;
     my $length = $ENV{CONTENT_LENGTH} || 0;
     if ($limit and $length > $limit) {
-      $self->set_response_status(413);
+      $self->{response_status} = "413 $HTTP_STATUS{413}" unless $self->{headers_rendered};
       die "Request body limit exceeded\n";
     }
     $_[0]{content} = '';
@@ -228,8 +228,7 @@ sub _body_params {
   my ($self) = @_;
   unless (exists $self->{body_params}) {
     my (@ordered, %keyed);
-    my $content_type = $self->content_type;
-    if (defined $content_type and $content_type =~ m/^application\/x-www-form-urlencoded/i) {
+    if ($ENV{CONTENT_TYPE} and $ENV{CONTENT_TYPE} =~ m/^application\/x-www-form-urlencoded/i) {
       foreach my $pair (split /&/, $self->body) {
         my ($key, $value) = split /=/, $pair, 2;
         $value = '' unless defined $value;
@@ -246,8 +245,7 @@ sub _body_params {
 sub body_json {
   my ($self) = @_;
   unless (exists $self->{body_json}) {
-    my $content_type = $self->content_type;
-    if (defined $content_type and $content_type =~ m/^application\/json/i) {
+    if ($ENV{CONTENT_TYPE} and $ENV{CONTENT_TYPE} =~ m/^application\/json/i) {
       $self->{body_json} = $self->_json->decode($self->body);
     }
   }
@@ -335,10 +333,11 @@ sub render {
     $status = "302 $HTTP_STATUS{302}" if !defined $status and $type eq 'redirect';
     if ($self->{nph}) {
       $status = "200 $HTTP_STATUS{200}" unless defined $status;
-      my $protocol = $ENV{SERVER_PROTOCOL} || 'HTTP/1.0';
-      my $server = $ENV{SERVER_SOFTWARE};
+      my $protocol = $ENV{SERVER_PROTOCOL};
+      $protocol = 'HTTP/1.0' unless defined $protocol and length $protocol;
       $headers_str = "$protocol $status\r\n$headers_str";
-      $headers_str .= "Server: $server\r\n" if defined $server;
+      my $server = $ENV{SERVER_SOFTWARE};
+      $headers_str .= "Server: $server\r\n" if defined $server and length $server;
     } elsif (!$headers_set{status} and defined $status) {
       $headers_str = "Status: $status\r\n$headers_str";
     }
