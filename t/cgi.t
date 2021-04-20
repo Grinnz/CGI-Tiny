@@ -44,10 +44,9 @@ subtest 'Empty response' => sub {
   open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
 
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    $cgi->render;
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->render;
   };
 
   ok length($out_data), 'response rendered';
@@ -69,10 +68,9 @@ subtest 'No render' => sub {
 
   my $error;
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_error_handler(sub { $error = $_[1] });
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
+    $_->set_error_handler(sub { $error = $_[1] });
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
   };
 
   ok defined($error), 'error logged';
@@ -93,10 +91,9 @@ subtest 'Exception before render' => sub {
 
   my ($error, $headers_rendered);
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_error_handler(sub { $error = $_[1]; $headers_rendered = $_[0]->headers_rendered; });
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
+    $_->set_error_handler(sub { $error = $_[1]; $headers_rendered = $_[0]->headers_rendered; });
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
     die 'Error 42';
   };
 
@@ -120,11 +117,10 @@ subtest 'Exception after render' => sub {
 
   my ($error, $headers_rendered);
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_error_handler(sub { $error = $_[1]; $headers_rendered = $_[0]->headers_rendered; });
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    $cgi->render;
+    $_->set_error_handler(sub { $error = $_[1]; $headers_rendered = $_[0]->headers_rendered; });
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->render;
     die 'Error 42';
   };
 
@@ -150,13 +146,12 @@ subtest 'Excessive request body' => sub {
 
   my $error;
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_error_handler(sub { $error = $_[1] });
-    $cgi->set_request_body_limit(100);
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    my $body = $cgi->body;
-    $cgi->render(data => $body);
+    $_->set_error_handler(sub { $error = $_[1] });
+    $_->set_request_body_limit(100);
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    my $body = $_->body;
+    $_->render(data => $body);
   };
 
   ok defined($error), 'error logged';
@@ -176,11 +171,10 @@ subtest 'Not found' => sub {
   open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
 
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    $cgi->set_response_status(404);
-    $cgi->render(text => '');
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->set_response_status(404);
+    $_->render(text => '');
   };
 
   ok length($out_data), 'response rendered';
@@ -202,10 +196,9 @@ subtest 'Data response' => sub {
 
   my $data = "\x01\x02\x03\x04\r\n\xFF";
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    $cgi->render(data => $data);
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->render(data => $data);
   };
 
   ok length($out_data), 'response rendered';
@@ -227,10 +220,9 @@ subtest 'Text response' => sub {
 
   my $text = "♥☃";
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    $cgi->render(text => $text);
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->render(text => $text);
   };
 
   ok length($out_data), 'response rendered';
@@ -252,11 +244,10 @@ subtest 'Text response (UTF-16LE)' => sub {
 
   my $text = "♥☃";
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    $cgi->set_response_charset('UTF-16LE');
-    $cgi->render(text => $text);
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->set_response_charset('UTF-16LE');
+    $_->render(text => $text);
   };
 
   ok length($out_data), 'response rendered';
@@ -278,10 +269,9 @@ subtest 'HTML response' => sub {
 
   my $html = "<html><head><title>♥</title></head><body><p>☃&nbsp;&amp;</p></body></html>";
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    $cgi->render(html => $html);
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->render(html => $html);
   };
 
   ok length($out_data), 'response rendered';
@@ -303,10 +293,9 @@ subtest 'XML response' => sub {
 
   my $xml = "<items><item>♥</item><item>☃&nbsp;&amp;</item></items>";
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    $cgi->render(xml => $xml);
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->render(xml => $xml);
   };
 
   ok length($out_data), 'response rendered';
@@ -328,10 +317,9 @@ subtest 'JSON response' => sub {
 
   my $ref = {stuff => ['and', '♥']};
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    $cgi->render(json => $ref);
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->render(json => $ref);
   };
 
   ok length($out_data), 'response rendered';
@@ -353,10 +341,9 @@ subtest 'Redirect response' => sub {
 
   my $url = '/foo';
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    $cgi->render(redirect => $url);
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->render(redirect => $url);
   };
 
   ok length($out_data), 'response rendered';
@@ -385,14 +372,13 @@ subtest 'Response headers' => sub {
     ['x', '', Expires => 'Sun, 06 Nov 1994 08:49:37 GMT', HttpOnly => 0, SameSite => 'Lax', Secure => 0],
   );
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    $cgi->add_response_header(@$_) for @headers;
-    $cgi->add_response_cookie(@$_) for @cookies;
-    $cgi->set_response_content_type('image/gif');
-    $cgi->set_response_status(202);
-    $cgi->render;
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    foreach my $header (@headers) { $_->add_response_header(@$header) }
+    foreach my $cookie (@cookies) { $_->add_response_cookie(@$cookie) }
+    $_->set_response_content_type('image/gif');
+    $_->set_response_status(202);
+    $_->render;
   };
 
   ok length($out_data), 'response rendered';
@@ -421,14 +407,13 @@ subtest 'Query parameters' => sub {
 
   my ($params, $pairs, $param_snowman, $param_c_array);
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    $params = $cgi->query_params;
-    $pairs = $cgi->query_pairs;
-    $param_snowman = $cgi->query_param('☃');
-    $param_c_array = $cgi->query_param_array('c');
-    $cgi->render;
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $params = $_->query_params;
+    $pairs = $_->query_pairs;
+    $param_snowman = $_->query_param('☃');
+    $param_c_array = $_->query_param_array('c');
+    $_->render;
   };
 
   ok length($out_data), 'response rendered';
@@ -457,14 +442,13 @@ subtest 'Body parameters' => sub {
 
   my ($params, $pairs, $param_snowman, $param_c_array);
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    $params = $cgi->body_params;
-    $pairs = $cgi->body_pairs;
-    $param_snowman = $cgi->body_param('☃');
-    $param_c_array = $cgi->body_param_array('c');
-    $cgi->render;
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $params = $_->body_params;
+    $pairs = $_->body_pairs;
+    $param_snowman = $_->body_param('☃');
+    $param_c_array = $_->body_param_array('c');
+    $_->render;
   };
 
   ok length($out_data), 'response rendered';
@@ -492,11 +476,10 @@ subtest 'Body JSON' => sub {
 
   my ($json_data);
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    $json_data = $cgi->body_json;
-    $cgi->render;
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $json_data = $_->body_json;
+    $_->render;
   };
 
   ok length($out_data), 'response rendered';
@@ -535,14 +518,13 @@ subtest 'Request meta-variables and headers' => sub {
 
   my ($headers, $auth_header, $content_length_header, %vars);
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    $vars{$_} = $cgi->$_ for (map { lc } @env_keys), qw(method path query);
-    $headers = $cgi->headers;
-    $auth_header = $cgi->header('Authorization');
-    $content_length_header = $cgi->header('Content-Length');
-    $cgi->render;
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    foreach my $key ((map { lc } @env_keys), qw(method path query)) { $vars{$key} = $_->$key }
+    $headers = $_->headers;
+    $auth_header = $_->header('Authorization');
+    $content_length_header = $_->header('Content-Length');
+    $_->render;
   };
 
   ok length($out_data), 'response rendered';
@@ -588,13 +570,12 @@ subtest 'Cookies' => sub {
 
   my ($cookies, $a_cookie, $b_cookie);
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    $cookies = $cgi->cookies;
-    $a_cookie = $cgi->cookie('a');
-    $b_cookie = $cgi->cookie('b');
-    $cgi->render;
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $cookies = $_->cookies;
+    $a_cookie = $_->cookie('a');
+    $b_cookie = $_->cookie('b');
+    $_->render;
   };
 
   ok length($out_data), 'response rendered';
@@ -617,11 +598,10 @@ subtest 'NPH response' => sub {
   open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
 
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    $cgi->set_nph(1);
-    $cgi->render;
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->set_nph(1);
+    $_->render;
   };
 
   ok length($out_data), 'response rendered';
@@ -644,13 +624,12 @@ subtest 'NPH error response' => sub {
   open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
 
   cgi {
-    my ($cgi) = @_;
-    $cgi->set_input_handle($in_fh);
-    $cgi->set_output_handle($out_fh);
-    $cgi->set_nph(1);
-    $cgi->set_response_status(404);
-    $cgi->set_response_content_type('text/plain');
-    $cgi->render;
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->set_nph(1);
+    $_->set_response_status(404);
+    $_->set_response_content_type('text/plain');
+    $_->render;
   };
 
   ok length($out_data), 'response rendered';

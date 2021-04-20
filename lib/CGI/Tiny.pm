@@ -84,7 +84,7 @@ sub cgi (&) {
   my ($error, $errored);
   {
     local $@;
-    eval { $handler->($cgi); die "No response rendered by cgi\n" unless $cgi->{headers_rendered}; 1 }
+    eval { local $_ = $cgi; $handler->(); die "No response rendered by cgi\n" unless $cgi->{headers_rendered}; 1 }
       or do { $error = $@; $errored = 1 };
   }
   if ($errored) {
@@ -431,7 +431,7 @@ CGI::Tiny - Common Gateway Interface, with no frills
   use CGI::Tiny;
 
   cgi {
-    my ($cgi) = @_;
+    my $cgi = $_;
     $cgi->set_error_handler(sub {
       my ($cgi, $error) = @_;
       warn $error;
@@ -503,14 +503,14 @@ incompatibly if needed.
 CGI::Tiny's interface is a regular function called C<cgi> exported by default.
 
   cgi {
-    my ($cgi) = @_;
+    my $cgi = $_;
     # set up error handling on $cgi
     # inspect request data via $cgi
     # set response headers if needed via $cgi
     # render response data with $cgi->render
   };
 
-The code block is immediately run and passed a CGI::Tiny object, which
+The code block is immediately run with C<$_> set to a CGI::Tiny object, which
 L</"METHODS"> can be called on to read request information and render a
 response.
 
@@ -553,7 +553,7 @@ L<Text::Xslate> is an efficient template engine designed for HTML/XML.
   use Data::Section::Simple 'get_data_section';
 
   cgi {
-    my ($cgi) = @_;
+    my $cgi = $_;
     my $foo = $cgi->query_param('foo');
     my $tx = Text::Xslate->new(path => ['templates'], cache => 0);
 
@@ -582,7 +582,7 @@ toolkit.
   use Mojo::Loader 'data_section';
 
   cgi {
-    my ($cgi) = @_;
+    my $cgi = $_;
     my $foo = $cgi->query_param('foo');
     my $mt = Mojo::Template->new(auto_escape => 1, vars => 1);
 
@@ -631,7 +631,7 @@ name).
   );
 
   cgi {
-    my ($cgi) = @_;
+    my $cgi = $_;
 
     my $routes = Routes::Tiny->new;
     # /script.cgi/foo
