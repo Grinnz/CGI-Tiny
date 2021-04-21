@@ -100,6 +100,10 @@ render a response, it will run the handler set by L</"set_error_handler"> if
 any, or by default emit the error as a warning and (if nothing has been
 rendered yet) render a 500 Internal Server Error.
 
+Note that the C<cgi> block's current implementation as a regular exported
+subroutine is an implementation detail, and future implementations reserve the
+right to provide it as an XSUB or keyword for performance reasons.
+
 =head1 EXTENDING
 
 CGI::Tiny is a minimal interface to the CGI protocol, but can be extended with
