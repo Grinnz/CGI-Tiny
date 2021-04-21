@@ -400,7 +400,7 @@ Retrieve the value of a request cookie by name.
 Retrieve the request body as bytes.
 
 Note that this will read the whole request body into memory, so make sure the
-L</"request_body_limit"> can fit well within the available memory.
+L</"set_request_body_limit"> can fit well within the available memory.
 
 =head3 body_pairs
 
@@ -410,7 +410,7 @@ Retrieve C<x-www-form-urlencoded> body parameters as an array reference of
 two-element array references.
 
 Note that this will read the whole request body into memory, so make sure the
-L</"request_body_limit"> can fit well within the available memory.
+L</"set_request_body_limit"> can fit well within the available memory.
 
 =head3 body_params
 
@@ -420,7 +420,7 @@ Retrieve C<x-www-form-urlencoded> body parameters as a hash reference. If a
 parameter name is passed multiple times, its value will be an array reference.
 
 Note that this will read the whole request body into memory, so make sure the
-L</"request_body_limit"> can fit well within the available memory.
+L</"set_request_body_limit"> can fit well within the available memory.
 
 =head3 body_param
 
@@ -431,7 +431,7 @@ parameter name is passed multiple times, returns the last value. Use
 L</"body_param_array"> to get multiple values of a parameter.
 
 Note that this will read the whole request body into memory, so make sure the
-L</"request_body_limit"> can fit well within the available memory.
+L</"set_request_body_limit"> can fit well within the available memory.
 
 =head3 body_param_array
 
@@ -441,7 +441,7 @@ Retrieve values of a named C<x-www-form-urlencoded> body parameter as an array
 reference.
 
 Note that this will read the whole request body into memory, so make sure the
-L</"request_body_limit"> can fit well within the available memory.
+L</"set_request_body_limit"> can fit well within the available memory.
 
 =head3 body_json
 
@@ -450,7 +450,7 @@ L</"request_body_limit"> can fit well within the available memory.
 Decode an C<application/json> request body from UTF-8-encoded JSON.
 
 Note that this will read the whole request body into memory, so make sure the
-L</"request_body_limit"> can fit well within the available memory.
+L</"set_request_body_limit"> can fit well within the available memory.
 
 =head2 Response
 
@@ -656,7 +656,7 @@ standard CGI environment variables.
 
 =head2 CGI_TINY_REQUEST_BODY_LIMIT
 
-Default value for L</"request_body_limit">.
+Default value for L</"set_request_body_limit">.
 
 =head1 COMPARISON TO CGI.PM
 
