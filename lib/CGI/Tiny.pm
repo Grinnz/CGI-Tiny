@@ -78,6 +78,38 @@ my %HTTP_STATUS = (
     511 => 'Network Authentication Required', # RFC 6585: Additional Codes
 );
 
+my @DAYS_OF_WEEK = qw(Sun Mon Tue Wed Thu Fri Sat);
+my @MONTH_NAMES = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
+my %MONTH_NUMS;
+@MONTH_NUMS{@MONTH_NAMES} = 0..11;
+
+sub epoch_to_date {
+  my ($sec,$min,$hour,$mday,$mon,$year,$wday) = gmtime $_[0];
+  return sprintf '%s, %02d %s %04d %02d:%02d:%02d GMT',
+    $DAYS_OF_WEEK[$wday], $mday, $MONTH_NAMES[$mon], $year + 1900, $hour, $min, $sec;
+}
+
+sub date_to_epoch {
+  # RFC 1123
+  my ($mday,$mon,$year,$hour,$min,$sec) = $_[0] =~ m/^(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat),
+    [ ] ([0-9]{2}) [ ] (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [ ] ([0-9]{4})
+    [ ] ([0-9]{2}) : ([0-9]{2}) : ([0-9]{2}) [ ] GMT$/x;
+  # RFC 850
+  ($mday,$mon,$year,$hour,$min,$sec) = $_[0] =~ m/^(?:Sun|Mon|Tues|Wednes|Thurs|Fri|Satur)day,
+    [ ] ([0-9]{2}) - (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) - ([0-9]{2})
+    [ ] ([0-9]{2}) : ([0-9]{2}) : ([0-9]{2}) [ ] GMT$/x unless defined $mday;
+  # asctime
+  ($mon,$mday,$hour,$min,$sec,$year) = $_[0] =~ m/^(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat)
+    [ ] (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [ ]{1,2} ([0-9]{1,2})
+    [ ] ([0-9]{2}) : ([0-9]{2}) : ([0-9]{2}) [ ] ([0-9]{4})$/x unless defined $mday;
+  return undef unless defined $mday;
+
+  require Time::Local;
+  # 4 digit years interpreted literally
+  # 2 digit years interpreted with best effort heuristic
+  return scalar Time::Local::timegm($sec, $min, $hour, $mday, $MONTH_NUMS{$mon}, $year);
+}
+
 sub cgi (&) {
   my ($handler) = @_;
   my $cgi = bless {}, __PACKAGE__;
@@ -531,12 +563,6 @@ L<JSON::PP>. CGI scripts that deal with JSON content will greatly benefit from
 installing L<Cpanel::JSON::XS> version C<4.09> or newer for efficient encoding
 and decoding, which will be used automatically if available.
 
-=head2 Dates
-
-Dates used in HTTP headers (e.g. C<Date>, C<Expires>, and the C<Expires>
-attribute for cookies) are expected in RFC 1123 format in GMT. L<HTTP::Date> or
-L<Mojo::Date> can be used to parse or render this date format.
-
 =head2 Templating
 
 HTML and XML responses are most easily managed with templating. A number of
@@ -931,9 +957,8 @@ Domain for which cookie is valid.
 
 =item Expires
 
-Expiration date string for cookie. L<HTTP::Date/time2str> or
-L<Mojo::Date/to_string> can be used to generate the appropriate date string
-format.
+Expiration date string for cookie. L</"epoch_to_date"> can be used to generate
+the appropriate date string format.
 
 =item HttpOnly
 
@@ -1019,6 +1044,26 @@ C<redirect> will print a redirection header if response headers have not yet
 been rendered, and will set a response status of 302 if none has been set by
 L</"set_response_status">. It will not set a C<Content-Type> response header.
 If response headers have already been rendered a warning will be emitted.
+
+=head1 FUNCTIONS
+
+The following convenience functions are provided but not exported.
+
+=head2 epoch_to_date
+
+  my $date = CGI::Tiny::epoch_to_date $epoch;
+
+Convert a Unix epoch timestamp to a RFC 1123 HTTP date string suitable for use
+in date and expiration headers.
+
+=head2 date_to_epoch
+
+  my $epoch = CGI::Tiny::date_to_epoch $date;
+
+Parse a RFC 1123 HTTP date string to a Unix epoch timestamp. For compatibility
+as required by L<RFC 7231|https://tools.ietf.org/html/rfc7231#section-7.1.1.1>,
+legacy RFC 850 and ANSI C asctime date formats are also recognized. Returns
+C<undef> if the string does not parse as one of these formats.
 
 =head1 ENVIRONMENT
 

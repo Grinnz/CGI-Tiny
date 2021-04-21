@@ -2,6 +2,7 @@
   - Add set_nph method and support NPH response mode
   - Add cookies and cookie methods to parse request cookies
   - Add add_response_cookie method to set response cookies
+  - Add CGI::Tiny::epoch_to_date and CGI::Tiny::date_to_epoch convenience functions
   - Pass the CGI::Tiny object to the cgi block as $_ instead of in @_
 
 0.002     2021-04-19 03:59:16 EDT
