@@ -489,8 +489,9 @@ Sets the response HTTP status code. No effect after response headers have been
 rendered.
 
 A full status string including a human-readable message will be used as-is. A
-bare status code must be a known HTTP status code and will have the standard
-human-readable message appended.
+bare status code must be a known
+L<HTTP status code|https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml>
+and will have the standard human-readable message appended.
 
 The CGI protocol assumes a status of C<200 OK> if no response status is set.
 
