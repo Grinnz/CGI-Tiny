@@ -1093,6 +1093,74 @@ standard CGI environment variables.
 
 Default value for L</"request_body_limit">.
 
+=head1 COMPARISON TO CGI.PM
+
+Traditionally, the L<CGI> module has been used to write Perl CGI scripts. This
+module has a number of interface differences to be aware of.
+
+=over
+
+=item *
+
+There is no global CGI::Tiny object; the object is constructed for the scope of
+the C<cgi> block, only reads request data from the environment once it is
+accessed, and once the block completes (normally or abnormally), it ensures
+that a valid response is rendered to avoid gateway errors.
+
+=item *
+
+Instead of global variables like C<$CGI::POST_MAX>, global behavior settings
+are applied to the CGI::Tiny object inside the C<cgi> block.
+
+=item *
+
+Request query and body parameter accessors in CGI::Tiny are not context
+sensitive. L</"query_param"> and L</"body_param"> always return a single value,
+and L</"query_param_array"> and L</"body_param_array"> must be used to retrieve
+multi-value parameters. CGI::Tiny does not have a method-sensitive C<param>
+accessor, query or body parameters must be accessed specifically.
+
+=item *
+
+CGI::Tiny decodes request query and body parameters from UTF-8 to Unicode
+characters by default, and L</"render"> provides methods to encode response
+data from Unicode characters to UTF-8 or other charsets automatically.
+
+=item *
+
+Instead of printing a response header string or the response data directly, a
+CGI::Tiny script uses the L</"render"> method to automatically render the
+response headers when first needed (and only once), as well as any response
+data passed to it. C<redirect> responses are also handled by L</"render">.
+
+=item *
+
+In CGI::Tiny, a custom response status is set by calling
+L</"set_response_status"> before the first L</"render">, which only requires
+the status code and will add the appropriate status message itself.
+
+=item *
+
+Response setters are distinct methods from request accessors in CGI::Tiny.
+L</"content_type">, L</"header">, and L</"cookie"> are used to access request
+data, and L</"set_response_content_type">, L</"add_response_header">, and
+L</"add_response_cookie"> are used to set response headers for the pending
+response before the first call to L</"render">.
+
+=item *
+
+CGI::Tiny does not provide any HTML templating helpers, as this functionality
+is much better implemented by other robust implementations on CPAN; see
+L</"Templating">.
+
+=item *
+
+CGI::Tiny does not do any implicit encoding of cookie values or the C<Expires>
+header or cookie attribute. The L</"epoch_to_date"> convenience function is
+provided to render appropriate C<Expires> date values.
+
+=back
+
 =head1 CAVEATS
 
 CGI is an extremely simplistic protocol and relies particularly on the global
