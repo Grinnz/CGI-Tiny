@@ -74,6 +74,8 @@ rendering output.
 
 =back
 
+See L</"COMPARISON TO CGI.PM">.
+
 This module's interface is currently I<EXPERIMENTAL> and may be changed
 incompatibly if needed.
 
