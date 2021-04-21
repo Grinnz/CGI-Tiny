@@ -592,7 +592,7 @@ without having to install the dependencies there. As a bonus, this means the
 script doesn't have to load those modules separately from disk on every
 execution.
 
-  $ fatpack pack script.cgi > script.packed.cgi
+  $ fatpack pack script.source.cgi > script.cgi
 
 =head2 JSON
 
