@@ -6,6 +6,7 @@
   - Set Date header in all responses
   - Pass the CGI::Tiny object to the cgi block as $_ instead of in @_
   - Remove the request_body_limit method
+  - Handle when exit is called without rendering a response
 
 0.002     2021-04-19 03:59:16 EDT
   - Remove header_names method

@@ -114,34 +114,48 @@ sub date_to_epoch {
     (length($year) == 4 && $year < 1900) ? $year - 1900 : $year);
 }
 
+# for cleanup in END in case of premature exit
+my %PENDING_CGI;
+
 sub cgi (&) {
   my ($handler) = @_;
   my $cgi = bless {}, __PACKAGE__;
+  $PENDING_CGI{0+$cgi} = $cgi;
   my ($error, $errored);
   {
     local $@;
-    eval { local $_ = $cgi; $handler->(); die "No response rendered by cgi\n" unless $cgi->{headers_rendered}; 1 }
+    eval { local $_ = $cgi; $handler->(); die "cgi completed without rendering a response\n" unless $cgi->{headers_rendered}; 1 }
       or do { $error = $@; $errored = 1 };
   }
-  if ($errored) {
-    my $caller = caller;
-    $cgi->{response_status} = "500 $HTTP_STATUS{500}" unless $cgi->{headers_rendered} or defined $cgi->{response_status};
-    if (defined(my $handler = $cgi->{on_error})) {
-      my ($error_error, $error_errored);
-      {
-        local $@;
-        eval { $handler->($cgi, $error); 1 } or do { $error_error = $@; $error_errored = 1 };
-      }
-      if ($error_errored) {
-        warn "Exception in error handler: $error_error";
-        warn "Original error: $error";
-      }
-    } else {
-      warn $error;
-    }
-    $cgi->render(text => 'Internal Server Error') unless $cgi->{headers_rendered};
-  }
+  _handle_error($cgi, $error) if $errored;
+  delete $PENDING_CGI{0+$cgi};
   1;
+}
+
+END {
+  foreach my $key (keys %PENDING_CGI) {
+    my $cgi = delete $PENDING_CGI{$key};
+    _handle_error($cgi, "cgi exited without rendering a response\n") unless $cgi->{headers_rendered};
+  }
+}
+
+sub _handle_error {
+  my ($cgi, $error) = @_;
+  $cgi->{response_status} = "500 $HTTP_STATUS{500}" unless $cgi->{headers_rendered} or defined $cgi->{response_status};
+  if (defined(my $handler = $cgi->{on_error})) {
+    my ($error_error, $error_errored);
+    {
+      local $@;
+      eval { $handler->($cgi, $error); 1 } or do { $error_error = $@; $error_errored = 1 };
+    }
+    if ($error_errored) {
+      warn "Exception in error handler: $error_error";
+      warn "Original error: $error";
+    }
+  } else {
+    warn $error;
+  }
+  $cgi->render(text => 'Internal Server Error') unless $cgi->{headers_rendered};
 }
 
 sub set_error_handler { $_[0]{on_error} = $_[1]; $_[0] }
@@ -482,7 +496,8 @@ CGI::Tiny - Common Gateway Interface, with no frills
       $fribble = $cgi->body_param('fribble');
     } else {
       $cgi->set_response_status(405);
-      return $cgi->render;
+      $cgi->render;
+      exit;
     }
     die "Invalid fribble parameter" unless length $fribble;
     $cgi->render(json => {fribble => $fribble});
@@ -560,7 +575,9 @@ rendered yet) render a 500 Internal Server Error.
 
 Note that the C<cgi> block's current implementation as a regular exported
 subroutine is an implementation detail, and future implementations reserve the
-right to provide it as an XSUB or keyword for performance reasons.
+right to provide it as an XSUB or keyword for performance reasons. You should
+not rely on C<@_> to be set, and you should not use C<return> to exit the
+block; use C<exit> to end a CGI script early after rendering a response.
 
 =head1 EXTENDING
 
