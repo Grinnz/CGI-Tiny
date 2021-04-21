@@ -90,15 +90,15 @@ sub epoch_to_date {
 }
 
 sub date_to_epoch {
-  # RFC 1123
+  # RFC 1123 (Sun, 06 Nov 1994 08:49:37 GMT)
   my ($mday,$mon,$year,$hour,$min,$sec) = $_[0] =~ m/^(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat),
     [ ] ([0-9]{2}) [ ] (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [ ] ([0-9]{4})
     [ ] ([0-9]{2}) : ([0-9]{2}) : ([0-9]{2}) [ ] GMT$/x;
-  # RFC 850
+  # RFC 850 (Sunday, 06-Nov-94 08:49:37 GMT)
   ($mday,$mon,$year,$hour,$min,$sec) = $_[0] =~ m/^(?:Sun|Mon|Tues|Wednes|Thurs|Fri|Satur)day,
     [ ] ([0-9]{2}) - (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) - ([0-9]{2})
     [ ] ([0-9]{2}) : ([0-9]{2}) : ([0-9]{2}) [ ] GMT$/x unless defined $mday;
-  # asctime
+  # asctime (Sun Nov  6 08:49:37 1994)
   ($mon,$mday,$hour,$min,$sec,$year) = $_[0] =~ m/^(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat)
     [ ] (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [ ]{1,2} ([0-9]{1,2})
     [ ] ([0-9]{2}) : ([0-9]{2}) : ([0-9]{2}) [ ] ([0-9]{4})$/x unless defined $mday;
