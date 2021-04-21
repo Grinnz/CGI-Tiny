@@ -1117,8 +1117,8 @@ Default value for L</"set_request_body_limit">.
 =head1 COMPARISON TO CGI.PM
 
 Traditionally, the L<CGI> module (referred to as CGI.pm to differentiate it
-from the CGI protocol) has been used to write Perl CGI scripts. This module has
-a number of interface differences to be aware of.
+from the CGI protocol) has been used to write Perl CGI scripts. This module
+fills a similar need but has a number of interface differences to be aware of.
 
 =over
 
