@@ -145,10 +145,6 @@ sub cgi (&) {
 }
 
 sub set_error_handler { $_[0]{on_error} = $_[1]; $_[0] }
-sub request_body_limit {
-  return defined $_[0]{request_body_limit} ? $_[0]{request_body_limit} :
-    ($_[0]{request_body_limit} = defined $ENV{CGI_TINY_REQUEST_BODY_LIMIT} ? $ENV{CGI_TINY_REQUEST_BODY_LIMIT} : 16777216);
-}
 sub set_request_body_limit { $_[0]{request_body_limit} = $_[1]; $_[0] }
 sub set_input_handle       { $_[0]{input_handle} = $_[1]; $_[0] }
 sub set_output_handle      { $_[0]{output_handle} = $_[1]; $_[0] }
@@ -243,7 +239,9 @@ sub _cookies {
 sub body {
   my ($self) = @_;
   unless (exists $self->{content}) {
-    my $limit = $self->request_body_limit;
+    my $limit = $self->{request_body_limit};
+    $limit = $ENV{CGI_TINY_REQUEST_BODY_LIMIT} unless defined $limit;
+    $limit = 16777216 unless defined $limit;
     my $length = $ENV{CONTENT_LENGTH} || 0;
     if ($limit and $length > $limit) {
       $self->{response_status} = "413 $HTTP_STATUS{413}" unless $self->{headers_rendered};
@@ -712,23 +710,17 @@ error handlers should render some response if L</"headers_rendered"> is
 false. If no response has been rendered after the error handler completes, the
 default 500 Internal Server Error response will be rendered.
 
-=head3 request_body_limit
-
-  my $limit = $cgi->request_body_limit;
-
-Limit in bytes for parsing a request body into memory, defaults to the value of
-the C<CGI_TINY_REQUEST_BODY_LIMIT> environment variable or 16777216 (16 MiB).
-Since the request body is not parsed until needed, methods that parse the whole
-request body into memory like L</"body"> will set the response status to
-C<413 Payload Too Large> and throw an exception if the content length is over
-the limit. A value of 0 will remove the limit (not recommended unless you have
-other safeguards on memory usage).
-
 =head3 set_request_body_limit
 
   $cgi = $cgi->set_request_body_limit(16*1024*1024);
 
-Sets L</"request_body_limit">.
+Sets the limit in bytes for parsing a request body into memory. If not set,
+defaults to the value of the C<CGI_TINY_REQUEST_BODY_LIMIT> environment
+variable or 16777216 (16 MiB). Since the request body is not parsed until
+needed, methods that parse the whole request body into memory like L</"body">
+will set the response status to C<413 Payload Too Large> and throw an exception
+if the content length is over the limit. A value of 0 will remove the limit
+(not recommended unless you have other safeguards on memory usage).
 
 =head3 set_input_handle
 
