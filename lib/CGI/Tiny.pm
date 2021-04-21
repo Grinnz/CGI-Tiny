@@ -1136,6 +1136,12 @@ are applied to the CGI::Tiny object inside the C<cgi> block.
 
 =item *
 
+Exceptions within the C<cgi> block are handled by default by rendering a server
+error response and emitting the error as a warning. This can be customized with
+L</"set_error_handler">.
+
+=item *
+
 Request query and body parameter accessors in CGI::Tiny are not context
 sensitive. L</"query_param"> and L</"body_param"> always return a single value,
 and L</"query_param_array"> and L</"body_param_array"> must be used to retrieve
