@@ -114,6 +114,16 @@ block; use C<exit> to end a CGI script early after rendering a response.
 CGI::Tiny is a minimal interface to the CGI protocol, but can be extended with
 the use of other CPAN modules.
 
+=head2 Fatpacking
+
+L<App::FatPacker> can be used to pack CGI::Tiny, as well as any other pure-perl
+dependencies, into a CGI script so that it can be deployed to other systems
+without having to install the dependencies there. As a bonus, this means the
+script doesn't have to load those modules separately from disk on every
+execution.
+
+  $ fatpack pack script.cgi > script.packed.cgi
+
 =head2 JSON
 
 CGI::Tiny has built in support for parsing and rendering JSON content with
