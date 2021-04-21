@@ -1103,8 +1103,8 @@ The following convenience functions are provided but not exported.
 
   my $date = CGI::Tiny::epoch_to_date $epoch;
 
-Convert a Unix epoch timestamp to a RFC 1123 HTTP date string suitable for use
-in HTTP headers such as C<Date> and C<Expires>.
+Convert a Unix epoch timestamp, such as returned by C<time>, to a RFC 1123 HTTP
+date string suitable for use in HTTP headers such as C<Date> and C<Expires>.
 
 =head2 date_to_epoch
 
