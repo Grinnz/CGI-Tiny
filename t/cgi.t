@@ -54,6 +54,8 @@ subtest 'Empty response' => sub {
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   is $response->{headers}{'content-type'}, 'application/octet-stream', 'right content type';
   like $response->{status}, qr/^200\b/, '200 response status';
+  ok defined($response->{headers}{date}), 'Date set';
+  ok defined(CGI::Tiny::date_to_epoch $response->{headers}{date}), 'valid HTTP date';
   ok !length($response->{body}), 'empty response body';
 };
 
@@ -351,6 +353,8 @@ subtest 'Redirect response' => sub {
   ok !defined($response->{headers}{'content-type'}), 'Content-Type not set';
   is $response->{headers}{location}, $url, 'Location set';
   like $response->{status}, qr/^302\b/, '302 response status';
+  ok defined($response->{headers}{date}), 'Date set';
+  ok defined(CGI::Tiny::date_to_epoch $response->{headers}{date}), 'valid HTTP date';
   ok !length($response->{body}), 'empty response body';
 };
 
@@ -611,6 +615,8 @@ subtest 'NPH response' => sub {
   is $response->{headers}{'content-type'}, 'application/octet-stream', 'right content type';
   is $response->{headers}{server}, "CGI::Tiny/$CGI::Tiny::VERSION", 'right Server header';
   like $response->{status}, qr/^200\b/, '200 response status';
+  ok defined($response->{headers}{date}), 'Date set';
+  ok defined(CGI::Tiny::date_to_epoch $response->{headers}{date}), 'valid HTTP date';
   ok !length($response->{body}), 'empty response body';
 };
 

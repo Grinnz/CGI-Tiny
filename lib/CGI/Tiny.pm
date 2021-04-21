@@ -105,9 +105,10 @@ sub date_to_epoch {
   return undef unless defined $mday;
 
   require Time::Local;
-  # 4 digit years interpreted literally
+  # 4 digit years interpreted literally, but may have leading zeroes
   # 2 digit years interpreted with best effort heuristic
-  return scalar Time::Local::timegm($sec, $min, $hour, $mday, $MONTH_NUMS{$mon}, $year);
+  return scalar Time::Local::timegm($sec, $min, $hour, $mday, $MONTH_NUMS{$mon},
+    (length($year) == 4 && $year < 1900) ? $year - 1900 : $year);
 }
 
 sub cgi (&) {
@@ -405,6 +406,10 @@ sub render {
         unless defined $content_type;
       $headers_str = "Content-Type: $content_type\r\n$headers_str";
     }
+    if (!$headers_set{date}) {
+      my $date_str = epoch_to_date(time);
+      $headers_str = "Date: $date_str\r\n$headers_str";
+    }
     my $status = $self->{response_status};
     $status = "302 $HTTP_STATUS{302}" if !defined $status and $type eq 'redirect';
     if ($self->{nph}) {
@@ -417,9 +422,8 @@ sub render {
     } elsif (!$headers_set{status} and defined $status) {
       $headers_str = "Status: $status\r\n$headers_str";
     }
-    $headers_str .= "\r\n";
     binmode $out_fh;
-    $out_fh->printflush($headers_str);
+    $out_fh->printflush("$headers_str\r\n");
     $self->{headers_rendered} = 1;
   } elsif ($type eq 'redirect') {
     Carp::carp "Attempted to render a redirect but headers have already been rendered";
@@ -1040,10 +1044,13 @@ C<html>, C<xml>, or C<text> data is expected to be decoded characters, and will
 be encoded according to L</"response_charset">. C<json> data will be encoded to
 UTF-8.
 
-C<redirect> will print a redirection header if response headers have not yet
-been rendered, and will set a response status of 302 if none has been set by
+C<redirect> will set a L<Location> header if response headers have not yet been
+rendered, and will set a response status of 302 if none has been set by
 L</"set_response_status">. It will not set a C<Content-Type> response header.
 If response headers have already been rendered a warning will be emitted.
+
+The C<Date> response header will be set to the current time as an HTTP date
+string if not set manually.
 
 =head1 FUNCTIONS
 
@@ -1054,7 +1061,7 @@ The following convenience functions are provided but not exported.
   my $date = CGI::Tiny::epoch_to_date $epoch;
 
 Convert a Unix epoch timestamp to a RFC 1123 HTTP date string suitable for use
-in date and expiration headers.
+in HTTP headers such as C<Date> and C<Expires>.
 
 =head2 date_to_epoch
 
