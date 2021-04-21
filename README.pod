@@ -75,6 +75,13 @@ rendering output.
 
 =back
 
+Most applications are better written in a L<PSGI>-compatible framework (e.g.
+L<Dancer2> or L<Mojolicious>) and deployed in a persistent application server
+so that the application does not have to start up again every time it receives
+a request. CGI::Tiny, and the CGI protocol in general, is only suited for
+restricted deployment environments that can only run CGI scripts, or
+applications that don't need to scale.
+
 See L</"COMPARISON TO CGI.PM">.
 
 This module's interface is currently I<EXPERIMENTAL> and may be changed
@@ -266,8 +273,12 @@ warned or logged.
 
 Exceptions may occur before or after response headers have been rendered, so
 error handlers should render some response if L</"headers_rendered"> is
-false. If no response has been rendered after the error handler completes, the
-default 500 Internal Server Error response will be rendered.
+false.
+
+If the error handler itself throws an exception, that error and the original
+error will be emitted as a warning. If no response has been rendered after the
+error handler completes or dies, the default 500 Internal Server Error response
+will be rendered.
 
 =head3 set_request_body_limit
 
@@ -738,7 +749,7 @@ response before the first call to L</"render">.
 
 =item *
 
-CGI::Tiny does not provide any HTML templating helpers, as this functionality
+CGI::Tiny does not provide any HTML generation helpers, as this functionality
 is much better implemented by other robust implementations on CPAN; see
 L</"Templating">.
 
@@ -747,6 +758,39 @@ L</"Templating">.
 CGI::Tiny does not do any implicit encoding of cookie values or the C<Expires>
 header or cookie attribute. The L</"epoch_to_date"> convenience function is
 provided to render appropriate C<Expires> date values.
+
+=back
+
+There are a number of alternatives to CGI.pm but they do not sufficiently
+address the design issues; primarily, none of them gracefully handle
+exceptions or failure to render a response, and several of them have no
+features for rendering responses.
+
+=over
+
+=item *
+
+L<CGI::Simple> shares all of the interface design problems of CGI.pm, though it
+does not reimplement the HTML generation helpers.
+
+=item *
+
+L<CGI::Thin> is ancient and only implements parsing of request query or body
+parameters.
+
+=item *
+
+L<CGI::Minimal> has context-sensitive parameter accessors, and only implements
+parsing of request query/body parameters and uploads.
+
+=item *
+
+L<CGI::Lite> has context-sensitive parameter accessors, and only implements
+parsing of request query/body parameters, uploads, and cookies.
+
+=item *
+
+L<CGI::Easy> has a robust interface, but pre-parses all request information.
 
 =back
 
@@ -760,11 +804,6 @@ directly, but it may result in confusion.
 CGI::Tiny eschews certain sanity checking for performance reasons. For example,
 Content-Type and other header values set for the response should only contain
 ASCII text with no control characters, but CGI::Tiny does not verify this.
-
-Most applications are better written in a L<PSGI>-compatible framework (e.g.
-L<Dancer2> or L<Mojolicious>) and deployed in a persistent application server
-so that the application does not have to start up again every time it receives
-a request.
 
 =head1 TODO
 

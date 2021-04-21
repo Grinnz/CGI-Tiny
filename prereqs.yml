@@ -11,5 +11,6 @@ runtime:
     Cpanel::JSON::XS: '4.09'
 test:
   requires:
-    Test::More: '0.96'
+    File::Temp: 0
     MIME::Base64: 0
+    Test::More: '0.96'

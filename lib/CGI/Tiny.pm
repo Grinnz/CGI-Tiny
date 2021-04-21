@@ -119,19 +119,26 @@ my %PENDING_CGI;
 
 sub cgi (&) {
   my ($handler) = @_;
-  my $cgi = bless {}, __PACKAGE__;
-  $PENDING_CGI{0+$cgi} = $cgi;
+  my $cgi = bless {pid => $$}, __PACKAGE__;
+  my $cgi_key = 0+$cgi;
+  $PENDING_CGI{$cgi_key} = $cgi; # don't localize, so premature exit can clean up in END
   my ($error, $errored);
   {
     local $@;
-    eval { local $_ = $cgi; $handler->(); die "cgi completed without rendering a response\n" unless $cgi->{headers_rendered}; 1 }
-      or do { $error = $@; $errored = 1 };
+    eval { local $_ = $cgi; $handler->(); 1 } or do { $error = $@; $errored = 1 };
   }
-  _handle_error($cgi, $error) if $errored;
-  delete $PENDING_CGI{0+$cgi};
+  if ($errored) {
+    _handle_error($cgi, $error);
+  } elsif (!$cgi->{headers_rendered}) {
+    _handle_error($cgi, "cgi completed without rendering a response\n");
+  }
+  delete $PENDING_CGI{$cgi_key};
   1;
 }
 
+# cleanup of premature exit, more reliable than potentially doing this in global destruction
+# ModPerl::Registry or CGI::Compile won't run END after each request,
+# but they override exit to throw an exception which we handle already
 END {
   foreach my $key (keys %PENDING_CGI) {
     my $cgi = delete $PENDING_CGI{$key};
@@ -141,6 +148,7 @@ END {
 
 sub _handle_error {
   my ($cgi, $error) = @_;
+  return unless $cgi->{pid} == $$; # in case of fork
   $cgi->{response_status} = "500 $HTTP_STATUS{500}" unless $cgi->{headers_rendered} or defined $cgi->{response_status};
   if (defined(my $handler = $cgi->{on_error})) {
     my ($error_error, $error_errored);
@@ -148,6 +156,7 @@ sub _handle_error {
       local $@;
       eval { $handler->($cgi, $error); 1 } or do { $error_error = $@; $error_errored = 1 };
     }
+    return unless $cgi->{pid} == $$; # in case of fork in error handler
     if ($error_errored) {
       warn "Exception in error handler: $error_error";
       warn "Original error: $error";
@@ -158,7 +167,7 @@ sub _handle_error {
   $cgi->render(text => 'Internal Server Error') unless $cgi->{headers_rendered};
 }
 
-sub set_error_handler { $_[0]{on_error} = $_[1]; $_[0] }
+sub set_error_handler      { $_[0]{on_error} = $_[1]; $_[0] }
 sub set_request_body_limit { $_[0]{request_body_limit} = $_[1]; $_[0] }
 sub set_input_handle       { $_[0]{input_handle} = $_[1]; $_[0] }
 sub set_output_handle      { $_[0]{output_handle} = $_[1]; $_[0] }
@@ -323,8 +332,12 @@ sub set_response_status {
   if ($self->{headers_rendered}) {
     Carp::carp "Attempted to set HTTP response status but headers have already been rendered";
   } else {
-    Carp::croak "Attempted to set unknown HTTP response status $status" unless exists $HTTP_STATUS{$status};
-    $self->{response_status} = "$status $HTTP_STATUS{$status}";
+    if ($status =~ m/^[0-9]+\s/) {
+      $self->{response_status} = $status;
+    } else {
+      Carp::croak "Attempted to set unknown HTTP response status $status" unless exists $HTTP_STATUS{$status};
+      $self->{response_status} = "$status $HTTP_STATUS{$status}";
+    }
   }
   return $self;
 }
@@ -545,6 +558,13 @@ rendering output.
 
 =back
 
+Most applications are better written in a L<PSGI>-compatible framework (e.g.
+L<Dancer2> or L<Mojolicious>) and deployed in a persistent application server
+so that the application does not have to start up again every time it receives
+a request. CGI::Tiny, and the CGI protocol in general, is only suited for
+restricted deployment environments that can only run CGI scripts, or
+applications that don't need to scale.
+
 See L</"COMPARISON TO CGI.PM">.
 
 This module's interface is currently I<EXPERIMENTAL> and may be changed
@@ -736,8 +756,12 @@ warned or logged.
 
 Exceptions may occur before or after response headers have been rendered, so
 error handlers should render some response if L</"headers_rendered"> is
-false. If no response has been rendered after the error handler completes, the
-default 500 Internal Server Error response will be rendered.
+false.
+
+If the error handler itself throws an exception, that error and the original
+error will be emitted as a warning. If no response has been rendered after the
+error handler completes or dies, the default 500 Internal Server Error response
+will be rendered.
 
 =head3 set_request_body_limit
 
@@ -1208,7 +1232,7 @@ response before the first call to L</"render">.
 
 =item *
 
-CGI::Tiny does not provide any HTML templating helpers, as this functionality
+CGI::Tiny does not provide any HTML generation helpers, as this functionality
 is much better implemented by other robust implementations on CPAN; see
 L</"Templating">.
 
@@ -1217,6 +1241,39 @@ L</"Templating">.
 CGI::Tiny does not do any implicit encoding of cookie values or the C<Expires>
 header or cookie attribute. The L</"epoch_to_date"> convenience function is
 provided to render appropriate C<Expires> date values.
+
+=back
+
+There are a number of alternatives to CGI.pm but they do not sufficiently
+address the design issues; primarily, none of them gracefully handle
+exceptions or failure to render a response, and several of them have no
+features for rendering responses.
+
+=over
+
+=item *
+
+L<CGI::Simple> shares all of the interface design problems of CGI.pm, though it
+does not reimplement the HTML generation helpers.
+
+=item *
+
+L<CGI::Thin> is ancient and only implements parsing of request query or body
+parameters.
+
+=item *
+
+L<CGI::Minimal> has context-sensitive parameter accessors, and only implements
+parsing of request query/body parameters and uploads.
+
+=item *
+
+L<CGI::Lite> has context-sensitive parameter accessors, and only implements
+parsing of request query/body parameters, uploads, and cookies.
+
+=item *
+
+L<CGI::Easy> has a robust interface, but pre-parses all request information.
 
 =back
 
@@ -1230,11 +1287,6 @@ directly, but it may result in confusion.
 CGI::Tiny eschews certain sanity checking for performance reasons. For example,
 Content-Type and other header values set for the response should only contain
 ASCII text with no control characters, but CGI::Tiny does not verify this.
-
-Most applications are better written in a L<PSGI>-compatible framework (e.g.
-L<Dancer2> or L<Mojolicious>) and deployed in a persistent application server
-so that the application does not have to start up again every time it receives
-a request.
 
 =head1 TODO
 

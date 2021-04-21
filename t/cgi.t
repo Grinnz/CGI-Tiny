@@ -4,6 +4,7 @@ use utf8;
 use CGI::Tiny;
 use Test::More;
 use Encode 'decode';
+use File::Temp;
 use JSON::PP 'decode_json', 'encode_json';
 use MIME::Base64 'encode_base64';
 
@@ -76,6 +77,125 @@ subtest 'No render' => sub {
   };
 
   ok defined($error), 'error logged';
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  like $response->{status}, qr/^5[0-9]{2}\b/, '500 response status';
+};
+
+subtest 'No render (object lost)' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my $error;
+  cgi {
+    $_->set_error_handler(sub { $error = $_[1] });
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    undef $_;
+  };
+
+  ok defined($error), 'error logged';
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  like $response->{status}, qr/^5[0-9]{2}\b/, '500 response status';
+};
+
+subtest 'No render (object not destroyed)' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my $error;
+  my $persist_cgi;
+  cgi {
+    $_->set_error_handler(sub { $error = $_[1] });
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $persist_cgi = $_;
+  };
+
+  ok defined($error), 'error logged';
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  like $response->{status}, qr/^5[0-9]{2}\b/, '500 response status';
+};
+
+subtest 'No render (premature exit)' => sub {
+  my $outfile = File::Temp->new;
+  my $errfile = File::Temp->new;
+  my $pid = fork;
+  plan skip_all => "fork failed: $!" unless defined $pid;
+  unless ($pid) {
+    local @ENV{@env_keys} = ('')x@env_keys;
+    local $ENV{PATH_INFO} = '/';
+    local $ENV{REQUEST_METHOD} = 'GET';
+    local $ENV{SCRIPT_NAME} = '/';
+    local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+    open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+
+    cgi {
+      $_->set_error_handler(sub { print $errfile $_[1] });
+      $_->set_input_handle($in_fh);
+      $_->set_output_handle($outfile);
+      exit;
+    };
+    exit;
+  }
+  waitpid $pid, 0;
+
+  seek $errfile, 0, 0;
+  my $error = do { local $/; readline $errfile };
+  ok length($error), 'error logged';
+  seek $outfile, 0, 0;
+  my $out_data = do { local $/; readline $outfile };
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  like $response->{status}, qr/^5[0-9]{2}\b/, '500 response status';
+};
+
+subtest 'No render (premature exit with persistent object)' => sub {
+  my $outfile = File::Temp->new;
+  my $errfile = File::Temp->new;
+  my $pid = fork;
+  plan skip_all => "fork failed: $!" unless defined $pid;
+  unless ($pid) {
+    local @ENV{@env_keys} = ('')x@env_keys;
+    local $ENV{PATH_INFO} = '/';
+    local $ENV{REQUEST_METHOD} = 'GET';
+    local $ENV{SCRIPT_NAME} = '/';
+    local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+    open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+
+    my $persist_cgi;
+    cgi {
+      $_->set_error_handler(sub { print $errfile $_[1] });
+      $_->set_input_handle($in_fh);
+      $_->set_output_handle($outfile);
+      $persist_cgi = $_;
+      exit;
+    };
+    exit;
+  }
+  waitpid $pid, 0;
+
+  seek $errfile, 0, 0;
+  my $error = do { local $/; readline $errfile };
+  ok length($error), 'error logged';
+  seek $outfile, 0, 0;
+  my $out_data = do { local $/; readline $outfile };
   ok length($out_data), 'response rendered';
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
