@@ -1087,7 +1087,7 @@ C<html>, C<xml>, or C<text> data is expected to be decoded characters, and will
 be encoded according to L</"response_charset">. C<json> data will be encoded to
 UTF-8.
 
-C<redirect> will set a L<Location> header if response headers have not yet been
+C<redirect> will set a C<Location> header if response headers have not yet been
 rendered, and will set a response status of 302 if none has been set by
 L</"set_response_status">. It will not set a C<Content-Type> response header.
 If response headers have already been rendered a warning will be emitted.
