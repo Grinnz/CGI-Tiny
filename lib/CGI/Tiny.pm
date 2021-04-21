@@ -1301,6 +1301,8 @@ ASCII text with no control characters, but CGI::Tiny does not verify this.
 
 =item * Uploads/multipart request
 
+=item * Debugging tools
+
 =back
 
 =head1 BUGS
