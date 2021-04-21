@@ -966,10 +966,16 @@ L</"set_request_body_limit"> can fit well within the available memory.
 =head3 set_response_status
 
   $cgi = $cgi->set_response_status(404);
+  $cgi = $cgi->set_response_status('500 Internal Server Error');
 
 Sets the response HTTP status code. No effect after response headers have been
-rendered. The CGI protocol assumes a status of C<200 OK> if no response status
-is set.
+rendered.
+
+A full status string including a human-readable message will be used as-is. A
+bare status code must be a known HTTP status code and will have the standard
+human-readable message appended.
+
+The CGI protocol assumes a status of C<200 OK> if no response status is set.
 
 =head3 set_response_content_type
 
