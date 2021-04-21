@@ -955,14 +955,26 @@ Adds a response cookie. No effect after response headers have been rendered.
 
 Note that cookie values should only consist of ASCII characters and may not
 contain any control characters, space characters, or the characters C<",;\>.
-You may wish to encode more complex values to L<base64|MIME::Base64> for
+More complex values can be encoded to UTF-8 and L<base64|MIME::Base64> for
 transport.
 
+  use Encode 'encode';
   use MIME::Base64 'encode_base64';
-  $cgi->add_response_cookie(foo => encode_base64($value, ''));
+  $cgi->add_response_cookie(foo => encode_base64(encode('UTF-8', $value), ''));
 
+  use Encode 'decode';
   use MIME::Base64 'decode_base64';
-  my $value = decode_base64 $cgi->cookie('foo');
+  my $value = decode 'UTF-8', decode_base64 $cgi->cookie('foo');
+
+Structures can be encoded to JSON and base64 for transport.
+
+  use Cpanel::JSON::XS 'encode_json';
+  use MIME::Base64 'encode_base64';
+  $cgi->add_response_cookie(foo => encode_base64(encode_json(\%hash), ''));
+
+  use Cpanel::JSON::XS 'decode_json';
+  use MIME::Base64 'decode_base64';
+  my $hashref = decode_json decode_base64 $cgi->cookie('foo');
 
 Optional cookie attributes are specified in key-value pairs after the cookie
 name and value. Cookie attribute names are case-insensitive.
@@ -994,7 +1006,9 @@ URL path for which cookie is valid.
 =item SameSite
 
 C<Strict> to restrict the cookie to requests from the same site, C<Lax> to
-allow it additionally in certain cross-site requests.
+allow it additionally in certain cross-site requests. This attribute is
+currently part of a draft specification so its handling may change, but it is
+supported by most browsers.
 
 =item Secure
 
