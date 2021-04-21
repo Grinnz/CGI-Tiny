@@ -91,17 +91,20 @@ sub epoch_to_date {
 
 sub date_to_epoch {
   # RFC 1123 (Sun, 06 Nov 1994 08:49:37 GMT)
-  my ($mday,$mon,$year,$hour,$min,$sec) = $_[0] =~ m/^(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat),
+  my ($mday,$mon,$year,$hour,$min,$sec) = $_[0] =~ m/^ (?:Sun|Mon|Tue|Wed|Thu|Fri|Sat),
     [ ] ([0-9]{2}) [ ] (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [ ] ([0-9]{4})
-    [ ] ([0-9]{2}) : ([0-9]{2}) : ([0-9]{2}) [ ] GMT$/x;
+    [ ] ([0-9]{2}) : ([0-9]{2}) : ([0-9]{2}) [ ] GMT $/x;
+
   # RFC 850 (Sunday, 06-Nov-94 08:49:37 GMT)
-  ($mday,$mon,$year,$hour,$min,$sec) = $_[0] =~ m/^(?:Sun|Mon|Tues|Wednes|Thurs|Fri|Satur)day,
+  ($mday,$mon,$year,$hour,$min,$sec) = $_[0] =~ m/^ (?:Sun|Mon|Tues|Wednes|Thurs|Fri|Satur)day,
     [ ] ([0-9]{2}) - (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) - ([0-9]{2})
-    [ ] ([0-9]{2}) : ([0-9]{2}) : ([0-9]{2}) [ ] GMT$/x unless defined $mday;
+    [ ] ([0-9]{2}) : ([0-9]{2}) : ([0-9]{2}) [ ] GMT $/x unless defined $mday;
+
   # asctime (Sun Nov  6 08:49:37 1994)
-  ($mon,$mday,$hour,$min,$sec,$year) = $_[0] =~ m/^(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat)
+  ($mon,$mday,$hour,$min,$sec,$year) = $_[0] =~ m/^ (?:Sun|Mon|Tue|Wed|Thu|Fri|Sat)
     [ ] (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [ ]{1,2} ([0-9]{1,2})
-    [ ] ([0-9]{2}) : ([0-9]{2}) : ([0-9]{2}) [ ] ([0-9]{4})$/x unless defined $mday;
+    [ ] ([0-9]{2}) : ([0-9]{2}) : ([0-9]{2}) [ ] ([0-9]{4}) $/x unless defined $mday;
+
   return undef unless defined $mday;
 
   require Time::Local;
@@ -1070,7 +1073,16 @@ in HTTP headers such as C<Date> and C<Expires>.
 Parse a RFC 1123 HTTP date string to a Unix epoch timestamp. For compatibility
 as required by L<RFC 7231|https://tools.ietf.org/html/rfc7231#section-7.1.1.1>,
 legacy RFC 850 and ANSI C asctime date formats are also recognized. Returns
-C<undef> if the string does not parse as one of these formats.
+C<undef> if the string does not parse as any of these formats.
+
+  # RFC 1123
+  my $epoch = CGI::Tiny::date_to_epoch 'Sun, 06 Nov 1994 08:49:37 GMT';
+
+  # RFC 850
+  my $epoch = CGI::Tiny::date_to_epoch 'Sunday, 06-Nov-94 08:49:37 GMT';
+
+  # asctime
+  my $epoch = CGI::Tiny::date_to_epoch 'Sun Nov  6 08:49:37 1994';
 
 =head1 ENVIRONMENT
 

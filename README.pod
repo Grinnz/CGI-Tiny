@@ -615,7 +615,16 @@ in HTTP headers such as C<Date> and C<Expires>.
 Parse a RFC 1123 HTTP date string to a Unix epoch timestamp. For compatibility
 as required by L<RFC 7231|https://tools.ietf.org/html/rfc7231#section-7.1.1.1>,
 legacy RFC 850 and ANSI C asctime date formats are also recognized. Returns
-C<undef> if the string does not parse as one of these formats.
+C<undef> if the string does not parse as any of these formats.
+
+  # RFC 1123
+  my $epoch = CGI::Tiny::date_to_epoch 'Sun, 06 Nov 1994 08:49:37 GMT';
+
+  # RFC 850
+  my $epoch = CGI::Tiny::date_to_epoch 'Sunday, 06-Nov-94 08:49:37 GMT';
+
+  # asctime
+  my $epoch = CGI::Tiny::date_to_epoch 'Sun Nov  6 08:49:37 1994';
 
 =head1 ENVIRONMENT
 
