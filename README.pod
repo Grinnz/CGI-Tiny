@@ -25,8 +25,7 @@ CGI::Tiny - Common Gateway Interface, with no frills
     } elsif ($method eq 'POST') {
       $fribble = $cgi->body_param('fribble');
     } else {
-      $cgi->set_response_status(405);
-      $cgi->render;
+      $cgi->set_response_status(405)->render;
       exit;
     }
     die "Invalid fribble parameter" unless length $fribble;
@@ -244,8 +243,7 @@ name).
     if (defined(my $match = $routes->match($cgi->path, method => $cgi->method))) {
       $dispatch{$match->name}->($cgi, $match->captures);
     } else {
-      $cgi->set_response_status(404);
-      $cgi->render(text => 'Not Found');
+      $cgi->set_response_status(404)->render(text => 'Not Found');
     }
   };
 
