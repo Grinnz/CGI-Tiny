@@ -327,31 +327,6 @@ sub body_json {
   return $self->{body_json};
 }
 
-sub set_response_status {
-  my ($self, $status) = @_;
-  if ($self->{headers_rendered}) {
-    Carp::carp "Attempted to set HTTP response status but headers have already been rendered";
-  } else {
-    if ($status =~ m/^[0-9]+\s/) {
-      $self->{response_status} = $status;
-    } else {
-      Carp::croak "Attempted to set unknown HTTP response status $status" unless exists $HTTP_STATUS{$status};
-      $self->{response_status} = "$status $HTTP_STATUS{$status}";
-    }
-  }
-  return $self;
-}
-
-sub set_response_content_type {
-  my ($self, $content_type) = @_;
-  if ($self->{headers_rendered}) {
-    Carp::carp "Attempted to set HTTP response content type but headers have already been rendered";
-  } else {
-    $self->{response_content_type} = $content_type;
-  }
-  return $self;
-}
-
 sub add_response_header {
   my ($self, $name, $value) = @_;
   if ($self->{headers_rendered}) {
@@ -384,6 +359,31 @@ sub add_response_cookie {
       $i += 2;
     }
     push @{$self->{response_headers}}, ['Set-Cookie', $cookie_str];
+  }
+  return $self;
+}
+
+sub set_response_status {
+  my ($self, $status) = @_;
+  if ($self->{headers_rendered}) {
+    Carp::carp "Attempted to set HTTP response status but headers have already been rendered";
+  } else {
+    if ($status =~ m/^[0-9]+\s/) {
+      $self->{response_status} = $status;
+    } else {
+      Carp::croak "Attempted to set unknown HTTP response status $status" unless exists $HTTP_STATUS{$status};
+      $self->{response_status} = "$status $HTTP_STATUS{$status}";
+    }
+  }
+  return $self;
+}
+
+sub set_response_content_type {
+  my ($self, $content_type) = @_;
+  if ($self->{headers_rendered}) {
+    Carp::carp "Attempted to set HTTP response content type but headers have already been rendered";
+  } else {
+    $self->{response_content_type} = $content_type;
   }
   return $self;
 }
@@ -963,28 +963,6 @@ L</"set_request_body_limit"> can fit well within the available memory.
 
 =head2 Response
 
-=head3 set_response_status
-
-  $cgi = $cgi->set_response_status(404);
-  $cgi = $cgi->set_response_status('500 Internal Server Error');
-
-Sets the response HTTP status code. No effect after response headers have been
-rendered.
-
-A full status string including a human-readable message will be used as-is. A
-bare status code must be a known
-L<HTTP status code|https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml>
-and will have the standard human-readable message appended.
-
-The CGI protocol assumes a status of C<200 OK> if no response status is set.
-
-=head3 set_response_content_type
-
-  $cgi = $cgi->set_response_content_type('application/xml');
-
-Sets the response Content-Type header, to override autodetection. No effect
-after response headers have been rendered.
-
 =head3 add_response_header
 
   $cgi = $cgi->add_response_header('Content-Disposition' => 'attachment');
@@ -1071,6 +1049,28 @@ supported by most browsers.
 If set to a true value, the cookie will be restricted to HTTPS requests.
 
 =back
+
+=head3 set_response_status
+
+  $cgi = $cgi->set_response_status(404);
+  $cgi = $cgi->set_response_status('500 Internal Server Error');
+
+Sets the response HTTP status code. No effect after response headers have been
+rendered.
+
+A full status string including a human-readable message will be used as-is. A
+bare status code must be a known
+L<HTTP status code|https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml>
+and will have the standard human-readable message appended.
+
+The CGI protocol assumes a status of C<200 OK> if no response status is set.
+
+=head3 set_response_content_type
+
+  $cgi = $cgi->set_response_content_type('application/xml');
+
+Sets the response Content-Type header, to override autodetection. No effect
+after response headers have been rendered.
 
 =head3 set_response_charset
 
