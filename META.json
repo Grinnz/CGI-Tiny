@@ -66,7 +66,7 @@
    "provides" : {
       "CGI::Tiny" : {
          "file" : "lib/CGI/Tiny.pm",
-         "version" : "0.004"
+         "version" : "0.005"
       }
    },
    "release_status" : "stable",
@@ -81,7 +81,7 @@
          "web" : "https://github.com/Grinnz/CGI-Tiny"
       }
    },
-   "version" : "0.004",
+   "version" : "0.005",
    "x_contributors" : [
       "Dan Book <grinnz@grinnz.com>"
    ],

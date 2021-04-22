@@ -837,5 +837,3 @@ This is free software, licensed under:
 =head1 SEE ALSO
 
 L<CGI::Alternatives>, L<Mojolicious>, L<Dancer2>
-
-=cut
