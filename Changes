@@ -1,6 +1,7 @@
 {{$NEXT}}
   - Fork-safety in error handling and cleanup
   - set_response_status now also accepts a full status string which will be passed as-is
+  - Remove the response_charset method
 
 0.003     2021-04-21 03:31:54 EDT
   - Add set_nph method and support NPH response mode

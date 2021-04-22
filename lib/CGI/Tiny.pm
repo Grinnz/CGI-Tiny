@@ -388,7 +388,6 @@ sub add_response_cookie {
   return $self;
 }
 
-sub response_charset     { defined $_[0]{response_charset} ? $_[0]{response_charset} : ($_[0]{response_charset} = 'UTF-8') }
 sub set_response_charset { $_[0]{response_charset} = $_[1]; $_[0] }
 
 sub set_nph {
@@ -409,7 +408,8 @@ sub render {
   my ($self, $type, $data) = @_;
   $type = '' unless defined $type;
   Carp::croak "Don't know how to render '$type'" if length $type and !exists $known_types{$type};
-  my $charset = $self->response_charset;
+  my $charset = $self->{response_charset};
+  $charset = 'UTF-8' unless defined $charset;
   my $out_fh = defined $self->{output_handle} ? $self->{output_handle} : *STDOUT;
   if (!$self->{headers_rendered}) {
     my @headers = @{$self->{response_headers} || []};
@@ -1072,18 +1072,12 @@ If set to a true value, the cookie will be restricted to HTTPS requests.
 
 =back
 
-=head3 response_charset
-
-  my $charset = $cgi->response_charset;
-
-Charset to use when rendering C<text>, C<html>, or C<xml> response data,
-defaults to C<UTF-8>.
-
 =head3 set_response_charset
 
   $cgi = $cgi->set_response_charset('UTF-8');
 
-Sets L</"response_charset">.
+Set charset to use when rendering C<text>, C<html>, or C<xml> response data,
+defaults to C<UTF-8>.
 
 =head3 set_nph
 
@@ -1125,8 +1119,8 @@ passed in the first call to C<render>, or to C<application/octet-stream> if
 there is no more appropriate value.
 
 C<html>, C<xml>, or C<text> data is expected to be decoded characters, and will
-be encoded according to L</"response_charset">. C<json> data will be encoded to
-UTF-8.
+be encoded according to L</"set_response_charset"> (UTF-8 by default). C<json>
+data will be encoded to UTF-8.
 
 C<redirect> will set a C<Location> header if response headers have not yet been
 rendered, and will set a response status of 302 if none has been set by
