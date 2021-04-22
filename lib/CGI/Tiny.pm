@@ -263,6 +263,7 @@ sub _cookies {
 sub body {
   my ($self) = @_;
   unless (exists $self->{content}) {
+    $self->{content} = '';
     my $limit = $self->{request_body_limit};
     $limit = $ENV{CGI_TINY_REQUEST_BODY_LIMIT} unless defined $limit;
     $limit = 16777216 unless defined $limit;
@@ -271,7 +272,6 @@ sub body {
       $self->{response_status} = "413 $HTTP_STATUS{413}" unless $self->{headers_rendered};
       die "Request body limit exceeded\n";
     }
-    $_[0]{content} = '';
     my $offset = 0;
     my $in_fh = defined $self->{input_handle} ? $self->{input_handle} : *STDIN;
     binmode $in_fh;
@@ -304,7 +304,7 @@ sub _body_params {
   my ($self) = @_;
   unless (exists $self->{body_params}) {
     my (@ordered, %keyed);
-    if ($ENV{CONTENT_TYPE} and $ENV{CONTENT_TYPE} =~ m/^application\/x-www-form-urlencoded/i) {
+    if ($ENV{CONTENT_TYPE} and $ENV{CONTENT_TYPE} =~ m/^application\/x-www-form-urlencoded\b/i) {
       foreach my $pair (split /&/, $self->body) {
         my ($key, $value) = split /=/, $pair, 2;
         $value = '' unless defined $value;
@@ -321,8 +321,10 @@ sub _body_params {
 sub body_json {
   my ($self) = @_;
   unless (exists $self->{body_json}) {
-    if ($ENV{CONTENT_TYPE} and $ENV{CONTENT_TYPE} =~ m/^application\/json/i) {
+    if ($ENV{CONTENT_TYPE} and $ENV{CONTENT_TYPE} =~ m/^application\/json\b/i) {
       $self->{body_json} = $self->_json->decode($self->body);
+    } else {
+      $self->{body_json} = undef;
     }
   }
   return $self->{body_json};
