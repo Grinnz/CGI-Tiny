@@ -11,6 +11,7 @@ CGI::Tiny - Common Gateway Interface, with no frills
   #!/usr/bin/perl
   use strict;
   use warnings;
+  use utf8;
   use CGI::Tiny;
 
   cgi {
@@ -211,6 +212,7 @@ name).
   #!/usr/bin/perl
   use strict;
   use warnings;
+  use utf8;
   use CGI::Tiny;
   use Routes::Tiny;
 
