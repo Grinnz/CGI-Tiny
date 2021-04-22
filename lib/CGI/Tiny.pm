@@ -1206,8 +1206,10 @@ L</"set_error_handler">.
 =item *
 
 Request query and body parameter accessors in CGI::Tiny are not context
-sensitive. L</"query_param"> and L</"body_param"> always return a single value,
-and L</"query_param_array"> and L</"body_param_array"> must be used to retrieve
+sensitive, as context sensitivity can lead to surprising behavior and
+L<vulnerabilities|https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-1572>.
+L</"query_param"> and L</"body_param"> always return a single value, and
+L</"query_param_array"> and L</"body_param_array"> must be used to retrieve
 multi-value parameters. CGI::Tiny also does not have a method-sensitive
 C<param> accessor; query or body parameters must be accessed specifically.
 
