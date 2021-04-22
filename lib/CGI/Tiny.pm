@@ -332,6 +332,7 @@ sub add_response_header {
   if ($self->{headers_rendered}) {
     Carp::carp "Attempted to add HTTP response header '$name' but headers have already been rendered";
   } else {
+    Carp::croak "Newline characters not allowed in HTTP response header '$name'" if $value =~ tr/\r\n//;
     push @{$self->{response_headers}}, [$name, $value];
   }
   return $self;
@@ -358,6 +359,7 @@ sub add_response_cookie {
     } continue {
       $i += 2;
     }
+    Carp::croak "Newline characters not allowed in HTTP response cookie '$name'" if $cookie_str =~ tr/\r\n//;
     push @{$self->{response_headers}}, ['Set-Cookie', $cookie_str];
   }
   return $self;
@@ -368,7 +370,7 @@ sub set_response_status {
   if ($self->{headers_rendered}) {
     Carp::carp "Attempted to set HTTP response status but headers have already been rendered";
   } else {
-    if ($status =~ m/^[0-9]+\s/) {
+    if ($status =~ m/\A[0-9]+ [^\r\n]*\z/) {
       $self->{response_status} = $status;
     } else {
       Carp::croak "Attempted to set unknown HTTP response status $status" unless exists $HTTP_STATUS{$status};
@@ -383,12 +385,18 @@ sub set_response_content_type {
   if ($self->{headers_rendered}) {
     Carp::carp "Attempted to set HTTP response content type but headers have already been rendered";
   } else {
+    Carp::croak "Newline characters not allowed in HTTP response content type" if $content_type =~ tr/\r\n//;
     $self->{response_content_type} = $content_type;
   }
   return $self;
 }
 
-sub set_response_charset { $_[0]{response_charset} = $_[1]; $_[0] }
+sub set_response_charset {
+  my ($self, $charset) = @_;
+  Carp::croak "Space characters not allowed in HTTP response charset" if $charset =~ m/\s/;
+  $self->{response_charset} = $charset;
+  return $self;
+}
 
 sub set_nph {
   my ($self, $value) = @_;
@@ -421,6 +429,7 @@ sub render {
       $headers_set{lc $name} = 1;
     }
     if (!$headers_set{location} and $type eq 'redirect') {
+      Carp::croak "Newline characters not allowed in HTTP redirect" if $data =~ tr/\r\n//;
       $headers_str = "Location: $data\r\n$headers_str";
     }
     if (!$headers_set{'content-type'} and $type ne 'redirect') {
@@ -1069,8 +1078,8 @@ The CGI protocol assumes a status of C<200 OK> if no response status is set.
 
   $cgi = $cgi->set_response_content_type('application/xml');
 
-Sets the response Content-Type header, to override autodetection. No effect
-after response headers have been rendered.
+Sets the response Content-Type header, to override autodetection in
+L</"render">. No effect after response headers have been rendered.
 
 =head3 set_response_charset
 

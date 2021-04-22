@@ -586,8 +586,8 @@ The CGI protocol assumes a status of C<200 OK> if no response status is set.
 
   $cgi = $cgi->set_response_content_type('application/xml');
 
-Sets the response Content-Type header, to override autodetection. No effect
-after response headers have been rendered.
+Sets the response Content-Type header, to override autodetection in
+L</"render">. No effect after response headers have been rendered.
 
 =head3 set_response_charset
 
