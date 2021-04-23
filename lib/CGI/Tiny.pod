@@ -129,9 +129,17 @@ L<App::FatPacker> can be used to pack CGI::Tiny, as well as any other pure-perl
 dependencies, into a CGI script so that it can be deployed to other systems
 without having to install the dependencies there. As a bonus, this means the
 script doesn't have to load those modules separately from disk on every
-execution.
+execution. Just keep in mind that the script will have to be repacked to update
+those dependencies.
 
   $ fatpack pack script.source.cgi > script.cgi
+
+To pack in JSON support if you need to deploy to a Perl older than 5.14:
+
+  $ fatpack trace --use=JSON::PP script.source.cgi
+  $ fatpack packlists-for $(cat fatpacker.trace) > packlists
+  $ fatpack tree $(cat packlists)
+  $ fatpack file script.source.cgi > script.cgi
 
 =head2 JSON
 
