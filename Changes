@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+0.005     2021-04-22 21:11:18 EDT
+  - Separate documentation from code for efficiency
+
 0.004     2021-04-21 21:27:52 EDT
   - Fork-safety in error handling and cleanup
   - set_response_status now also accepts a full status string which will be passed as-is
