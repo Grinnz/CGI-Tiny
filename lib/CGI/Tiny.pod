@@ -134,7 +134,7 @@ those dependencies.
 
   $ fatpack pack script.source.cgi > script.cgi
 
-To pack in JSON support if you need to deploy to a Perl older than 5.14:
+If you need to deploy with JSON support to a Perl older than 5.14:
 
   $ fatpack trace --use=JSON::PP script.source.cgi
   $ fatpack packlists-for $(cat fatpacker.trace) > packlists
