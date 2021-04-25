@@ -396,8 +396,8 @@ Short aliases for a few request meta-variables.
 
   my $pairs = $cgi->query_params;
 
-Retrieve URL query string parameters as an array reference of two-element array
-references.
+Retrieve URL query string parameters as an ordered array reference of
+name/value pairs, represented as two-element array references.
 
 =head3 query_param_names
 
@@ -417,7 +417,8 @@ get multiple values of a parameter.
 
   my $arrayref = $cgi->query_param_array('foo');
 
-Retrieve values of a named URL query string parameter as an array reference.
+Retrieve values of a named URL query string parameter as an ordered array
+reference.
 
 =head3 headers
 
@@ -438,7 +439,8 @@ values.
 
   my $pairs = $cgi->cookies;
 
-Retrieve request cookies as an array reference of two-element array references.
+Retrieve request cookies as an ordered array reference of name/value pairs,
+represented as two-element array references.
 
 =head3 cookie_names
 
@@ -458,7 +460,7 @@ multiple values of a cookie name.
 
   my $arrayref = $cgi->cookie_array('foo');
 
-Retrieve values of a request cookie name as an array reference.
+Retrieve values of a request cookie name as an ordered array reference.
 
 =head3 body
 
@@ -473,8 +475,8 @@ L</"set_request_body_limit"> can fit well within the available memory.
 
   my $pairs = $cgi->body_params;
 
-Retrieve C<x-www-form-urlencoded> body parameters as an array reference of
-two-element array references.
+Retrieve C<x-www-form-urlencoded> body parameters as an ordered array reference
+of name/value pairs, represented as two-element array references.
 
 Note that this will read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
@@ -504,8 +506,8 @@ L</"set_request_body_limit"> can fit well within the available memory.
 
   my $arrayref = $cgi->body_param_array('foo');
 
-Retrieve values of a named C<x-www-form-urlencoded> body parameter as an array
-reference.
+Retrieve values of a named C<x-www-form-urlencoded> body parameter as an
+ordered array reference.
 
 Note that this will read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
