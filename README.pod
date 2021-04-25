@@ -562,14 +562,14 @@ contain any control characters, space characters, or the characters C<",;\>.
 More complex values can be encoded to UTF-8 and L<base64|MIME::Base64> for
 transport.
 
-  use Encode 'encode';
+  use Unicode::UTF8 'encode_utf8';
   use MIME::Base64 'encode_base64';
-  my $encoded_value = encode_base64 encode('UTF-8', $value), '';
+  my $encoded_value = encode_base64 encode_utf8($value), '';
   $cgi->add_response_cookie(foo => $encoded_value, %attrs);
 
-  use Encode 'decode';
+  use Unicode::UTF8 'decode_utf8';
   use MIME::Base64 'decode_base64';
-  my $value = decode 'UTF-8', decode_base64 $cgi->cookie('foo');
+  my $value = decode_utf8, decode_base64 $cgi->cookie('foo');
 
 Data structures can be encoded to JSON and base64 for transport.
 
