@@ -569,7 +569,7 @@ transport.
 
   use Unicode::UTF8 'decode_utf8';
   use MIME::Base64 'decode_base64';
-  my $value = decode_utf8, decode_base64 $cgi->cookie('foo');
+  my $value = decode_utf8 decode_base64 $cgi->cookie('foo');
 
 Data structures can be encoded to JSON and base64 for transport.
 
