@@ -194,16 +194,10 @@ sub server_software   { defined $ENV{SERVER_SOFTWARE} ? $ENV{SERVER_SOFTWARE} : 
 *path = \&path_info;
 *query = \&query_string;
 
-sub query_pairs { [@{$_[0]->_query_params->{ordered}}] }
+sub query_pairs { [map { [@$_] } @{$_[0]->_query_params->{ordered}}] }
 sub query_params {
-  my ($self) = @_;
-  my %params;
-  my $keyed = $self->_query_params->{keyed};
-  foreach my $key (keys %$keyed) {
-    my @values = @{$keyed->{$key}};
-    $params{$key} = @values > 1 ? \@values : $values[0];
-  }
-  return \%params;
+  my $p = $_[0]->_query_params->{keyed};
+  return {map { my $v = $p->{$_}; ($_ => @$v > 1 ? [@$v] : $v->[0]) } keys %$p};
 }
 sub query_param       { my $p = $_[0]->_query_params->{keyed}; exists $p->{$_[1]} ? $p->{$_[1]}[-1] : undef }
 sub query_param_array { my $p = $_[0]->_query_params->{keyed}; exists $p->{$_[1]} ? [@{$p->{$_[1]}}] : [] }
@@ -224,10 +218,7 @@ sub _query_params {
   return $self->{query_params};
 }
 
-sub headers { +{%{$_[0]->_headers}} }
-sub header { (my $name = $_[1]) =~ tr/-/_/; $ENV{"HTTP_\U$name"} }
-
-sub _headers {
+sub headers {
   my ($self) = @_;
   unless (exists $self->{request_headers}) {
     my %headers;
@@ -239,8 +230,10 @@ sub _headers {
     }
     $self->{request_headers} = \%headers;
   }
-  return $self->{request_headers};
+  return {%{$self->{request_headers}}};
 }
+
+sub header { (my $name = $_[1]) =~ tr/-/_/; $ENV{"HTTP_\U$name"} }
 
 sub cookies { +{%{$_[0]->_cookies}} }
 sub cookie { $_[0]->_cookies->{$_[1]} }
@@ -286,16 +279,10 @@ sub body {
   return $self->{content};
 }
 
-sub body_pairs { [@{$_[0]->_body_params->{ordered}}] }
+sub body_pairs { [map { [@$_] } @{$_[0]->_body_params->{ordered}}] }
 sub body_params {
-  my ($self) = @_;
-  my %params;
-  my $keyed = $self->_body_params->{keyed};
-  foreach my $key (keys %$keyed) {
-    my @values = @{$keyed->{$key}};
-    $params{$key} = @values > 1 ? \@values : $values[0];
-  }
-  return \%params;
+  my $p = $_[0]->_body_params->{keyed};
+  return {map { my $v = $p->{$_}; ($_ => @$v > 1 ? [@$v] : $v->[0]) } keys %$p};
 }
 sub body_param       { my $p = $_[0]->_body_params->{keyed}; exists $p->{$_[1]} ? $p->{$_[1]}[-1] : undef }
 sub body_param_array { my $p = $_[0]->_body_params->{keyed}; exists $p->{$_[1]} ? [@{$p->{$_[1]}}] : [] }
