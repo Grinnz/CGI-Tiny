@@ -130,12 +130,15 @@ L<App::FatPacker> can be used to pack CGI::Tiny, as well as any other pure-perl
 dependencies, into a CGI script so that it can be deployed to other systems
 without having to install the dependencies there. As a bonus, this means the
 script doesn't have to load those modules separately from disk on every
-execution. Just keep in mind that the script will have to be repacked to update
-those dependencies.
+execution.
+
+Just keep in mind that the script will have to be repacked to update those
+dependencies, and CGI scripts greatly benefit from efficient XS tools which
+cannot be packed this way.
 
   $ fatpack pack script.source.cgi > script.cgi
 
-If you need to deploy with JSON support to a Perl older than 5.14:
+To pack in optional modules, such as JSON support for Perls older than 5.14:
 
   $ fatpack trace --use=JSON::PP script.source.cgi
   $ fatpack packlists-for $(cat fatpacker.trace) > packlists
@@ -432,17 +435,32 @@ Retrieve the value of a request header by name (case insensitive). CGI request
 headers can only contain a single value, which may be combined from multiple
 values.
 
+=head3 cookie_pairs
+
+  my $pairs = $cgi->cookie_pairs;
+
+Retrieve request cookies as an array reference of two-element array references.
+
 =head3 cookies
 
   my $hashref = $cgi->cookies;
 
-Hash reference of request cookie names and values.
+Retrieve request cookies as a hash reference. If multiple cookies are passed
+with the same name, the value of that name will be an array reference.
 
 =head3 cookie
 
   my $value = $cgi->cookie('foo');
 
-Retrieve the value of a request cookie by name.
+Retrieve the value of a request cookie by name. If multiple cookies are passed
+with the same name, returns the last value. Use L</"cookie_array"> to get
+multiple values of a cookie name.
+
+=head3 cookie_array
+
+  my $arrayref = $cgi->cookie_array('foo');
+
+Retrieve values of a request cookie name as an array reference.
 
 =head3 body
 

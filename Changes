@@ -1,5 +1,6 @@
 {{$NEXT}}
   - Use Unicode::UTF8 for encoding output data if available
+  - Support multiple request cookies with the same name
 
 0.005     2021-04-22 21:11:18 EDT
   - Separate documentation from code for efficiency

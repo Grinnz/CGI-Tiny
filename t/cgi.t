@@ -688,16 +688,18 @@ subtest 'Cookies' => sub {
   local $ENV{REQUEST_METHOD} = 'GET';
   local $ENV{SCRIPT_NAME} = '/';
   local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
-  local $ENV{HTTP_COOKIE} = 'a=b; c=42; x=';
+  local $ENV{HTTP_COOKIE} = 'a=b; c=42; x=; a=c';
   open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
   open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
 
-  my ($cookies, $a_cookie, $b_cookie);
+  my ($cookies, $cookie_pairs, $a_cookie, $a_cookies, $b_cookie);
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
     $cookies = $_->cookies;
+    $cookie_pairs = $_->cookie_pairs;
     $a_cookie = $_->cookie('a');
+    $a_cookies = $_->cookie_array('a');
     $b_cookie = $_->cookie('b');
     $_->render;
   };
@@ -706,8 +708,10 @@ subtest 'Cookies' => sub {
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   like $response->{status}, qr/^200\b/, '200 response status';
-  is_deeply $cookies, {a => 'b', c => '42', x => ''}, 'right cookies';
-  is $a_cookie, 'b', 'right cookie value';
+  is_deeply $cookies, {a => ['b', 'c'], c => '42', x => ''}, 'right cookies';
+  is_deeply $cookie_pairs, [['a', 'b'], ['c', 42], ['x', ''], ['a', 'c']], 'right cookies';
+  is $a_cookie, 'c', 'right cookie value';
+  is_deeply $a_cookies, ['b', 'c'], 'right cookie values';
   ok !defined $b_cookie, 'no cookie value';
 };
 

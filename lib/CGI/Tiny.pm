@@ -235,20 +235,28 @@ sub headers {
 
 sub header { (my $name = $_[1]) =~ tr/-/_/; $ENV{"HTTP_\U$name"} }
 
-sub cookies { +{%{$_[0]->_cookies}} }
-sub cookie { $_[0]->_cookies->{$_[1]} }
+sub cookie_pairs { [map { [@$_] } @{$_[0]->_cookies->{ordered}}] }
+sub cookies {
+  my $c = $_[0]->_cookies->{keyed};
+  return {map { my $v = $c->{$_}; ($_ => @$v > 1 ? [@$v] : $v->[0]) } keys %$c};
+}
+sub cookie       { my $c = $_[0]->_cookies->{keyed}; exists $c->{$_[1]} ? $c->{$_[1]}[-1] : undef }
+sub cookie_array { my $c = $_[0]->_cookies->{keyed}; exists $c->{$_[1]} ? [@{$c->{$_[1]}}] : [] }
 
 sub _cookies {
   my ($self) = @_;
   unless (exists $self->{request_cookies}) {
-    $self->{request_cookies} = {};
+    my (@ordered, %keyed);
     if (defined $ENV{HTTP_COOKIE}) {
       foreach my $pair (split /\s*;\s*/, $ENV{HTTP_COOKIE}) {
         next unless length $pair;
         my ($name, $value) = split /=/, $pair, 2;
-        $self->{request_cookies}{$name} = $value if defined $value;
+        next unless defined $value;
+        push @ordered, [$name, $value];
+        push @{$keyed{$name}}, $value;
       }
     }
+    $self->{request_cookies} = {ordered => \@ordered, keyed => \%keyed};
   }
   return $self->{request_cookies};
 }
