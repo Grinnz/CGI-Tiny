@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.006     2021-04-25 14:48:30 EDT
   - Use Unicode::UTF8 for encoding output data if available
   - query_params, body_params, and cookies methods now return pairs instead of a hashref
   - Remove query_pairs and body_pairs methods
