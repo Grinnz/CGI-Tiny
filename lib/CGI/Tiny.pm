@@ -330,40 +330,12 @@ sub body_json {
   return $self->{body_json};
 }
 
-sub add_response_header {
-  my ($self, $name, $value) = @_;
+sub set_nph {
+  my ($self, $value) = @_;
   if ($self->{headers_rendered}) {
-    Carp::carp "Attempted to add HTTP response header '$name' but headers have already been rendered";
+    Carp::carp "Attempted to set NPH response mode but headers have already been rendered";
   } else {
-    Carp::croak "Newline characters not allowed in HTTP response header '$name'" if $value =~ tr/\r\n//;
-    push @{$self->{response_headers}}, [$name, $value];
-  }
-  return $self;
-}
-
-my %COOKIE_ATTR_VALUE = (expires => 1, domain => 1, path => 1, secure => 0, httponly => 0, samesite => 1, 'max-age' => 1);
-sub add_response_cookie {
-  my ($self, $name, $value, @attrs) = @_;
-  if ($self->{headers_rendered}) {
-    Carp::carp "Attempted to add HTTP response cookie '$name' but headers have already been rendered";
-  } else {
-    my $cookie_str = "$name=$value";
-    my $i = 0;
-    while ($i <= $#attrs) {
-      my ($key, $val) = @attrs[$i, $i+1];
-      my $has_value = $COOKIE_ATTR_VALUE{lc $key};
-      if (!defined $has_value) {
-        Carp::carp "Attempted to set unknown cookie attribute '$key'";
-      } elsif ($has_value) {
-        $cookie_str .= "; $key=$val" if defined $val;
-      } else {
-        $cookie_str .= "; $key" if $val;
-      }
-    } continue {
-      $i += 2;
-    }
-    Carp::croak "Newline characters not allowed in HTTP response cookie '$name'" if $cookie_str =~ tr/\r\n//;
-    push @{$self->{response_headers}}, ['Set-Cookie', $cookie_str];
+    $self->{nph} = $value;
   }
   return $self;
 }
@@ -401,12 +373,40 @@ sub set_response_charset {
   return $self;
 }
 
-sub set_nph {
-  my ($self, $value) = @_;
+sub add_response_header {
+  my ($self, $name, $value) = @_;
   if ($self->{headers_rendered}) {
-    Carp::carp "Attempted to set NPH response mode but headers have already been rendered";
+    Carp::carp "Attempted to add HTTP response header '$name' but headers have already been rendered";
   } else {
-    $self->{nph} = $value;
+    Carp::croak "Newline characters not allowed in HTTP response header '$name'" if $value =~ tr/\r\n//;
+    push @{$self->{response_headers}}, [$name, $value];
+  }
+  return $self;
+}
+
+my %COOKIE_ATTR_VALUE = (expires => 1, domain => 1, path => 1, secure => 0, httponly => 0, samesite => 1, 'max-age' => 1);
+sub add_response_cookie {
+  my ($self, $name, $value, @attrs) = @_;
+  if ($self->{headers_rendered}) {
+    Carp::carp "Attempted to add HTTP response cookie '$name' but headers have already been rendered";
+  } else {
+    my $cookie_str = "$name=$value";
+    my $i = 0;
+    while ($i <= $#attrs) {
+      my ($key, $val) = @attrs[$i, $i+1];
+      my $has_value = $COOKIE_ATTR_VALUE{lc $key};
+      if (!defined $has_value) {
+        Carp::carp "Attempted to set unknown cookie attribute '$key'";
+      } elsif ($has_value) {
+        $cookie_str .= "; $key=$val" if defined $val;
+      } else {
+        $cookie_str .= "; $key" if $val;
+      }
+    } continue {
+      $i += 2;
+    }
+    Carp::croak "Newline characters not allowed in HTTP response cookie '$name'" if $cookie_str =~ tr/\r\n//;
+    push @{$self->{response_headers}}, ['Set-Cookie', $cookie_str];
   }
   return $self;
 }

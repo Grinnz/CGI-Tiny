@@ -490,6 +490,47 @@ L</"set_request_body_limit"> can fit well within the available memory.
 
 =head2 Response
 
+=head3 set_nph
+
+  $cgi = $cgi->set_nph(1);
+
+If set to a true value before rendering response headers, CGI::Tiny will act as
+a L<NPH (Non-Parsed Header)|https://tools.ietf.org/html/rfc3875#section-5>
+script and render full HTTP response headers. This may be required for some CGI
+servers, or enable unbuffered responses or HTTP extensions not supported by the
+CGI server.
+
+No effect after response headers have been rendered.
+
+=head3 set_response_status
+
+  $cgi = $cgi->set_response_status(404);
+  $cgi = $cgi->set_response_status('500 Internal Server Error');
+
+Sets the response HTTP status code. No effect after response headers have been
+rendered.
+
+A full status string including a human-readable message will be used as-is. A
+bare status code must be a known
+L<HTTP status code|https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml>
+and will have the standard human-readable message appended.
+
+The CGI protocol assumes a status of C<200 OK> if no response status is set.
+
+=head3 set_response_content_type
+
+  $cgi = $cgi->set_response_content_type('application/xml');
+
+Sets the response Content-Type header, to override autodetection in
+L</"render">. No effect after response headers have been rendered.
+
+=head3 set_response_charset
+
+  $cgi = $cgi->set_response_charset('UTF-8');
+
+Set charset to use when rendering C<text>, C<html>, or C<xml> response data,
+defaults to C<UTF-8>.
+
 =head3 add_response_header
 
   $cgi = $cgi->add_response_header('Content-Disposition' => 'attachment');
@@ -576,47 +617,6 @@ supported by most browsers.
 If set to a true value, the cookie will be restricted to HTTPS requests.
 
 =back
-
-=head3 set_response_status
-
-  $cgi = $cgi->set_response_status(404);
-  $cgi = $cgi->set_response_status('500 Internal Server Error');
-
-Sets the response HTTP status code. No effect after response headers have been
-rendered.
-
-A full status string including a human-readable message will be used as-is. A
-bare status code must be a known
-L<HTTP status code|https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml>
-and will have the standard human-readable message appended.
-
-The CGI protocol assumes a status of C<200 OK> if no response status is set.
-
-=head3 set_response_content_type
-
-  $cgi = $cgi->set_response_content_type('application/xml');
-
-Sets the response Content-Type header, to override autodetection in
-L</"render">. No effect after response headers have been rendered.
-
-=head3 set_response_charset
-
-  $cgi = $cgi->set_response_charset('UTF-8');
-
-Set charset to use when rendering C<text>, C<html>, or C<xml> response data,
-defaults to C<UTF-8>.
-
-=head3 set_nph
-
-  $cgi = $cgi->set_nph(1);
-
-If set to a true value before rendering response headers, CGI::Tiny will act as
-a L<NPH (Non-Parsed Header)|https://tools.ietf.org/html/rfc3875#section-5>
-script and render full HTTP response headers. This may be required for some CGI
-servers, or enable unbuffered responses or HTTP extensions not supported by the
-CGI server.
-
-No effect after response headers have been rendered.
 
 =head3 headers_rendered
 
@@ -734,8 +734,8 @@ C<param> accessor; query or body parameters must be accessed specifically.
 =item *
 
 CGI::Tiny decodes request query and body parameters from UTF-8 to Unicode
-characters by default, and L</"render"> provides methods to encode response
-data from Unicode characters to UTF-8 or other charsets automatically.
+characters automatically, and L</"render"> provides methods to encode response
+data from Unicode characters to UTF-8 by default.
 
 =item *
 
@@ -789,17 +789,19 @@ does not reimplement the HTML generation helpers.
 =item *
 
 L<CGI::Thin> is ancient and only implements parsing of request query or body
-parameters.
+parameters, without decoding them from UTF-8 bytes.
 
 =item *
 
 L<CGI::Minimal> has context-sensitive parameter accessors, and only implements
-parsing of request query/body parameters and uploads.
+parsing of request query/body parameters (without decoding them from UTF-8
+bytes) and uploads.
 
 =item *
 
 L<CGI::Lite> has context-sensitive parameter accessors, and only implements
-parsing of request query/body parameters, uploads, and cookies.
+parsing of request query/body parameters (without decoding them from UTF-8
+bytes), uploads, and cookies.
 
 =item *
 
