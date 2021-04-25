@@ -39,7 +39,8 @@ CGI::Tiny - Common Gateway Interface, with no frills
 
 CGI::Tiny provides a modern interface to write
 L<CGI|https://en.wikipedia.org/wiki/Common_Gateway_Interface> scripts to
-dynamically respond to HTTP requests. It is intended to be:
+dynamically respond to HTTP requests as defined in
+L<RFC 3875|https://tools.ietf.org/html/rfc3875>. It is intended to be:
 
 =over
 
@@ -411,7 +412,7 @@ represented in lowercase.
 
 =head3 header
 
-  my $value = $cgi->header('Accept');
+  my $value = $cgi->header('Accept-Language');
 
 Retrieve the value of a request header by name (case insensitive). CGI request
 headers can only contain a single value, which may be combined from multiple
@@ -507,13 +508,12 @@ No effect after response headers have been rendered.
   $cgi = $cgi->set_response_status(404);
   $cgi = $cgi->set_response_status('500 Internal Server Error');
 
-Sets the response HTTP status code. No effect after response headers have been
-rendered.
-
-A full status string including a human-readable message will be used as-is. A
-bare status code must be a known
+Sets the response HTTP status code. A full status string including a
+human-readable message will be used as-is. A bare status code must be a known
 L<HTTP status code|https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml>
 and will have the standard human-readable message appended.
+
+No effect after response headers have been rendered.
 
 The CGI protocol assumes a status of C<200 OK> if no response status is set.
 
@@ -521,7 +521,7 @@ The CGI protocol assumes a status of C<200 OK> if no response status is set.
 
   $cgi = $cgi->set_response_content_type('application/xml');
 
-Sets the response Content-Type header, to override autodetection in
+Sets the response C<Content-Type> header, to override autodetection in
 L</"render">. No effect after response headers have been rendered.
 
 =head3 set_response_charset
@@ -535,7 +535,8 @@ defaults to C<UTF-8>.
 
   $cgi = $cgi->add_response_header('Content-Disposition' => 'attachment');
 
-Adds a response header. No effect after response headers have been rendered.
+Adds a custom response header. No effect after response headers have been
+rendered.
 
 Note that header names are case insensitive and CGI::Tiny does not attempt to
 deduplicate or munge headers that have been added manually. Headers are printed
@@ -553,7 +554,8 @@ times will result in multiple instances of that response header.
     Secure    => 1,
   );
 
-Adds a response cookie. No effect after response headers have been rendered.
+Adds a response C<Set-Cookie> header. No effect after response headers have
+been rendered.
 
 Note that cookie values should only consist of ASCII characters and may not
 contain any control characters, space characters, or the characters C<",;\>.
@@ -817,8 +819,10 @@ filehandles. CGI::Tiny does not prevent you from messing with these interfaces
 directly, but it may result in confusion.
 
 CGI::Tiny eschews certain sanity checking for performance reasons. For example,
-Content-Type and other header values set for the response should only contain
-ASCII text with no control characters, but CGI::Tiny does not verify this.
+C<Content-Type> and other header values set for the response should only
+contain ASCII text with no control characters, but CGI::Tiny does not verify
+this (though it does verify they do not contain newline characters to protect
+against HTTP response splitting).
 
 =head1 TODO
 
