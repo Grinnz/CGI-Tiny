@@ -528,11 +528,12 @@ subtest 'Query parameters' => sub {
   open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
   open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
 
-  my ($params, $param_snowman, $param_c_array);
+  my ($params, $param_names, $param_snowman, $param_c_array);
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
     $params = $_->query_params;
+    $param_names = $_->query_param_names;
     $param_snowman = $_->query_param('☃');
     $param_c_array = $_->query_param_array('c');
     $_->render;
@@ -543,6 +544,7 @@ subtest 'Query parameters' => sub {
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   like $response->{status}, qr/^200\b/, '200 response status';
   is_deeply $params, \@query_pairs, 'right query pairs';
+  is_deeply [sort @$param_names], [sort 'c', 'b', '☃'], 'right query param names';
   is $param_snowman, '%', 'right query param value';
   is_deeply $param_c_array, [42, 'foo'], 'right query param values array';
 };
@@ -560,11 +562,12 @@ subtest 'Body parameters' => sub {
   open my $in_fh, '<', \$body_string or die "failed to open handle for input: $!";
   open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
 
-  my ($params, $param_snowman, $param_c_array);
+  my ($params, $param_names, $param_snowman, $param_c_array);
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
     $params = $_->body_params;
+    $param_names = $_->body_param_names;
     $param_snowman = $_->body_param('☃');
     $param_c_array = $_->body_param_array('c');
     $_->render;
@@ -575,6 +578,7 @@ subtest 'Body parameters' => sub {
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   like $response->{status}, qr/^200\b/, '200 response status';
   is_deeply $params, \@body_pairs, 'right body pairs';
+  is_deeply [sort @$param_names], [sort 'c', 'b', '☃'], 'right body param names';
   is $param_snowman, '%', 'right body param value';
   is_deeply $param_c_array, [42, 'foo'], 'right body param values array';
 };
@@ -686,11 +690,12 @@ subtest 'Cookies' => sub {
   open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
   open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
 
-  my ($cookies, $a_cookie, $a_cookies, $b_cookie);
+  my ($cookies, $cookie_names, $a_cookie, $a_cookies, $b_cookie);
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
     $cookies = $_->cookies;
+    $cookie_names = $_->cookie_names;
     $a_cookie = $_->cookie('a');
     $a_cookies = $_->cookie_array('a');
     $b_cookie = $_->cookie('b');
@@ -702,6 +707,7 @@ subtest 'Cookies' => sub {
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   like $response->{status}, qr/^200\b/, '200 response status';
   is_deeply $cookies, [['a', 'b'], ['c', 42], ['x', ''], ['a', 'c']], 'right cookies';
+  is_deeply [sort @$cookie_names], [sort 'a', 'c', 'x'], 'right cookie names';
   is $a_cookie, 'c', 'right cookie value';
   is_deeply $a_cookies, ['b', 'c'], 'right cookie values';
   ok !defined $b_cookie, 'no cookie value';

@@ -399,6 +399,12 @@ Short aliases for a few request meta-variables.
 Retrieve URL query string parameters as an array reference of two-element array
 references.
 
+=head3 query_param_names
+
+  my $arrayref = $cgi->query_param_names;
+
+Retrieve URL query string parameter names as an unsorted array reference.
+
 =head3 query_param
 
   my $value = $cgi->query_param('foo');
@@ -434,6 +440,12 @@ values.
 
 Retrieve request cookies as an array reference of two-element array references.
 
+=head3 cookie_names
+
+  my $arrayref = $cgi->cookie_names;
+
+Retrieve request cookie names as an unsorted array reference.
+
 =head3 cookie
 
   my $value = $cgi->cookie('foo');
@@ -463,6 +475,16 @@ L</"set_request_body_limit"> can fit well within the available memory.
 
 Retrieve C<x-www-form-urlencoded> body parameters as an array reference of
 two-element array references.
+
+Note that this will read the whole request body into memory, so make sure the
+L</"set_request_body_limit"> can fit well within the available memory.
+
+=head3 body_param_names
+
+  my $arrayref = $cgi->body_param_names;
+
+Retrieve C<x-www-form-urlencoded> body parameter names as an unsorted array
+reference.
 
 Note that this will read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.

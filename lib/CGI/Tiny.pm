@@ -195,6 +195,7 @@ sub server_software   { defined $ENV{SERVER_SOFTWARE} ? $ENV{SERVER_SOFTWARE} : 
 *query = \&query_string;
 
 sub query_params      { [map { [@$_] } @{$_[0]->_query_params->{ordered}}] }
+sub query_param_names { [keys %{$_[0]->_query_params->{keyed}}] }
 sub query_param       { my $p = $_[0]->_query_params->{keyed}; exists $p->{$_[1]} ? $p->{$_[1]}[-1] : undef }
 sub query_param_array { my $p = $_[0]->_query_params->{keyed}; exists $p->{$_[1]} ? [@{$p->{$_[1]}}] : [] }
 
@@ -232,6 +233,7 @@ sub headers {
 sub header { (my $name = $_[1]) =~ tr/-/_/; $ENV{"HTTP_\U$name"} }
 
 sub cookies      { [map { [@$_] } @{$_[0]->_cookies->{ordered}}] }
+sub cookie_names { [keys %{$_[0]->_cookies->{keyed}}] }
 sub cookie       { my $c = $_[0]->_cookies->{keyed}; exists $c->{$_[1]} ? $c->{$_[1]}[-1] : undef }
 sub cookie_array { my $c = $_[0]->_cookies->{keyed}; exists $c->{$_[1]} ? [@{$c->{$_[1]}}] : [] }
 
@@ -280,6 +282,7 @@ sub body {
 }
 
 sub body_params      { [map { [@$_] } @{$_[0]->_body_params->{ordered}}] }
+sub body_param_names { [keys %{$_[0]->_body_params->{keyed}}] }
 sub body_param       { my $p = $_[0]->_body_params->{keyed}; exists $p->{$_[1]} ? $p->{$_[1]}[-1] : undef }
 sub body_param_array { my $p = $_[0]->_body_params->{keyed}; exists $p->{$_[1]} ? [@{$p->{$_[1]}}] : [] }
 
