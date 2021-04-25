@@ -521,7 +521,6 @@ subtest 'Query parameters' => sub {
   local $ENV{PATH_INFO} = '/';
   my $query_string = 'c=42&b=1+2%26&%E2%98%83=%25&c=foo';
   my @query_pairs = (['c', 42], ['b', '1 2&'], ['☃', '%'], ['c', 'foo']);
-  my $query_hash = {c => [42, 'foo'], b => '1 2&', '☃' => '%'};
   local $ENV{QUERY_STRING} = $query_string;
   local $ENV{REQUEST_METHOD} = 'GET';
   local $ENV{SCRIPT_NAME} = '/';
@@ -529,12 +528,11 @@ subtest 'Query parameters' => sub {
   open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
   open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
 
-  my ($params, $pairs, $param_snowman, $param_c_array);
+  my ($params, $param_snowman, $param_c_array);
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
     $params = $_->query_params;
-    $pairs = $_->query_pairs;
     $param_snowman = $_->query_param('☃');
     $param_c_array = $_->query_param_array('c');
     $_->render;
@@ -544,10 +542,9 @@ subtest 'Query parameters' => sub {
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   like $response->{status}, qr/^200\b/, '200 response status';
-  is_deeply $params, $query_hash, 'right query params';
-  is_deeply $pairs, \@query_pairs, 'right query pairs';
+  is_deeply $params, \@query_pairs, 'right query pairs';
   is $param_snowman, '%', 'right query param value';
-  is_deeply $param_c_array, $query_hash->{c}, 'right query param values array';
+  is_deeply $param_c_array, [42, 'foo'], 'right query param values array';
 };
 
 subtest 'Body parameters' => sub {
@@ -557,19 +554,17 @@ subtest 'Body parameters' => sub {
   local $ENV{SCRIPT_NAME} = '/';
   local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
   my $body_string = 'c=42&b=1+2%26&%E2%98%83=%25&c=foo';
-  my $body_hash = {c => [42, 'foo'], b => '1 2&', '☃' => '%'};
   my @body_pairs = (['c', 42], ['b', '1 2&'], ['☃', '%'], ['c', 'foo']);
   local $ENV{CONTENT_TYPE} = 'application/x-www-form-urlencoded';
   local $ENV{CONTENT_LENGTH} = length $body_string;
   open my $in_fh, '<', \$body_string or die "failed to open handle for input: $!";
   open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
 
-  my ($params, $pairs, $param_snowman, $param_c_array);
+  my ($params, $param_snowman, $param_c_array);
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
     $params = $_->body_params;
-    $pairs = $_->body_pairs;
     $param_snowman = $_->body_param('☃');
     $param_c_array = $_->body_param_array('c');
     $_->render;
@@ -579,10 +574,9 @@ subtest 'Body parameters' => sub {
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   like $response->{status}, qr/^200\b/, '200 response status';
-  is_deeply $params, $body_hash, 'right body params';
-  is_deeply $pairs, \@body_pairs, 'right body pairs';
+  is_deeply $params, \@body_pairs, 'right body pairs';
   is $param_snowman, '%', 'right body param value';
-  is_deeply $param_c_array, $body_hash->{c}, 'right body param values array';
+  is_deeply $param_c_array, [42, 'foo'], 'right body param values array';
 };
 
 subtest 'Body JSON' => sub {
@@ -692,12 +686,11 @@ subtest 'Cookies' => sub {
   open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
   open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
 
-  my ($cookies, $cookie_pairs, $a_cookie, $a_cookies, $b_cookie);
+  my ($cookies, $a_cookie, $a_cookies, $b_cookie);
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
     $cookies = $_->cookies;
-    $cookie_pairs = $_->cookie_pairs;
     $a_cookie = $_->cookie('a');
     $a_cookies = $_->cookie_array('a');
     $b_cookie = $_->cookie('b');
@@ -708,8 +701,7 @@ subtest 'Cookies' => sub {
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   like $response->{status}, qr/^200\b/, '200 response status';
-  is_deeply $cookies, {a => ['b', 'c'], c => '42', x => ''}, 'right cookies';
-  is_deeply $cookie_pairs, [['a', 'b'], ['c', 42], ['x', ''], ['a', 'c']], 'right cookies';
+  is_deeply $cookies, [['a', 'b'], ['c', 42], ['x', ''], ['a', 'c']], 'right cookies';
   is $a_cookie, 'c', 'right cookie value';
   is_deeply $a_cookies, ['b', 'c'], 'right cookie values';
   ok !defined $b_cookie, 'no cookie value';

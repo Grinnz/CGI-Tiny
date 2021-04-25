@@ -194,11 +194,7 @@ sub server_software   { defined $ENV{SERVER_SOFTWARE} ? $ENV{SERVER_SOFTWARE} : 
 *path = \&path_info;
 *query = \&query_string;
 
-sub query_pairs { [map { [@$_] } @{$_[0]->_query_params->{ordered}}] }
-sub query_params {
-  my $p = $_[0]->_query_params->{keyed};
-  return {map { my $v = $p->{$_}; ($_ => @$v > 1 ? [@$v] : $v->[0]) } keys %$p};
-}
+sub query_params      { [map { [@$_] } @{$_[0]->_query_params->{ordered}}] }
 sub query_param       { my $p = $_[0]->_query_params->{keyed}; exists $p->{$_[1]} ? $p->{$_[1]}[-1] : undef }
 sub query_param_array { my $p = $_[0]->_query_params->{keyed}; exists $p->{$_[1]} ? [@{$p->{$_[1]}}] : [] }
 
@@ -235,11 +231,7 @@ sub headers {
 
 sub header { (my $name = $_[1]) =~ tr/-/_/; $ENV{"HTTP_\U$name"} }
 
-sub cookie_pairs { [map { [@$_] } @{$_[0]->_cookies->{ordered}}] }
-sub cookies {
-  my $c = $_[0]->_cookies->{keyed};
-  return {map { my $v = $c->{$_}; ($_ => @$v > 1 ? [@$v] : $v->[0]) } keys %$c};
-}
+sub cookies      { [map { [@$_] } @{$_[0]->_cookies->{ordered}}] }
 sub cookie       { my $c = $_[0]->_cookies->{keyed}; exists $c->{$_[1]} ? $c->{$_[1]}[-1] : undef }
 sub cookie_array { my $c = $_[0]->_cookies->{keyed}; exists $c->{$_[1]} ? [@{$c->{$_[1]}}] : [] }
 
@@ -287,11 +279,7 @@ sub body {
   return $self->{content};
 }
 
-sub body_pairs { [map { [@$_] } @{$_[0]->_body_params->{ordered}}] }
-sub body_params {
-  my $p = $_[0]->_body_params->{keyed};
-  return {map { my $v = $p->{$_}; ($_ => @$v > 1 ? [@$v] : $v->[0]) } keys %$p};
-}
+sub body_params      { [map { [@$_] } @{$_[0]->_body_params->{ordered}}] }
 sub body_param       { my $p = $_[0]->_body_params->{keyed}; exists $p->{$_[1]} ? $p->{$_[1]}[-1] : undef }
 sub body_param_array { my $p = $_[0]->_body_params->{keyed}; exists $p->{$_[1]} ? [@{$p->{$_[1]}}] : [] }
 

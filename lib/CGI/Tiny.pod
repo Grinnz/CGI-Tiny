@@ -392,19 +392,12 @@ missing and empty values, missing values will be normalized to an empty string.
 
 Short aliases for a few request meta-variables.
 
-=head3 query_pairs
+=head3 query_params
 
-  my $pairs = $cgi->query_pairs;
+  my $pairs = $cgi->query_params;
 
 Retrieve URL query string parameters as an array reference of two-element array
 references.
-
-=head3 query_params
-
-  my $params = $cgi->query_params;
-
-Retrieve URL query string parameters as a hash reference. If a parameter name
-is passed multiple times, its value will be an array reference.
 
 =head3 query_param
 
@@ -435,18 +428,11 @@ Retrieve the value of a request header by name (case insensitive). CGI request
 headers can only contain a single value, which may be combined from multiple
 values.
 
-=head3 cookie_pairs
-
-  my $pairs = $cgi->cookie_pairs;
-
-Retrieve request cookies as an array reference of two-element array references.
-
 =head3 cookies
 
-  my $hashref = $cgi->cookies;
+  my $pairs = $cgi->cookies;
 
-Retrieve request cookies as a hash reference. If multiple cookies are passed
-with the same name, the value of that name will be an array reference.
+Retrieve request cookies as an array reference of two-element array references.
 
 =head3 cookie
 
@@ -471,22 +457,12 @@ Retrieve the request body as bytes.
 Note that this will read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
 
-=head3 body_pairs
+=head3 body_params
 
-  my $pairs = $cgi->body_pairs;
+  my $pairs = $cgi->body_params;
 
 Retrieve C<x-www-form-urlencoded> body parameters as an array reference of
 two-element array references.
-
-Note that this will read the whole request body into memory, so make sure the
-L</"set_request_body_limit"> can fit well within the available memory.
-
-=head3 body_params
-
-  my $params = $cgi->body_params;
-
-Retrieve C<x-www-form-urlencoded> body parameters as a hash reference. If a
-parameter name is passed multiple times, its value will be an array reference.
 
 Note that this will read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.

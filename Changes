@@ -1,6 +1,8 @@
 {{$NEXT}}
   - Use Unicode::UTF8 for encoding output data if available
-  - Support multiple request cookies with the same name
+  - query_params, body_params, and cookies methods now return pairs instead of a hashref
+  - Remove query_pairs and body_pairs methods
+  - Add cookie_array method to support multiple request cookies with the same name
 
 0.005     2021-04-22 21:11:18 EDT
   - Separate documentation from code for efficiency
