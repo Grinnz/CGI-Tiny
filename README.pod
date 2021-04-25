@@ -397,28 +397,30 @@ Short aliases for a few request meta-variables.
   my $pairs = $cgi->query_params;
 
 Retrieve URL query string parameters as an ordered array reference of
-name/value pairs, represented as two-element array references.
+name/value pairs, represented as two-element array references. Names and values
+are decoded to Unicode characters.
 
 =head3 query_param_names
 
   my $arrayref = $cgi->query_param_names;
 
-Retrieve URL query string parameter names as an unsorted array reference.
+Retrieve URL query string parameter names, decoded to Unicode characters, as an
+unsorted array reference.
 
 =head3 query_param
 
   my $value = $cgi->query_param('foo');
 
-Retrieve value of a named URL query string parameter. If the parameter name was
-passed multiple times, returns the last value. Use L</"query_param_array"> to
-get multiple values of a parameter.
+Retrieve value of a named URL query string parameter, decoded to Unicode
+characters. If the parameter name was passed multiple times, returns the last
+value. Use L</"query_param_array"> to get multiple values of a parameter.
 
 =head3 query_param_array
 
   my $arrayref = $cgi->query_param_array('foo');
 
-Retrieve values of a named URL query string parameter as an ordered array
-reference.
+Retrieve values of a named URL query string parameter, decoded to Unicode
+characters, as an ordered array reference.
 
 =head3 headers
 
@@ -476,7 +478,8 @@ L</"set_request_body_limit"> can fit well within the available memory.
   my $pairs = $cgi->body_params;
 
 Retrieve C<x-www-form-urlencoded> body parameters as an ordered array reference
-of name/value pairs, represented as two-element array references.
+of name/value pairs, represented as two-element array references. Names and
+values are decoded to Unicode characters.
 
 Note that this will read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
@@ -485,8 +488,8 @@ L</"set_request_body_limit"> can fit well within the available memory.
 
   my $arrayref = $cgi->body_param_names;
 
-Retrieve C<x-www-form-urlencoded> body parameter names as an unsorted array
-reference.
+Retrieve C<x-www-form-urlencoded> body parameter names, decoded to Unicode
+characters, as an unsorted array reference.
 
 Note that this will read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
@@ -495,9 +498,10 @@ L</"set_request_body_limit"> can fit well within the available memory.
 
   my $value = $cgi->body_param('foo');
 
-Retrieve value of a named C<x-www-form-urlencoded> body parameter. If the
-parameter name was passed multiple times, returns the last value. Use
-L</"body_param_array"> to get multiple values of a parameter.
+Retrieve value of a named C<x-www-form-urlencoded> body parameter, decoded to
+Unicode characters. If the parameter name was passed multiple times, returns
+the last value. Use L</"body_param_array"> to get multiple values of a
+parameter.
 
 Note that this will read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
@@ -506,8 +510,8 @@ L</"set_request_body_limit"> can fit well within the available memory.
 
   my $arrayref = $cgi->body_param_array('foo');
 
-Retrieve values of a named C<x-www-form-urlencoded> body parameter as an
-ordered array reference.
+Retrieve values of a named C<x-www-form-urlencoded> body parameter, decoded to
+Unicode characters, as an ordered array reference.
 
 Note that this will read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
@@ -681,8 +685,8 @@ L</"set_response_content_type">, or autodetected depending on the data type
 passed in the first call to C<render>, or to C<application/octet-stream> if
 there is no more appropriate value.
 
-C<html>, C<xml>, or C<text> data is expected to be decoded characters, and will
-be encoded according to L</"set_response_charset"> (UTF-8 by default).
+C<html>, C<xml>, or C<text> data is expected to be decoded Unicode characters,
+and will be encoded according to L</"set_response_charset"> (UTF-8 by default).
 L<Unicode::UTF8> will be used for efficient UTF-8 encoding if available.
 
 C<json> data structures will be encoded to JSON and UTF-8.
