@@ -409,7 +409,7 @@ Retrieve URL query string parameter names as an unsorted array reference.
 
   my $value = $cgi->query_param('foo');
 
-Retrieve value of a named URL query string parameter. If the parameter name is
+Retrieve value of a named URL query string parameter. If the parameter name was
 passed multiple times, returns the last value. Use L</"query_param_array"> to
 get multiple values of a parameter.
 
@@ -452,7 +452,7 @@ Retrieve request cookie names as an unsorted array reference.
 
   my $value = $cgi->cookie('foo');
 
-Retrieve the value of a request cookie by name. If multiple cookies are passed
+Retrieve the value of a request cookie by name. If multiple cookies were passed
 with the same name, returns the last value. Use L</"cookie_array"> to get
 multiple values of a cookie name.
 
@@ -496,7 +496,7 @@ L</"set_request_body_limit"> can fit well within the available memory.
   my $value = $cgi->body_param('foo');
 
 Retrieve value of a named C<x-www-form-urlencoded> body parameter. If the
-parameter name is passed multiple times, returns the last value. Use
+parameter name was passed multiple times, returns the last value. Use
 L</"body_param_array"> to get multiple values of a parameter.
 
 Note that this will read the whole request body into memory, so make sure the
