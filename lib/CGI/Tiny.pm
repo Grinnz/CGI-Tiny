@@ -471,8 +471,12 @@ sub render {
   if ($type eq 'json') {
     $out_fh->printflush($self->_json->encode($data));
   } elsif ($type eq 'html' or $type eq 'xml' or $type eq 'text') {
-    require Encode;
-    $out_fh->printflush(Encode::encode($charset, "$data"));
+    if (uc $charset eq 'UTF-8' and do { local $@; eval { require Unicode::UTF8; 1 } }) {
+      $out_fh->printflush(Unicode::UTF8::encode_utf8($data));
+    } else {
+      require Encode;
+      $out_fh->printflush(Encode::encode($charset, "$data"));
+    }
   } elsif ($type eq 'data') {
     $out_fh->printflush($data);
   }
@@ -481,8 +485,7 @@ sub render {
 sub _json {
   my ($self) = @_;
   unless (exists $self->{json}) {
-    local $@;
-    if (eval { require Cpanel::JSON::XS; Cpanel::JSON::XS->VERSION('4.09'); 1 }) {
+    if (do { local $@; eval { require Cpanel::JSON::XS; Cpanel::JSON::XS->VERSION('4.09'); 1 } }) {
       $self->{json} = Cpanel::JSON::XS->new->allow_dupkeys->stringify_infnan;
     } else {
       require JSON::PP;

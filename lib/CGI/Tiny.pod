@@ -554,7 +554,7 @@ times will result in multiple instances of that response header.
     Secure    => 1,
   );
 
-Adds a response C<Set-Cookie> header. No effect after response headers have
+Adds a C<Set-Cookie> response header. No effect after response headers have
 been rendered.
 
 Note that cookie values should only consist of ASCII characters and may not
@@ -564,17 +564,19 @@ transport.
 
   use Encode 'encode';
   use MIME::Base64 'encode_base64';
-  $cgi->add_response_cookie(foo => encode_base64(encode('UTF-8', $value), ''));
+  my $encoded_value = encode_base64 encode('UTF-8', $value), '';
+  $cgi->add_response_cookie(foo => $encoded_value, %attrs);
 
   use Encode 'decode';
   use MIME::Base64 'decode_base64';
   my $value = decode 'UTF-8', decode_base64 $cgi->cookie('foo');
 
-Structures can be encoded to JSON and base64 for transport.
+Data structures can be encoded to JSON and base64 for transport.
 
   use Cpanel::JSON::XS 'encode_json';
   use MIME::Base64 'encode_base64';
-  $cgi->add_response_cookie(foo => encode_base64(encode_json(\%hash), ''));
+  my $encoded_value = encode_base64 encode_json(\%hash), '';
+  $cgi->add_response_cookie(foo => $encoded_value, %attrs);
 
   use Cpanel::JSON::XS 'decode_json';
   use MIME::Base64 'decode_base64';
@@ -648,8 +650,10 @@ passed in the first call to C<render>, or to C<application/octet-stream> if
 there is no more appropriate value.
 
 C<html>, C<xml>, or C<text> data is expected to be decoded characters, and will
-be encoded according to L</"set_response_charset"> (UTF-8 by default). C<json>
-data will be encoded to UTF-8.
+be encoded according to L</"set_response_charset"> (UTF-8 by default).
+L<Unicode::UTF8> will be used for efficient UTF-8 encoding if available.
+
+C<json> data structures will be encoded to JSON and UTF-8.
 
 C<redirect> will set a C<Location> header if response headers have not yet been
 rendered, and will set a response status of 302 if none has been set by

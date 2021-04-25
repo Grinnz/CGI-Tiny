@@ -38,7 +38,8 @@
       },
       "runtime" : {
          "recommends" : {
-            "Cpanel::JSON::XS" : "4.09"
+            "Cpanel::JSON::XS" : "4.09",
+            "Unicode::UTF8" : "0"
          },
          "requires" : {
             "Carp" : "0",

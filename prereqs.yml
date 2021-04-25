@@ -9,6 +9,7 @@ runtime:
     Time::Local: 0
   recommends:
     Cpanel::JSON::XS: '4.09'
+    Unicode::UTF8: 0
 test:
   requires:
     File::Temp: 0
