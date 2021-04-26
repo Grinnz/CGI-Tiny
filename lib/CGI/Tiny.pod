@@ -585,7 +585,7 @@ File size in bytes.
 
 =item content_type
 
-C<Content-Type> header of file field, undef if unspecified.
+C<Content-Type> of uploaded file, undef if unspecified.
 
 =back
 
