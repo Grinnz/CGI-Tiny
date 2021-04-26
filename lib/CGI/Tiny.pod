@@ -473,47 +473,54 @@ Retrieve the request body as bytes.
 Note that this will read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
 
+Not available after calling L</"body_params"> or L</"uploads"> (or related
+methods) on a C<multipartE<sol>form-data> request, since in this case the whole
+request body is not retained in memory after it has been read.
+
 =head3 body_params
 
   my $pairs = $cgi->body_params;
 
-Retrieve C<x-www-form-urlencoded> body parameters as an ordered array reference
-of name/value pairs, represented as two-element array references. Names and
-values are decoded to Unicode characters.
+Retrieve C<applicationE<sol>x-www-form-urlencoded> or
+C<multipartE<sol>form-data> body parameters as an ordered array reference of
+name/value pairs, represented as two-element array references. Names and values
+are decoded to Unicode characters.
 
-Note that this will read the whole request body into memory, so make sure the
+Note that this may read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
 
 =head3 body_param_names
 
   my $arrayref = $cgi->body_param_names;
 
-Retrieve C<x-www-form-urlencoded> body parameter names, decoded to Unicode
+Retrieve C<applicationE<sol>x-www-form-urlencoded> or
+C<multipartE<sol>form-data> body parameter names, decoded to Unicode
 characters, as an unsorted array reference.
 
-Note that this will read the whole request body into memory, so make sure the
+Note that this may read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
 
 =head3 body_param
 
   my $value = $cgi->body_param('foo');
 
-Retrieve value of a named C<x-www-form-urlencoded> body parameter, decoded to
-Unicode characters. If the parameter name was passed multiple times, returns
-the last value. Use L</"body_param_array"> to get multiple values of a
-parameter.
+Retrieve value of a named C<applicationE<sol>x-www-form-urlencoded> or
+C<multipartE<sol>form-data> body parameter, decoded to Unicode characters. If
+the parameter name was passed multiple times, returns the last value. Use
+L</"body_param_array"> to get multiple values of a parameter.
 
-Note that this will read the whole request body into memory, so make sure the
+Note that this may read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
 
 =head3 body_param_array
 
   my $arrayref = $cgi->body_param_array('foo');
 
-Retrieve values of a named C<x-www-form-urlencoded> body parameter, decoded to
-Unicode characters, as an ordered array reference.
+Retrieve values of a named C<applicationE<sol>x-www-form-urlencoded> or
+C<multipartE<sol>form-data> body parameter, decoded to Unicode characters, as
+an ordered array reference.
 
-Note that this will read the whole request body into memory, so make sure the
+Note that this may read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
 
 =head3 body_json
@@ -524,6 +531,36 @@ Decode an C<application/json> request body from UTF-8-encoded JSON.
 
 Note that this will read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
+
+=head3 uploads
+
+  my $pairs = $cgi->uploads;
+
+Retrieve C<multipartE<sol>form-data> file uploads as an ordered array reference
+of name/upload pairs, represented as two-element array references. Names are
+decoded to Unicode characters.
+
+=head3 upload_names
+
+  my $arrayref = $cgi->upload_names;
+
+Retrieve C<multipartE<sol>form-data> file upload names, decoded to Unicode
+characters, as an unsorted array reference.
+
+=head3 upload
+
+  my $upload = $cgi->upload('foo');
+
+Retrieve a named C<multipartE<sol>form-data> file upload. If the upload name
+was passed multiple times, returns the last value. Use L</"upload_array">
+to get multiple uploads with the same name.
+
+=head3 upload_array
+
+  my $arrayref = $cgi->upload_array('foo');
+
+Retrieve all C<multipartE<sol>form-data> file uploads of the specified name as
+an ordered array reference.
 
 =head2 Response
 

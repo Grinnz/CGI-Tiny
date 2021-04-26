@@ -3,7 +3,7 @@ use warnings;
 use utf8;
 use CGI::Tiny;
 use Test::More;
-use Encode 'decode';
+use Encode 'decode', 'encode';
 use File::Temp;
 use JSON::PP 'decode_json', 'encode_json';
 use MIME::Base64 'encode_base64';
@@ -581,6 +581,146 @@ subtest 'Body parameters' => sub {
   is_deeply [sort @$param_names], [sort 'c', 'b', '☃'], 'right body param names';
   is $param_snowman, '%', 'right body param value';
   is_deeply $param_c_array, [42, 'foo'], 'right body param values array';
+};
+
+subtest 'Multipart body' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  my $utf8_snowman = encode 'UTF-8', '☃';
+  my $utf16le_snowman = encode 'UTF-16LE', "☃...\n";
+  my $body_string = <<"EOB";
+preamble\r
+--delimiter\r
+Content-Disposition: form-data; name="snowman"\r
+Content-Type: text/plain;charset=UTF-8\r
+\r
+$utf8_snowman!\r
+--delimiter\r
+Content-Disposition: form-data; name=snowman\r
+Content-Type: text/plain;charset=UTF-16LE\r
+\r
+$utf16le_snowman\r
+--delimiter\r
+Content-Disposition: form-data; name="newline"\r
+Content-Type: text/plain;charset=UTF-8\r
+\r
+
+\r
+--delimiter\r
+Content-Disposition: form-data; name="empty"\r
+Content-Type: text/plain;charset=UTF-8\r
+\r
+\r
+--delimiter\r
+Content-Disposition: form-data; name="file"; filename="test.dat"\r
+Content-Type: application/octet-stream\r
+\r
+00000000
+11111111\0\r
+--delimiter\r
+Content-Disposition: form-data; name="file"; filename="test2.dat"\r
+Content-Type: application/json\r
+\r
+{"test":42}\r
+--delimiter\r
+Content-Disposition: form-data; name="snowman"; filename="snowman.txt"\r
+Content-Type: text/plain;charset=UTF-8\r
+\r
+$utf8_snowman\r
+--delimiter--\r
+postamble
+EOB
+  local $ENV{CONTENT_TYPE} = 'multipart/form-data; boundary=delimiter';
+  local $ENV{CONTENT_LENGTH} = length $body_string;
+  open my $in_fh, '<', \$body_string or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my ($params, $param_names, $param_snowman, $param_snowman_array);
+  my ($uploads, $upload_names, $upload_file, $upload_file_array);
+  cgi {
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $params = $_->body_params;
+    $param_names = $_->body_param_names;
+    $param_snowman = $_->body_param('snowman');
+    $param_snowman_array = $_->body_param_array('snowman');
+    $uploads = $_->uploads;
+    $upload_names = $_->upload_names;
+    $upload_file = $_->upload('file');
+    $upload_file_array = $_->upload_array('file');
+    $_->render;
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  like $response->{status}, qr/^200\b/, '200 response status';
+  is_deeply $params, [['snowman', '☃!'], ['snowman', "☃...\n"], ['newline', "\n"], ['empty', '']], 'right multipart body params';
+  is_deeply [sort @$param_names], [sort 'snowman', 'newline', 'empty'], 'right multipart body param names';
+  is $param_snowman, "☃...\n", 'right multipart body param value';
+  is_deeply $param_snowman_array, ['☃!', "☃...\n"], 'right multipart body param values';
+  is $uploads->[-1][0], 'snowman', 'right upload name';
+  my $upload_snowman = $uploads->[-1][1];
+  ok defined $upload_snowman, 'last upload';
+  is $upload_snowman->{filename}, 'snowman.txt', 'right upload filename';
+  is $upload_snowman->{size}, length $utf8_snowman, 'right upload size';
+  is do { local $/; scalar readline $upload_snowman->{file} }, $utf8_snowman, 'right upload contents';
+  is_deeply [sort @$upload_names], [sort 'file', 'snowman'], 'right upload names';
+  is $upload_file->{filename}, 'test2.dat', 'right upload filename';
+  is_deeply $upload_file->{headers},
+    [['Content-Disposition', 'form-data; name="file"; filename="test2.dat"'], ['Content-Type', 'application/json']],
+    'right upload headers';
+  is $upload_file_array->[0]{filename}, 'test.dat', 'right upload filename';
+  is $upload_file_array->[1]{filename}, 'test2.dat', 'right upload filename';
+};
+
+subtest 'Multipart body read into memory' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  my $utf8_snowman = encode 'UTF-8', '☃';
+  my $body_string = <<"EOB";
+--fffff\r
+Content-Disposition: form-data; name="snowman"\r
+Content-Type: text/plain;charset=UTF-8\r
+\r
+$utf8_snowman!\r
+--fffff\r
+Content-Disposition: form-data; name="file"; filename="test.dat"\r
+Content-Type: text/plain;charset=UTF-8\r
+\r
+$utf8_snowman!\r
+--fffff--\r
+EOB
+  local $ENV{CONTENT_TYPE} = 'multipart/form-data; boundary=fffff';
+  local $ENV{CONTENT_LENGTH} = length $body_string;
+  open my $in_fh, '<', \$body_string or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my ($body, $params, $param_names, $param_snowman);
+  cgi {
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $body = $_->body;
+    $params = $_->body_params;
+    $param_names = $_->body_param_names;
+    $param_snowman = $_->body_param('snowman');
+    $_->render;
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  like $response->{status}, qr/^200\b/, '200 response status';
+  is $body, $body_string, 'right body content bytes';
+  is_deeply $params, [['snowman', '☃!']], 'right multipart body params';
+  is_deeply $param_names, ['snowman'], 'right multipart body param names';
+  is $param_snowman, '☃!', 'right multipart body param value';
 };
 
 subtest 'Body JSON' => sub {
