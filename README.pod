@@ -494,7 +494,7 @@ C<multipartE<sol>form-data> body parameters as an ordered array reference of
 name/value pairs, represented as two-element array references. Names and values
 are decoded to Unicode characters.
 
-Note that this may read the whole request body into memory, so make sure the
+Note that this will read the text form fields into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
 
 =head3 body_param_names
@@ -505,7 +505,7 @@ Retrieve C<applicationE<sol>x-www-form-urlencoded> or
 C<multipartE<sol>form-data> body parameter names, decoded to Unicode
 characters, as an unsorted array reference.
 
-Note that this may read the whole request body into memory, so make sure the
+Note that this will read the text form fields into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
 
 =head3 body_param
@@ -517,7 +517,7 @@ C<multipartE<sol>form-data> body parameter, decoded to Unicode characters. If
 the parameter name was passed multiple times, returns the last value. Use
 L</"body_param_array"> to get multiple values of a parameter.
 
-Note that this may read the whole request body into memory, so make sure the
+Note that this will read the text form fields into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
 
 =head3 body_param_array
@@ -528,7 +528,7 @@ Retrieve values of a named C<applicationE<sol>x-www-form-urlencoded> or
 C<multipartE<sol>form-data> body parameter, decoded to Unicode characters, as
 an ordered array reference.
 
-Note that this may read the whole request body into memory, so make sure the
+Note that this will read the text form fields into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
 
 =head3 body_json
@@ -548,12 +548,18 @@ Retrieve C<multipartE<sol>form-data> file uploads as an ordered array reference
 of name/upload pairs, represented as two-element array references. Names are
 decoded to Unicode characters.
 
+Note that this will read the text form fields into memory, so make sure the
+L</"set_request_body_limit"> can fit well within the available memory.
+
 =head3 upload_names
 
   my $arrayref = $cgi->upload_names;
 
 Retrieve C<multipartE<sol>form-data> file upload names, decoded to Unicode
 characters, as an unsorted array reference.
+
+Note that this will read the text form fields into memory, so make sure the
+L</"set_request_body_limit"> can fit well within the available memory.
 
 =head3 upload
 
@@ -563,12 +569,18 @@ Retrieve a named C<multipartE<sol>form-data> file upload. If the upload name
 was passed multiple times, returns the last value. Use L</"upload_array">
 to get multiple uploads with the same name.
 
+Note that this will read the text form fields into memory, so make sure the
+L</"set_request_body_limit"> can fit well within the available memory.
+
 =head3 upload_array
 
   my $arrayref = $cgi->upload_array('foo');
 
 Retrieve all C<multipartE<sol>form-data> file uploads of the specified name as
 an ordered array reference.
+
+Note that this will read the text form fields into memory, so make sure the
+L</"set_request_body_limit"> can fit well within the available memory.
 
 =head2 Response
 
