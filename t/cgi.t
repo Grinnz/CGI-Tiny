@@ -595,16 +595,15 @@ subtest 'Multipart body' => sub {
 preamble\r
 --delimiter\r
 Content-Disposition: form-data; name="snowman"\r
-Content-Type: text/plain;charset=UTF-8\r
 \r
 $utf8_snowman!\r
 --delimiter\r
 Content-Disposition: form-data; name=snowman\r
+Content-Type: text/plain;charset=UTF-16LE\r
 \r
 $utf16le_snowman\r
 --delimiter\r
 Content-Disposition: form-data; name="newline"\r
-Content-Type: text/plain;charset=UTF-8\r
 \r
 
 \r
@@ -625,6 +624,7 @@ Content-Type: application/json\r
 {"test":42}\r
 --delimiter\r
 Content-Disposition: form-data; name="snowman"; filename="snowman.txt"\r
+Content-Type: text/plain;charset=UTF-16LE\r
 \r
 $utf16le_snowman\r
 --delimiter--\r
@@ -640,7 +640,7 @@ EOB
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
-    $_->set_multipart_form_charset('UTF-16LE');
+    $_->set_multipart_form_charset('UTF-8');
     $params = $_->body_params;
     $param_names = $_->body_param_names;
     $param_snowman = $_->body_param('snowman');
@@ -665,7 +665,7 @@ EOB
   ok defined $upload_snowman, 'last upload';
   is $upload_snowman->{filename}, 'snowman.txt', 'right upload filename';
   is $upload_snowman->{size}, length $utf16le_snowman, 'right upload size';
-  is $upload_snowman->{content_type}, undef, 'no Content-Type specified';
+  is $upload_snowman->{content_type}, 'text/plain;charset=UTF-16LE', 'right Content-Type';
   is do { local $/; scalar readline $upload_snowman->{file} }, $utf16le_snowman, 'right upload contents';
   is_deeply [sort @$upload_names], [sort 'file', 'snowman'], 'right upload names';
   is $upload_file->{filename}, 'test2.dat', 'right upload filename';
@@ -680,21 +680,17 @@ subtest 'Multipart body read into memory' => sub {
   local $ENV{REQUEST_METHOD} = 'GET';
   local $ENV{SCRIPT_NAME} = '/';
   local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
-  my $utf16le_snowman = encode 'UTF-16LE', '☃!';
+  my $utf8_snowman = encode 'UTF-8', '☃!';
   my $body_string = <<"EOB";
---fffff\r
-Content-Disposition: form-data; name="_charset_"\r
-\r
-UTF-16LE\r
 --fffff\r
 Content-Disposition: form-data; name="snowman"\r
 \r
-$utf16le_snowman\r
+$utf8_snowman\r
 --fffff\r
 Content-Disposition: form-data; name="file"; filename="test.txt"\r
-Content-Type: text/plain;charset=UTF-16LE\r
+Content-Type: text/plain;charset=UTF-8\r
 \r
-$utf16le_snowman\r
+$utf8_snowman\r
 --fffff--\r
 EOB
   local $ENV{CONTENT_TYPE} = 'multipart/form-data; boundary=fffff';
@@ -721,13 +717,13 @@ EOB
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   like $response->{status}, qr/^200\b/, '200 response status';
   is $body, $body_string, 'right body content bytes';
-  is_deeply $params, [['_charset_', 'UTF-16LE'], ['snowman', '☃!']], 'right multipart body params';
-  is_deeply [sort @$param_names], [sort '_charset_', 'snowman'], 'right multipart body param names';
+  is_deeply $params, [['snowman', '☃!']], 'right multipart body params';
+  is_deeply $param_names, ['snowman'], 'right multipart body param names';
   is $param_snowman, '☃!', 'right multipart body param value';
   is $uploads->[0][0], 'file', 'right upload name';
   is_deeply $upload_names, ['file'], 'right upload names';
   is $upload_snowman->{filename}, 'test.txt', 'right upload filename';
-  is $upload_snowman->{content_type}, 'text/plain;charset=UTF-16LE', 'right upload Content-Type';
+  is $upload_snowman->{content_type}, 'text/plain;charset=UTF-8', 'right upload Content-Type';
 };
 
 subtest 'Body JSON' => sub {

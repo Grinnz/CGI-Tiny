@@ -299,6 +299,12 @@ sub _body_params {
       foreach my $part (@{$self->_body_multipart}) {
         next if defined $part->{filename};
         my ($name, $value, $charset) = @$part{'name','content','charset'};
+        if (uc $default_charset eq 'UTF-8' and do { local $@; eval { require Unicode::UTF8; 1 } }) {
+          $name = Unicode::UTF8::decode_utf8($name);
+        } else {
+          require Encode;
+          $name = Encode::decode($default_charset, "$name");
+        }
         $charset = $default_charset unless defined $charset;
         my $content_type = $part->{headers}{content_type};
         if (!defined $content_type or $content_type =~ m/^text\b/i) {
@@ -338,9 +344,19 @@ sub _body_uploads {
   unless (exists $self->{body_uploads}) {
     $self->{body_uploads} = {ordered => \my @ordered, keyed => \my %keyed};
     if ($ENV{CONTENT_TYPE} and $ENV{CONTENT_TYPE} =~ m/^multipart\/form-data\b/i) {
+      my $default_charset = $self->{multipart_form_charset};
+      $default_charset = 'UTF-8' unless defined $default_charset;
       foreach my $part (@{$self->_body_multipart}) {
         next unless defined $part->{filename};
         my ($name, $filename, $file, $size) = @$part{'name','filename','file','filesize'};
+        if (uc $default_charset eq 'UTF-8' and do { local $@; eval { require Unicode::UTF8; 1 } }) {
+          $name = Unicode::UTF8::decode_utf8($name);
+          $filename = Unicode::UTF8::decode_utf8($filename);
+        } else {
+          require Encode;
+          $name = Encode::decode($default_charset, "$name");
+          $filename = Encode::decode($default_charset, "$filename");
+        }
         my $content_type = $part->{headers}{content_type};
         my $upload = {content_type => $content_type, filename => $filename, file => $file, size => $size};
         push @ordered, [$name, $upload];
@@ -397,7 +413,7 @@ sub _body_multipart {
 sub _parse_multipart {
   my ($input, $length, $boundary, $buffer_size) = @_;
   my $buffer = "\r\n";
-  my (%state, @parts, $charset);
+  my (%state, @parts);
   READER: while ($length > 0) {
     if (ref $input eq 'SCALAR') {
       $buffer .= $$input;
@@ -452,10 +468,6 @@ sub _parse_multipart {
           $state{part}{content} .= $append if length $append;
         }
 
-        if (!$state{parsing_body} and $state{part}{name} eq '_charset_' and length $state{part}{content}) {
-          $charset = $state{part}{content};
-        }
-
         last READER if $state{done};         # end of multipart data
         next READER if $state{parsing_body}; # end of part not read yet
         push @parts, $state{part} = {headers => {}, content => ''}; # new part started
@@ -490,18 +502,10 @@ sub _parse_multipart {
           }
         }
         next READER unless $state{parsing_body}; # end of headers not read yet
-        
       }
     }
   }
   return undef unless $state{done};
-
-  # apply charset to text fields from _charset_
-  if (defined $charset) {
-    foreach my $part (@parts) {
-      $part->{charset} = $charset if !defined $part->{charset} and !defined $part->{filename} and $part->{name} ne '_charset_';
-    }
-  }
 
   return \@parts;
 }

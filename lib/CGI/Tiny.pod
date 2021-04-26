@@ -322,9 +322,10 @@ parsed.
 
   $cgi = $cgi->set_multipart_form_charset('UTF-8');
 
-Sets the default charset for decoding C<multipartE<sol>form-data> text field
-values, defaults to C<UTF-8>. Used when the form doesn't have a C<_charset_>
-field and the form field doesn't have a charset set in C<Content-Type>.
+Sets the default charset for decoding C<multipartE<sol>form-data> forms,
+defaults to C<UTF-8>. Parameter and upload field names, upload filenames, and
+text parameter values that don't specify a charset will be decoded from this
+charset.
 
 =head3 set_input_handle
 
@@ -970,6 +971,12 @@ C<Content-Type> and other header values set for the response should only
 contain ASCII text with no control characters, but CGI::Tiny does not verify
 this (though it does verify they do not contain newline characters to protect
 against HTTP response splitting).
+
+Field names and filenames in C<multipartE<sol>form-data> requests do not have
+a well-defined escape mechanism for special characters, so CGI::Tiny will not
+attempt to decode these names from however the client passes them aside from
+L</"set_multipart_form_charset">. For best compatibility, form field names
+should be ASCII without double quotes or semicolons.
 
 =head1 TODO
 
