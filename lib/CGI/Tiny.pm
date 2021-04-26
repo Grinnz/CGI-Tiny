@@ -165,7 +165,7 @@ sub _handle_error {
   } else {
     warn $error;
   }
-  $cgi->render(text => 'Internal Server Error') unless $cgi->{headers_rendered};
+  $cgi->render(text => $cgi->{response_status}) unless $cgi->{headers_rendered};
 }
 
 sub set_error_handler      { $_[0]{on_error} = $_[1]; $_[0] }
