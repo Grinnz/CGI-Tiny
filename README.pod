@@ -318,9 +318,9 @@ the limit. Files uploaded through a C<multipartE<sol>form-data> request body
 also count toward this limit, though they are streamed to temporary files when
 parsed.
 
-=head3 set_multipart_charset
+=head3 set_multipart_form_charset
 
-  $cgi = $cgi->set_multipart_charset('UTF-8');
+  $cgi = $cgi->set_multipart_form_charset('UTF-8');
 
 Sets the default charset for decoding C<multipartE<sol>form-data> text field
 values, defaults to C<UTF-8>. Used when the form doesn't have a C<_charset_>

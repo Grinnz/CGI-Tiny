@@ -171,12 +171,12 @@ sub _handle_error {
   $cgi->render(text => $cgi->{response_status}) unless $cgi->{headers_rendered};
 }
 
-sub set_error_handler       { $_[0]{on_error} = $_[1]; $_[0] }
-sub set_request_body_buffer { $_[0]{request_body_buffer} = $_[1]; $_[0] }
-sub set_request_body_limit  { $_[0]{request_body_limit} = $_[1]; $_[0] }
-sub set_multipart_charset   { $_[0]{multipart_charset} = $_[1]; $_[0] }
-sub set_input_handle        { $_[0]{input_handle} = $_[1]; $_[0] }
-sub set_output_handle       { $_[0]{output_handle} = $_[1]; $_[0] }
+sub set_error_handler          { $_[0]{on_error} = $_[1]; $_[0] }
+sub set_request_body_buffer    { $_[0]{request_body_buffer} = $_[1]; $_[0] }
+sub set_request_body_limit     { $_[0]{request_body_limit} = $_[1]; $_[0] }
+sub set_multipart_form_charset { $_[0]{multipart_form_charset} = $_[1]; $_[0] }
+sub set_input_handle           { $_[0]{input_handle} = $_[1]; $_[0] }
+sub set_output_handle          { $_[0]{output_handle} = $_[1]; $_[0] }
 
 sub auth_type         { defined $ENV{AUTH_TYPE} ? $ENV{AUTH_TYPE} : '' }
 sub content_length    { defined $ENV{CONTENT_LENGTH} ? $ENV{CONTENT_LENGTH} : '' }
@@ -294,7 +294,7 @@ sub _body_params {
         push @{$keyed{$name}}, $value;
       }
     } elsif ($ENV{CONTENT_TYPE} and $ENV{CONTENT_TYPE} =~ m/^multipart\/form-data\b/i) {
-      my $default_charset = $self->{multipart_charset};
+      my $default_charset = $self->{multipart_form_charset};
       $default_charset = 'UTF-8' unless defined $default_charset;
       foreach my $part (@{$self->_body_multipart}) {
         next if defined $part->{filename};
@@ -474,14 +474,10 @@ sub _parse_multipart {
 
           if (lc $name eq 'content-disposition') {
             $state{part}{headers}{content_disposition} = $value;
-            if (my ($name_quoted, $name_unquoted) = $value =~ m/;\s*name\s*=\s*(?:"([^"]*)"|([^";]*))/i) {
+            if (my ($name_quoted, $name_unquoted) = $value =~ m/;\s*name\s*=\s*(?:"((?:\\"|[^";])*)"|([^";]*))/i) {
               $state{part}{name} = defined $name_quoted ? $name_quoted : $name_unquoted;
-              if (index($state{part}{name}, '=?') >= 0) {
-                require Encode;
-                $state{part}{name} = Encode::decode('MIME-Header', "$state{part}{name}");
-              }
             }
-            if (my ($filename_quoted, $filename_unquoted) = $value =~ m/;\s*filename\s*=\s*(?:"([^"]*)"|([^";]*))/i) {
+            if (my ($filename_quoted, $filename_unquoted) = $value =~ m/;\s*filename\s*=\s*(?:"((?:\\"|[^"])*)"|([^";]*))/i) {
               $state{part}{filename} = defined $filename_quoted ? $filename_quoted : $filename_unquoted;
             }
           } elsif (lc $name eq 'content-type') {

@@ -640,7 +640,7 @@ EOB
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
-    $_->set_multipart_charset('UTF-16LE');
+    $_->set_multipart_form_charset('UTF-16LE');
     $params = $_->body_params;
     $param_names = $_->body_param_names;
     $param_snowman = $_->body_param('snowman');
