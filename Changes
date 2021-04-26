@@ -1,6 +1,7 @@
 {{$NEXT}}
   - Support reading request body parameters from multipart/form-data requests
   - Add uploads, upload_names, upload, and upload_array methods to support multipart/form-data file uploads
+  - Add set_multipart_charset method
 
 0.006     2021-04-25 14:48:30 EDT
   - Use Unicode::UTF8 for encoding output data if available

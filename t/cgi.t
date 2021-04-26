@@ -600,7 +600,6 @@ Content-Type: text/plain;charset=UTF-8\r
 $utf8_snowman!\r
 --delimiter\r
 Content-Disposition: form-data; name=snowman\r
-Content-Type: text/plain;charset=UTF-16LE\r
 \r
 $utf16le_snowman\r
 --delimiter\r
@@ -611,7 +610,6 @@ Content-Type: text/plain;charset=UTF-8\r
 \r
 --delimiter\r
 Content-Disposition: form-data; name="empty"\r
-Content-Type: text/plain;charset=UTF-8\r
 \r
 \r
 --delimiter\r
@@ -643,6 +641,7 @@ EOB
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
+    $_->set_multipart_charset('UTF-16LE');
     $params = $_->body_params;
     $param_names = $_->body_param_names;
     $param_snowman = $_->body_param('snowman');

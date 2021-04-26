@@ -170,6 +170,7 @@ sub _handle_error {
 
 sub set_error_handler      { $_[0]{on_error} = $_[1]; $_[0] }
 sub set_request_body_limit { $_[0]{request_body_limit} = $_[1]; $_[0] }
+sub set_multipart_charset  { $_[0]{multipart_charset} = $_[1]; $_[0] }
 sub set_input_handle       { $_[0]{input_handle} = $_[1]; $_[0] }
 sub set_output_handle      { $_[0]{output_handle} = $_[1]; $_[0] }
 
@@ -288,10 +289,14 @@ sub _body_params {
         push @{$keyed{$name}}, $value;
       }
     } elsif ($ENV{CONTENT_TYPE} and $ENV{CONTENT_TYPE} =~ m/^multipart\/form-data\b/i) {
+      my $default_charset = $self->{multipart_charset};
+      $default_charset = 'UTF-8' unless defined $default_charset;
       foreach my $part (@{$self->_body_multipart}) {
         next if defined $part->{filename};
         my ($name, $value, $charset) = @$part{'name','content','charset'};
-        if (defined $charset) {
+        $charset = $default_charset unless defined $charset;
+        my $content_type = $part->{headers}{content_type};
+        if (!defined $content_type or $content_type =~ m/^text\b/i) {
           if (uc $charset eq 'UTF-8' and do { local $@; eval { require Unicode::UTF8; 1 } }) {
             $value = Unicode::UTF8::decode_utf8($value);
           } else {

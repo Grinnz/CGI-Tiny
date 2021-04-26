@@ -306,6 +306,14 @@ will set the response status to C<413 Payload Too Large> and throw an exception
 if the content length is over the limit. A value of 0 will remove the limit
 (not recommended unless you have other safeguards on memory usage).
 
+=head3 set_multipart_charset
+
+  $cgi = $cgi->set_multipart_charset('UTF-8');
+
+Sets the default charset for decoding C<multipartE<sol>form-data> text field
+values, defaults to C<UTF-8>. Used when the form doesn't have a C<_charset_>
+field and the form field doesn't have a charset set in C<Content-Type>.
+
 =head3 set_input_handle
 
   $cgi = $cgi->set_input_handle($fh);
