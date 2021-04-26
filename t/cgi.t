@@ -670,9 +670,7 @@ EOB
   is do { local $/; scalar readline $upload_snowman->{file} }, $utf8_snowman, 'right upload contents';
   is_deeply [sort @$upload_names], [sort 'file', 'snowman'], 'right upload names';
   is $upload_file->{filename}, 'test2.dat', 'right upload filename';
-  is_deeply $upload_file->{headers},
-    [['Content-Disposition', 'form-data; name="file"; filename="test2.dat"'], ['Content-Type', 'application/json']],
-    'right upload headers';
+  is $upload_file->{content_type}, 'application/json', 'right upload Content-Type';
   is $upload_file_array->[0]{filename}, 'test.dat', 'right upload filename';
   is $upload_file_array->[1]{filename}, 'test2.dat', 'right upload filename';
 };
@@ -683,18 +681,21 @@ subtest 'Multipart body read into memory' => sub {
   local $ENV{REQUEST_METHOD} = 'GET';
   local $ENV{SCRIPT_NAME} = '/';
   local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
-  my $utf8_snowman = encode 'UTF-8', '☃';
+  my $utf16le_snowman = encode 'UTF-16LE', '☃!';
   my $body_string = <<"EOB";
 --fffff\r
-Content-Disposition: form-data; name="snowman"\r
-Content-Type: text/plain;charset=UTF-8\r
+Content-Disposition: form-data; name="_charset_"\r
 \r
-$utf8_snowman!\r
+UTF-16LE\r
 --fffff\r
-Content-Disposition: form-data; name="file"; filename="test.dat"\r
-Content-Type: text/plain;charset=UTF-8\r
+Content-Disposition: form-data; name="snowman"\r
 \r
-$utf8_snowman!\r
+$utf16le_snowman\r
+--fffff\r
+Content-Disposition: form-data; name="file"; filename="test.txt"\r
+Content-Type: text/plain;charset=UTF-16LE\r
+\r
+$utf16le_snowman\r
 --fffff--\r
 EOB
   local $ENV{CONTENT_TYPE} = 'multipart/form-data; boundary=fffff';
@@ -702,7 +703,7 @@ EOB
   open my $in_fh, '<', \$body_string or die "failed to open handle for input: $!";
   open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
 
-  my ($body, $params, $param_names, $param_snowman);
+  my ($body, $params, $param_names, $param_snowman, $uploads, $upload_names, $upload_snowman);
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
@@ -710,6 +711,9 @@ EOB
     $params = $_->body_params;
     $param_names = $_->body_param_names;
     $param_snowman = $_->body_param('snowman');
+    $uploads = $_->uploads;
+    $upload_names = $_->upload_names;
+    $upload_snowman = $_->upload('file');
     $_->render;
   };
 
@@ -718,9 +722,13 @@ EOB
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   like $response->{status}, qr/^200\b/, '200 response status';
   is $body, $body_string, 'right body content bytes';
-  is_deeply $params, [['snowman', '☃!']], 'right multipart body params';
-  is_deeply $param_names, ['snowman'], 'right multipart body param names';
+  is_deeply $params, [['_charset_', 'UTF-16LE'], ['snowman', '☃!']], 'right multipart body params';
+  is_deeply [sort @$param_names], [sort '_charset_', 'snowman'], 'right multipart body param names';
   is $param_snowman, '☃!', 'right multipart body param value';
+  is $uploads->[0][0], 'file', 'right upload name';
+  is_deeply $upload_names, ['file'], 'right upload names';
+  is $upload_snowman->{filename}, 'test.txt', 'right upload filename';
+  is $upload_snowman->{content_type}, 'text/plain;charset=UTF-16LE', 'right upload Content-Type';
 };
 
 subtest 'Body JSON' => sub {

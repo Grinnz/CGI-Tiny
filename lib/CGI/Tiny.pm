@@ -330,8 +330,9 @@ sub _body_uploads {
     if ($ENV{CONTENT_TYPE} and $ENV{CONTENT_TYPE} =~ m/^multipart\/form-data\b/i) {
       foreach my $part (@{$self->_body_multipart}) {
         next unless defined $part->{filename};
-        my ($name, $headers, $filename, $file, $size) = @$part{'name','headers','filename','file','filesize'};
-        my $upload = {headers => $headers, filename => $filename, file => $file, size => $size};
+        my ($name, $filename, $file, $size) = @$part{'name','filename','file','filesize'};
+        my $content_type = $part->{headers}{content_type};
+        my $upload = {content_type => $content_type, filename => $filename, file => $file, size => $size};
         push @ordered, [$name, $upload];
         push @{$keyed{$name}}, $upload;
       }
@@ -373,7 +374,7 @@ sub _body_multipart {
       $input = defined $self->{input_handle} ? $self->{input_handle} : *STDIN;
       binmode $input;
     }
-    my $parts = _parse_multipart($input, $boundary, $length);
+    my $parts = _parse_multipart($input, $length, $boundary);
     unless (defined $parts) {
       $self->{response_status} = "400 $HTTP_STATUS{400}" unless $self->{headers_rendered};
       die "Malformed multipart/form-data request\n";
@@ -384,9 +385,9 @@ sub _body_multipart {
 }
 
 sub _parse_multipart {
-  my ($input, $boundary, $length) = @_;
+  my ($input, $length, $boundary) = @_;
   my $buffer = "\r\n";
-  my (%state, @parts);
+  my (%state, @parts, $charset);
   READER: while ($length > 0) {
     if (ref $input eq 'SCALAR') {
       $buffer .= $$input;
@@ -400,21 +401,21 @@ sub _parse_multipart {
     if (!$state{started} and (my $pos = index $buffer, "\r\n--$boundary\r\n") >= 0) {
       substr $buffer, 0, $pos + length($boundary) + 6, '';
       $state{started} = 1;
-      push @parts, $state{part} = {headers => [], content => ''};
+      push @parts, $state{part} = {headers => {}, content => ''};
     }
     next unless $state{started}; # start of multipart data not read yet
 
     while (length $buffer) {
-      if ($state{part_body}) {
+      if ($state{parsing_body}) {
         my $append = '';
         my $pos;
         if (($pos = index $buffer, "\r\n--$boundary\r\n") >= 0) {
           $append = substr $buffer, 0, $pos, '';
           substr $buffer, 0, length($boundary) + 6, '';
-          $state{part_body} = 0;
+          $state{parsing_body} = 0;
         } elsif (($pos = index $buffer, "\r\n--$boundary--") >= 0) {
           $append = substr $buffer, 0, $pos; # no replacement, we're done here
-          $state{part_body} = 0;
+          $state{parsing_body} = 0;
           $state{done} = 1;
         } elsif (length($buffer) > length($boundary) + 6) {
           $append = substr $buffer, 0, length($buffer) - length($boundary) - 6, '';
@@ -432,26 +433,26 @@ sub _parse_multipart {
             $state{part}{file}->print($append);
             $state{part}{filesize} += length $append;
           }
-          unless ($state{part_body}) {
+          unless ($state{parsing_body}) { # done with part
             $state{part}{file}->flush;
             seek $state{part}{file}, 0, 0;
           }
-        } elsif (length $append) {
-          if (defined $state{part}{content}) {
-            $state{part}{content} .= $append;
-          } else {
-            $state{part}{content} = $append;
-          }
+        } else {
+          $state{part}{content} .= $append if length $append;
         }
 
-        last READER if $state{done};      # end of multipart data
-        next READER if $state{part_body}; # end of part not read yet
-        push @parts, $state{part} = {headers => [], content => ''}; # new part started
+        if (!$state{parsing_body} and $state{part}{name} eq '_charset_' and length $state{part}{content}) {
+          $charset = $state{part}{content};
+        }
+
+        last READER if $state{done};         # end of multipart data
+        next READER if $state{parsing_body}; # end of part not read yet
+        push @parts, $state{part} = {headers => {}, content => ''}; # new part started
       } else { # part headers
         while ((my $pos = index $buffer, "\r\n") >= 0) {
           if ($pos == 0) { # end of headers
             substr $buffer, 0, 2, '';
-            $state{part_body} = 1;
+            $state{parsing_body} = 1;
             last;
           }
 
@@ -459,9 +460,9 @@ sub _parse_multipart {
           my ($name, $value) = split /\s*:\s*/, $header, 2;
           return undef unless defined $value;
           $value =~ s/\s*\z//;
-          push @{$state{part}{headers}}, [$name, $value];
 
           if (lc $name eq 'content-disposition') {
+            $state{part}{headers}{content_disposition} = $value;
             if (my ($name_quoted, $name_unquoted) = $value =~ m/;\s*name\s*=\s*(?:"([^"]*)"|([^";]*))/i) {
               $state{part}{name} = defined $name_quoted ? $name_quoted : $name_unquoted;
               if (index($state{part}{name}, '=?') >= 0) {
@@ -473,17 +474,29 @@ sub _parse_multipart {
               $state{part}{filename} = defined $filename_quoted ? $filename_quoted : $filename_unquoted;
             }
           } elsif (lc $name eq 'content-type') {
-            $state{part}{content_type} = $value;
+            $state{part}{headers}{content_type} = $value;
             if (my ($charset_quoted, $charset_unquoted) = $value =~ m/;\s*charset=(?:"([^"]+)"|([^";]+))/i) {
               $state{part}{charset} = defined $charset_quoted ? $charset_quoted : $charset_unquoted;
             }
+          } elsif (lc $name eq 'content-transfer-encoding') {
+            $state{part}{headers}{content_transfer_encoding} = $value;
           }
         }
-        next READER unless $state{part_body}; # end of headers not read yet
+        next READER unless $state{parsing_body}; # end of headers not read yet
+        
       }
     }
   }
-  return $state{done} ? \@parts : undef;
+  return undef unless $state{done};
+
+  # apply charset to text fields from _charset_
+  if (defined $charset) {
+    foreach my $part (@parts) {
+      $part->{charset} = $charset if !defined $part->{charset} and !defined $part->{filename} and $part->{name} ne '_charset_';
+    }
+  }
+
+  return \@parts;
 }
 
 sub set_nph {
