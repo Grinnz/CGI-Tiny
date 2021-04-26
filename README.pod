@@ -551,6 +551,31 @@ decoded to Unicode characters.
 Note that this will read the text form fields into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
 
+File uploads are returned as a hash reference containing the following keys:
+
+=over
+
+=item filename
+
+Original filename supplied to file input. An empty filename may indicate that
+no file was submitted.
+
+=item file
+
+L<File::Temp> object storing the file contents in a temporary file, which will
+be cleaned up when the CGI script ends by default. The filehandle will be open
+with the C<seek> pointer at the start of the file for reading.
+
+=item size
+
+File size in bytes.
+
+=item content_type
+
+C<Content-Type> header of file field, undef if unspecified.
+
+=back
+
 =head3 upload_names
 
   my $arrayref = $cgi->upload_names;
@@ -569,6 +594,8 @@ Retrieve a named C<multipartE<sol>form-data> file upload. If the upload name
 was passed multiple times, returns the last value. Use L</"upload_array">
 to get multiple uploads with the same name.
 
+See L</"uploads"> for details on the format of the returned upload.
+
 Note that this will read the text form fields into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
 
@@ -578,6 +605,8 @@ L</"set_request_body_limit"> can fit well within the available memory.
 
 Retrieve all C<multipartE<sol>form-data> file uploads of the specified name as
 an ordered array reference.
+
+See L</"uploads"> for details on the format of the returned uploads.
 
 Note that this will read the text form fields into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.

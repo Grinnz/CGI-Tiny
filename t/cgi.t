@@ -625,9 +625,8 @@ Content-Type: application/json\r
 {"test":42}\r
 --delimiter\r
 Content-Disposition: form-data; name="snowman"; filename="snowman.txt"\r
-Content-Type: text/plain;charset=UTF-8\r
 \r
-$utf8_snowman\r
+$utf16le_snowman\r
 --delimiter--\r
 postamble
 EOB
@@ -665,8 +664,9 @@ EOB
   my $upload_snowman = $uploads->[-1][1];
   ok defined $upload_snowman, 'last upload';
   is $upload_snowman->{filename}, 'snowman.txt', 'right upload filename';
-  is $upload_snowman->{size}, length $utf8_snowman, 'right upload size';
-  is do { local $/; scalar readline $upload_snowman->{file} }, $utf8_snowman, 'right upload contents';
+  is $upload_snowman->{size}, length $utf16le_snowman, 'right upload size';
+  is $upload_snowman->{content_type}, undef, 'no Content-Type specified';
+  is do { local $/; scalar readline $upload_snowman->{file} }, $utf16le_snowman, 'right upload contents';
   is_deeply [sort @$upload_names], [sort 'file', 'snowman'], 'right upload names';
   is $upload_file->{filename}, 'test2.dat', 'right upload filename';
   is $upload_file->{content_type}, 'application/json', 'right upload Content-Type';
