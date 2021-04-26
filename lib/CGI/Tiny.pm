@@ -307,7 +307,7 @@ sub _body_params {
         }
         $charset = $default_charset unless defined $charset;
         my $content_type = $part->{headers}{content_type};
-        if (!defined $content_type or $content_type =~ m/^text\b/i) {
+        if (!defined $content_type or $content_type =~ m/^text\/plain\b/i) {
           if (uc $charset eq 'UTF-8' and do { local $@; eval { require Unicode::UTF8; 1 } }) {
             $value = Unicode::UTF8::decode_utf8($value);
           } else {
