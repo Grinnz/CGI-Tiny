@@ -22,7 +22,8 @@ my %WriteMakefileArgs = (
     "Exporter" => "5.57",
     "IO::Handle" => 0,
     "JSON::PP" => 0,
-    "Time::Local" => 0
+    "Time::Local" => 0,
+    "constant" => 0
   },
   "TEST_REQUIRES" => {
     "ExtUtils::MakeMaker" => 0,
@@ -49,7 +50,8 @@ my %FallbackPrereqs = (
   "JSON::PP" => 0,
   "MIME::Base64" => 0,
   "Test::More" => "0.96",
-  "Time::Local" => 0
+  "Time::Local" => 0,
+  "constant" => 0
 );
 
 

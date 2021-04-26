@@ -294,17 +294,29 @@ error will be emitted as a warning. If no response has been rendered after the
 error handler completes or dies, the default 500 Internal Server Error response
 will be rendered.
 
+=head3 set_request_body_buffer
+
+  $cgi = $cgi->set_request_body_buffer(128*1024);
+
+Sets the buffer size for reading the request body (number of bytes to read at
+once). Defaults to the value of the C<CGI_TINY_REQUEST_BODY_BUFFER> environment
+variable or 131072 (128 KiB). A value of 0 will use the default value.
+
 =head3 set_request_body_limit
 
   $cgi = $cgi->set_request_body_limit(16*1024*1024);
 
-Sets the limit in bytes for parsing a request body into memory. If not set,
-defaults to the value of the C<CGI_TINY_REQUEST_BODY_LIMIT> environment
-variable or 16777216 (16 MiB). Since the request body is not parsed until
-needed, methods that parse the whole request body into memory like L</"body">
-will set the response status to C<413 Payload Too Large> and throw an exception
-if the content length is over the limit. A value of 0 will remove the limit
-(not recommended unless you have other safeguards on memory usage).
+Sets the limit in bytes for the request body. Defaults to the value of the
+C<CGI_TINY_REQUEST_BODY_LIMIT> environment variable or 16777216 (16 MiB). A
+value of 0 will remove the limit (not recommended unless you have other
+safeguards on memory usage).
+
+Since the request body is not parsed until needed, methods that parse the
+request body like L</"body"> or L</"upload"> will set the response status to
+C<413 Payload Too Large> and throw an exception if the content length is over
+the limit. Files uploaded through a C<multipartE<sol>form-data> request body
+also count toward this limit, though they are streamed to temporary files when
+parsed.
 
 =head3 set_multipart_charset
 
@@ -482,8 +494,8 @@ Note that this will read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
 
 Not available after calling L</"body_params"> or L</"uploads"> (or related
-methods) on a C<multipartE<sol>form-data> request, since in this case the whole
-request body is not retained in memory after it has been read.
+methods) on a C<multipartE<sol>form-data> request, since this type of request
+body is not retained in memory after parsing.
 
 =head3 body_params
 
@@ -819,6 +831,10 @@ C<undef> if the string does not parse as any of these formats.
 CGI::Tiny recognizes the following environment variables, in addition to the
 standard CGI environment variables.
 
+=head2 CGI_TINY_REQUEST_BODY_BUFFER
+
+Default value for L</"set_request_body_buffer">.
+
 =head2 CGI_TINY_REQUEST_BODY_LIMIT
 
 Default value for L</"set_request_body_limit">.
@@ -856,8 +872,13 @@ sensitive, as context sensitivity can lead to surprising behavior and
 L<vulnerabilities|https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-1572>.
 L</"query_param"> and L</"body_param"> always return a single value, and
 L</"query_param_array"> and L</"body_param_array"> must be used to retrieve
-multi-value parameters. CGI::Tiny also does not have a method-sensitive
-C<param> accessor; query or body parameters must be accessed specifically.
+multi-value parameters.
+
+=item *
+
+CGI::Tiny does not have a method-sensitive C<param> accessor; query or body
+parameters must be accessed specifically. Uploaded files and their metadata are
+accessed with L</"upload"> and do not affect the text parameter accessors.
 
 =item *
 
@@ -953,8 +974,6 @@ against HTTP response splitting).
 =head1 TODO
 
 =over
-
-=item * Uploads/multipart request
 
 =item * Debugging tools
 

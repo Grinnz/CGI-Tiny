@@ -9,6 +9,9 @@ use Exporter 'import';
 
 our $VERSION = '0.007';
 
+use constant DEFAULT_REQUEST_BODY_LIMIT => 16777216;
+use constant DEFAULT_REQUEST_BODY_BUFFER => 131072;
+
 our @EXPORT = 'cgi';
 
 # List from HTTP::Status 6.29
@@ -168,11 +171,12 @@ sub _handle_error {
   $cgi->render(text => $cgi->{response_status}) unless $cgi->{headers_rendered};
 }
 
-sub set_error_handler      { $_[0]{on_error} = $_[1]; $_[0] }
-sub set_request_body_limit { $_[0]{request_body_limit} = $_[1]; $_[0] }
-sub set_multipart_charset  { $_[0]{multipart_charset} = $_[1]; $_[0] }
-sub set_input_handle       { $_[0]{input_handle} = $_[1]; $_[0] }
-sub set_output_handle      { $_[0]{output_handle} = $_[1]; $_[0] }
+sub set_error_handler       { $_[0]{on_error} = $_[1]; $_[0] }
+sub set_request_body_buffer { $_[0]{request_body_buffer} = $_[1]; $_[0] }
+sub set_request_body_limit  { $_[0]{request_body_limit} = $_[1]; $_[0] }
+sub set_multipart_charset   { $_[0]{multipart_charset} = $_[1]; $_[0] }
+sub set_input_handle        { $_[0]{input_handle} = $_[1]; $_[0] }
+sub set_output_handle       { $_[0]{output_handle} = $_[1]; $_[0] }
 
 sub auth_type         { defined $ENV{AUTH_TYPE} ? $ENV{AUTH_TYPE} : '' }
 sub content_length    { defined $ENV{CONTENT_LENGTH} ? $ENV{CONTENT_LENGTH} : '' }
@@ -263,7 +267,8 @@ sub body {
     my $in_fh = defined $self->{input_handle} ? $self->{input_handle} : *STDIN;
     binmode $in_fh;
     while ($length > 0) {
-      my $chunk = $length < 131072 ? $length : 131072;
+      my $chunk = $self->{request_body_buffer} || $ENV{CGI_TINY_REQUEST_BODY_BUFFER} || DEFAULT_REQUEST_BODY_BUFFER;
+      $chunk = $length if $length < $chunk;
       last unless my $read = read $in_fh, $self->{body_content}, $chunk, length $self->{body_content};
       $length -= $read;
     }
@@ -350,7 +355,7 @@ sub _body_length {
   my ($self) = @_;
   my $limit = $self->{request_body_limit};
   $limit = $ENV{CGI_TINY_REQUEST_BODY_LIMIT} unless defined $limit;
-  $limit = 16777216 unless defined $limit;
+  $limit = DEFAULT_REQUEST_BODY_LIMIT unless defined $limit;
   my $length = $ENV{CONTENT_LENGTH} || 0;
   if ($limit and $length > $limit) {
     $self->{response_status} = "413 $HTTP_STATUS{413}" unless $self->{headers_rendered};
@@ -379,7 +384,7 @@ sub _body_multipart {
       $input = defined $self->{input_handle} ? $self->{input_handle} : *STDIN;
       binmode $input;
     }
-    my $parts = _parse_multipart($input, $length, $boundary);
+    my $parts = _parse_multipart($input, $length, $boundary, $self->{request_body_buffer});
     unless (defined $parts) {
       $self->{response_status} = "400 $HTTP_STATUS{400}" unless $self->{headers_rendered};
       die "Malformed multipart/form-data request\n";
@@ -390,7 +395,7 @@ sub _body_multipart {
 }
 
 sub _parse_multipart {
-  my ($input, $length, $boundary) = @_;
+  my ($input, $length, $boundary, $buffer_size) = @_;
   my $buffer = "\r\n";
   my (%state, @parts, $charset);
   READER: while ($length > 0) {
@@ -398,7 +403,8 @@ sub _parse_multipart {
       $buffer .= $$input;
       $length = 0;
     } else {
-      my $chunk = $length < 131072 ? $length : 131072;
+      my $chunk = $buffer_size || $ENV{CGI_TINY_REQUEST_BODY_BUFFER} || DEFAULT_REQUEST_BODY_BUFFER;
+      $chunk = $length if $length < $chunk;
       last unless my $read = read $input, $buffer, $chunk, length $buffer;
       $length -= $read;
     }
