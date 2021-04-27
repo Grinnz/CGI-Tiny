@@ -368,11 +368,10 @@ sub _body_uploads {
           $filename = Encode::decode($default_charset, "$filename");
         }
         my $upload = {
-          filename => $filename,
-          file     => $file,
-          size     => $size,
-          content_disposition => $headers->{'content-disposition'},
-          content_type        => $headers->{'content-type'},
+          filename     => $filename,
+          file         => $file,
+          size         => $size,
+          content_type => $headers->{'content-type'},
         };
         push @ordered, [$name, $upload];
         push @{$keyed{$name}}, $upload;

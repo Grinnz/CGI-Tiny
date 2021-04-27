@@ -693,7 +693,6 @@ EOB
   is $upload_snowman->{filename}, 'snowman.txt', 'right upload filename';
   is $upload_snowman->{size}, length $utf16le_snowman, 'right upload size';
   is $upload_snowman->{content_type}, 'text/plain;charset=UTF-16LE', 'right upload Content-Type';
-  is $upload_snowman->{content_disposition}, 'form-data; name="snowman"; filename="snowman.txt"', 'right upload Content-Disposition';
   is do { local $/; seek $upload_snowman->{file}, 0, 0; scalar readline $upload_snowman->{file} }, $utf16le_snowman, 'right upload contents';
   is_deeply [sort @$upload_names], [sort 'file', 'snowman'], 'right upload names';
   is $upload_file->{filename}, 'test2.dat', 'right upload filename';
@@ -769,7 +768,6 @@ EOB
   is_deeply $upload_names, ['file'], 'right upload names';
   is $upload_snowman->{filename}, 'test.txt', 'right upload filename';
   is $upload_snowman->{content_type}, 'text/plain;charset=UTF-8', 'right upload Content-Type';
-  is $upload_snowman->{content_disposition}, 'form-data; name="file"; filename="test.txt"', 'right upload Content-Disposition';
 };
 
 subtest 'Body JSON' => sub {
