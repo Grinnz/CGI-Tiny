@@ -614,19 +614,19 @@ File uploads are returned as a hash reference containing the following keys:
 Original filename supplied to file input. An empty filename may indicate that
 no file was submitted.
 
-=item file
+=item content_type
 
-L<File::Temp> object storing the file contents in a temporary file, which will
-be cleaned up when the CGI script ends by default. The filehandle will be open
-with the C<seek> pointer at the start of the file for reading.
+C<Content-Type> of uploaded file, undef if unspecified.
 
 =item size
 
 File size in bytes.
 
-=item content_type
+=item file
 
-C<Content-Type> of uploaded file, undef if unspecified.
+L<File::Temp> object storing the file contents in a temporary file, which will
+be cleaned up when the CGI script ends by default. The filehandle will be open
+with the C<seek> pointer at the start of the file for reading.
 
 =back
 
