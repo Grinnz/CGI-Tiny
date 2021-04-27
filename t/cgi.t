@@ -635,12 +635,14 @@ EOB
   open my $in_fh, '<', \$body_string or die "failed to open handle for input: $!";
   open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
 
+  my $parts;
   my ($params, $param_names, $param_snowman, $param_snowman_array);
   my ($uploads, $upload_names, $upload_file, $upload_file_array);
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
     $_->set_multipart_form_charset('UTF-8');
+    $parts = $_->body_parts;
     $params = $_->body_params;
     $param_names = $_->body_param_names;
     $param_snowman = $_->body_param('snowman');
@@ -656,6 +658,31 @@ EOB
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   like $response->{status}, qr/^200\b/, '200 response status';
+
+  my @files;
+  foreach my $i (0..$#$parts) {
+    $files[$i] = delete $parts->[$i]{file};
+    if (defined $files[$i]) {
+      $parts->[$i]{file_contents} = do { local $/; readline $files[$i] };
+    }
+  }
+  is_deeply $parts, [
+    {headers => {'content-disposition' => 'form-data; name="snowman"'},
+      name => 'snowman', filename => undef, size => length($utf8_snowman) + 1, content => "$utf8_snowman!"},
+    {headers => {'content-disposition' => 'form-data; name=snowman', 'content-type' => 'text/plain;charset=UTF-16LE'},
+      name => 'snowman', filename => undef, size => length($utf16le_snowman), content => $utf16le_snowman},
+    {headers => {'content-disposition' => 'form-data; name="newline"'},
+      name => 'newline', filename => undef, size => 1, content => "\n"},
+    {headers => {'content-disposition' => 'form-data; name="empty"'},
+      name => 'empty', filename => undef, size => 0, content => ''},
+    {headers => {'content-disposition' => 'form-data; name="file"; filename="test.dat"', 'content-type' => 'application/octet-stream'},
+      name => 'file', filename => 'test.dat', size => 18, file_contents => "00000000\n11111111\0"},
+    {headers => {'content-disposition' => 'form-data; name="file"; filename="test2.dat"', 'content-type' => 'application/json'},
+      name => 'file', filename => 'test2.dat', size => 11, file_contents => '{"test":42}'},
+    {headers => {'content-disposition' => 'form-data; name="snowman"; filename="snowman.txt"', 'content-type' => 'text/plain;charset=UTF-16LE'},
+      name => 'snowman', filename => 'snowman.txt', size => length($utf16le_snowman), file_contents => $utf16le_snowman},
+  ], 'right multipart body parts';
+
   is_deeply $params, [['snowman', '☃!'], ['snowman', "☃...\n"], ['newline', "\n"], ['empty', '']], 'right multipart body params';
   is_deeply [sort @$param_names], [sort 'snowman', 'newline', 'empty'], 'right multipart body param names';
   is $param_snowman, "☃...\n", 'right multipart body param value';
@@ -667,7 +694,7 @@ EOB
   is $upload_snowman->{size}, length $utf16le_snowman, 'right upload size';
   is $upload_snowman->{content_type}, 'text/plain;charset=UTF-16LE', 'right upload Content-Type';
   is $upload_snowman->{content_disposition}, 'form-data; name="snowman"; filename="snowman.txt"', 'right upload Content-Disposition';
-  is do { local $/; scalar readline $upload_snowman->{file} }, $utf16le_snowman, 'right upload contents';
+  is do { local $/; seek $upload_snowman->{file}, 0, 0; scalar readline $upload_snowman->{file} }, $utf16le_snowman, 'right upload contents';
   is_deeply [sort @$upload_names], [sort 'file', 'snowman'], 'right upload names';
   is $upload_file->{filename}, 'test2.dat', 'right upload filename';
   is $upload_file->{content_type}, 'application/json', 'right upload Content-Type';
@@ -691,7 +718,8 @@ $utf8_snowman\r
 Content-Disposition: form-data; name="file"; filename="test.txt"\r
 Content-Type: text/plain;charset=UTF-8\r
 \r
-$utf8_snowman\r
+$utf8_snowman
+\r
 --fffff--\r
 EOB
   local $ENV{CONTENT_TYPE} = 'multipart/form-data; boundary=fffff';
@@ -699,11 +727,12 @@ EOB
   open my $in_fh, '<', \$body_string or die "failed to open handle for input: $!";
   open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
 
-  my ($body, $params, $param_names, $param_snowman, $uploads, $upload_names, $upload_snowman);
+  my ($body, $parts, $params, $param_names, $param_snowman, $uploads, $upload_names, $upload_snowman);
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
     $body = $_->body;
+    $parts = $_->body_parts;
     $params = $_->body_params;
     $param_names = $_->body_param_names;
     $param_snowman = $_->body_param('snowman');
@@ -718,6 +747,21 @@ EOB
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   like $response->{status}, qr/^200\b/, '200 response status';
   is $body, $body_string, 'right body content bytes';
+
+  my @files;
+  foreach my $i (0..$#$parts) {
+    $files[$i] = delete $parts->[$i]{file};
+    if (defined $files[$i]) {
+      $parts->[$i]{file_contents} = do { local $/; readline $files[$i] };
+    }
+  }
+  is_deeply $parts, [
+    {headers => {'content-disposition' => 'form-data; name="snowman"'},
+      name => 'snowman', filename => undef, size => length($utf8_snowman), content => $utf8_snowman},
+    {headers => {'content-disposition' => 'form-data; name="file"; filename="test.txt"', 'content-type' => 'text/plain;charset=UTF-8'},
+      name => 'file', filename => 'test.txt', size => length($utf8_snowman) + 1, file_contents => "$utf8_snowman\n"},
+  ], 'right multipart body parts';
+
   is_deeply $params, [['snowman', '☃!']], 'right multipart body params';
   is_deeply $param_names, ['snowman'], 'right multipart body param names';
   is $param_snowman, '☃!', 'right multipart body param value';

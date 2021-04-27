@@ -325,7 +325,8 @@ parsed.
 Sets the default charset for decoding C<multipartE<sol>form-data> forms,
 defaults to C<UTF-8>. Parameter and upload field names, upload filenames, and
 text parameter values that don't specify a charset will be decoded from this
-charset.
+charset. Set to an empty string to disable this decoding, effectively
+interpreting such values in C<ISO-8859-1>.
 
 =head3 set_input_handle
 
@@ -552,6 +553,46 @@ Decode an C<application/json> request body from UTF-8-encoded JSON.
 
 Note that this will read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
+
+=head3 body_parts
+
+  my $parts = $cgi->body_parts;
+
+Retrieve C<multipartE<sol>form-data> request body parts as an ordered array
+reference. Most applications should retrieve multipart form data through the
+L</"body_params"> and L</"uploads"> (and related) accessors instead.
+
+Body parts are represented as hash references containing:
+
+=over
+
+=item headers
+
+Hash reference of part headers. Header names are represented in lowercase.
+
+=item name
+
+Form field name from C<Content-Disposition> header, undecoded.
+
+=item filename
+
+Filename from C<Content-Disposition> header if present, undecoded.
+
+=item size
+
+Size of part contents in bytes.
+
+=item content
+
+Part contents as undecoded bytes, for parts without a defined C<filename>. File
+uploads are stored in a temporary C<file> instead.
+
+=item file
+
+L<File::Temp> object referencing temporary file containing the part contents,
+for parts with a defined C<filename>.
+
+=back
 
 =head3 uploads
 

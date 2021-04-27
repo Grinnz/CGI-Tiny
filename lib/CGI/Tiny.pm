@@ -298,21 +298,25 @@ sub _body_params {
       $default_charset = 'UTF-8' unless defined $default_charset;
       foreach my $part (@{$self->_body_multipart}) {
         next if defined $part->{filename};
-        my ($name, $value, $charset) = @$part{'name','content','charset'};
+        my ($name, $value, $headers) = @$part{'name','content','headers'};
         if (uc $default_charset eq 'UTF-8' and do { local $@; eval { require Unicode::UTF8; 1 } }) {
           $name = Unicode::UTF8::decode_utf8($name);
-        } else {
+        } elsif (length $default_charset) {
           require Encode;
           $name = Encode::decode($default_charset, "$name");
         }
-        $charset = $default_charset unless defined $charset;
-        my $content_type = $part->{headers}{content_type};
-        if (!defined $content_type or $content_type =~ m/^text\/plain\b/i) {
-          if (uc $charset eq 'UTF-8' and do { local $@; eval { require Unicode::UTF8; 1 } }) {
+        if (!defined $headers->{'content-type'} or $headers->{'content-type'} =~ m/^text\/plain\b/i) {
+          my $value_charset = $default_charset;
+          if (defined $headers->{'content-type'}) {
+            if (my ($charset_quoted, $charset_unquoted) = $headers->{'content-type'} =~ m/;\s*charset=(?:"([^"]+)"|([^";]+))/i) {
+              $value_charset = defined $charset_quoted ? $charset_quoted : $charset_unquoted;
+            }
+          }
+          if (uc $value_charset eq 'UTF-8' and do { local $@; eval { require Unicode::UTF8; 1 } }) {
             $value = Unicode::UTF8::decode_utf8($value);
-          } else {
+          } elsif (length $value_charset) {
             require Encode;
-            $value = Encode::decode($charset, "$value");
+            $value = Encode::decode($value_charset, "$value");
           }
         }
         push @ordered, [$name, $value];
@@ -334,6 +338,12 @@ sub body_json {
   return $self->{body_json};
 }
 
+sub body_parts {
+  my ($self) = @_;
+  return [] unless $ENV{CONTENT_TYPE} and $ENV{CONTENT_TYPE} =~ m/^multipart\/form-data\b/i;
+  return [map { +{%$_} } @{$self->_body_multipart}];
+}
+
 sub uploads      { [map { [@$_] } @{$_[0]->_body_uploads->{ordered}}] }
 sub upload_names { [keys %{$_[0]->_body_uploads->{keyed}}] }
 sub upload       { my $u = $_[0]->_body_uploads->{keyed}; exists $u->{$_[1]} ? $u->{$_[1]}[-1] : undef }
@@ -348,17 +358,22 @@ sub _body_uploads {
       $default_charset = 'UTF-8' unless defined $default_charset;
       foreach my $part (@{$self->_body_multipart}) {
         next unless defined $part->{filename};
-        my ($name, $filename, $file, $size) = @$part{'name','filename','file','filesize'};
+        my ($name, $filename, $file, $size, $headers) = @$part{'name','filename','file','size','headers'};
         if (uc $default_charset eq 'UTF-8' and do { local $@; eval { require Unicode::UTF8; 1 } }) {
           $name = Unicode::UTF8::decode_utf8($name);
           $filename = Unicode::UTF8::decode_utf8($filename);
-        } else {
+        } elsif (length $default_charset) {
           require Encode;
           $name = Encode::decode($default_charset, "$name");
           $filename = Encode::decode($default_charset, "$filename");
         }
-        my $upload = {filename => $filename, file => $file, size => $size};
-        $upload->{$_} = $part->{headers}{$_} for qw(content_disposition content_type);
+        my $upload = {
+          filename => $filename,
+          file     => $file,
+          size     => $size,
+          content_disposition => $headers->{'content-disposition'},
+          content_type        => $headers->{'content-type'},
+        };
         push @ordered, [$name, $upload];
         push @{$keyed{$name}}, $upload;
       }
@@ -428,9 +443,9 @@ sub _parse_multipart {
     if (!$state{started} and (my $pos = index $buffer, "\r\n--$boundary\r\n") >= 0) {
       substr $buffer, 0, $pos + length($boundary) + 6, '';
       $state{started} = 1;
-      push @parts, $state{part} = {headers => {}, content => ''};
+      push @parts, $state{part} = {headers => {}, name => undef, filename => undef, size => 0};
     }
-    next unless $state{started}; # start of multipart data not read yet
+    next unless $state{started}; # read more to find start of multipart data
 
     while (length $buffer) {
       if ($state{parsing_body}) {
@@ -454,23 +469,28 @@ sub _parse_multipart {
             require File::Temp;
             $state{part}{file} = File::Temp->new;
             binmode $state{part}{file};
-            $state{part}{filesize} = 0;
           }
           if (length $append) {
             $state{part}{file}->print($append);
-            $state{part}{filesize} += length $append;
+            $state{part}{size} += length $append;
           }
-          unless ($state{parsing_body}) { # done with part
+          unless ($state{parsing_body}) { # finalize temp file
             $state{part}{file}->flush;
             seek $state{part}{file}, 0, 0;
           }
         } else {
-          $state{part}{content} .= $append if length $append;
+          $state{part}{content} = '' unless defined $state{part}{content};
+          if (length $append) {
+            $state{part}{content} .= $append;
+            $state{part}{size} += length $append;
+          }
         }
 
         last READER if $state{done};         # end of multipart data
-        next READER if $state{parsing_body}; # end of part not read yet
-        push @parts, $state{part} = {headers => {}, content => ''}; # new part started
+        next READER if $state{parsing_body}; # read more to find end of part
+
+        # new part started
+        push @parts, $state{part} = {headers => {}, name => undef, filename => undef, size => 0};
       } else { # part headers
         while ((my $pos = index $buffer, "\r\n") >= 0) {
           if ($pos == 0) { # end of headers
@@ -484,22 +504,17 @@ sub _parse_multipart {
           return undef unless defined $value;
           $value =~ s/\s*\z//;
 
+          $state{part}{headers}{lc $name} = $value;
           if (lc $name eq 'content-disposition') {
-            $state{part}{headers}{content_disposition} = $value;
             if (my ($name_quoted, $name_unquoted) = $value =~ m/;\s*name\s*=\s*(?:"((?:\\"|[^";])*)"|([^";]*))/i) {
               $state{part}{name} = defined $name_quoted ? $name_quoted : $name_unquoted;
             }
             if (my ($filename_quoted, $filename_unquoted) = $value =~ m/;\s*filename\s*=\s*(?:"((?:\\"|[^"])*)"|([^";]*))/i) {
               $state{part}{filename} = defined $filename_quoted ? $filename_quoted : $filename_unquoted;
             }
-          } elsif (lc $name eq 'content-type') {
-            $state{part}{headers}{content_type} = $value;
-            if (my ($charset_quoted, $charset_unquoted) = $value =~ m/;\s*charset=(?:"([^"]+)"|([^";]+))/i) {
-              $state{part}{charset} = defined $charset_quoted ? $charset_quoted : $charset_unquoted;
-            }
           }
         }
-        next READER unless $state{parsing_body}; # end of headers not read yet
+        next READER unless $state{parsing_body}; # read more to find end of headers
       }
     }
   }
