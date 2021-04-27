@@ -770,6 +770,47 @@ EOB
   is $upload_snowman->{content_type}, 'text/plain;charset=UTF-8', 'right upload Content-Type';
 };
 
+subtest 'Empty multipart body' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  my $body_string = <<"EOB";
+preamble\r
+\r
+-------\r
+\r
+postamble\r
+EOB
+  local $ENV{CONTENT_TYPE} = 'multipart/form-data; boundary="---"';
+  local $ENV{CONTENT_LENGTH} = length $body_string;
+  open my $in_fh, '<', \$body_string or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my ($parts, $params, $param_names, $uploads, $upload_names);
+  cgi {
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $parts = $_->body_parts;
+    $params = $_->body_params;
+    $param_names = $_->body_param_names;
+    $uploads = $_->uploads;
+    $upload_names = $_->upload_names;
+    $_->render;
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  like $response->{status}, qr/^200\b/, '200 response status';
+  is_deeply $parts, [], 'no multipart body parts';
+  is_deeply $params, [], 'no multipart body params';
+  is_deeply $param_names, [], 'no multipart body param names';
+  is_deeply $uploads, [], 'no uploads';
+  is_deeply $upload_names, [], 'no upload names';
+};
+
 subtest 'Body JSON' => sub {
   local @ENV{@env_keys} = ('')x@env_keys;
   local $ENV{PATH_INFO} = '/';

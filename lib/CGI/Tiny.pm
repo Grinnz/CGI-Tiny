@@ -439,12 +439,18 @@ sub _parse_multipart {
       $length -= $read;
     }
 
-    if (!$state{started} and (my $pos = index $buffer, "\r\n--$boundary\r\n") >= 0) {
-      substr $buffer, 0, $pos + length($boundary) + 6, '';
-      $state{started} = 1;
-      push @parts, $state{part} = {headers => {}, name => undef, filename => undef, size => 0};
+    unless ($state{started}) {
+      if ((my $pos = index $buffer, "\r\n--$boundary\r\n") >= 0) {
+        substr $buffer, 0, $pos + length($boundary) + 6, '';
+        $state{started} = 1;
+        push @parts, $state{part} = {headers => {}, name => undef, filename => undef, size => 0};
+      } elsif ((index $buffer, "\r\n--$boundary--") >= 0) {
+        @state{'started','done'} = (1,1);
+        last; # end of multipart data
+      } else {
+        next; # read more to find start of multipart data
+      }
     }
-    next unless $state{started}; # read more to find start of multipart data
 
     while (length $buffer) {
       if ($state{parsing_body}) {
