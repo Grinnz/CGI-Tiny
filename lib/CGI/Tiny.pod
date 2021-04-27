@@ -496,7 +496,7 @@ Note that this will read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
 
 Not available after calling L</"body_params"> or L</"uploads"> (or related
-methods) on a C<multipartE<sol>form-data> request, since this type of request
+accessors) on a C<multipartE<sol>form-data> request, since this type of request
 body is not retained in memory after parsing.
 
 =head3 body_params
@@ -559,8 +559,8 @@ L</"set_request_body_limit"> can fit well within the available memory.
   my $parts = $cgi->body_parts;
 
 Retrieve C<multipartE<sol>form-data> request body parts as an ordered array
-reference. Most applications should retrieve multipart form data through the
-L</"body_params"> and L</"uploads"> (and related) accessors instead.
+reference. Most applications should retrieve multipart form data through
+L</"body_params"> and L</"uploads"> (or related accessors) instead.
 
 Body parts are represented as hash references containing:
 
