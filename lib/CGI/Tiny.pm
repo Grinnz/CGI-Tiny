@@ -441,15 +441,15 @@ sub _parse_multipart {
       $length -= $read;
     }
 
-    unless ($state{started}) {
+    unless ($state{parsing_headers} or $state{parsing_body}) {
       my $next_pos = index $buffer, $next_boundary;
       my $end_pos = index $buffer, $end_boundary;
       if ($next_pos >= 0 and ($end_pos < 0 or $end_pos > $next_pos)) {
         substr $buffer, 0, $next_pos + length($next_boundary), '';
-        $state{started} = 1;
+        $state{parsing_headers} = 1;
         push @parts, $state{part} = {headers => {}, name => undef, filename => undef, size => 0};
       } elsif ($end_pos >= 0) {
-        @state{'started','done'} = (1,1);
+        $state{done} = 1;
         last; # end of multipart data
       } else {
         next; # read more to find start of multipart data
@@ -457,7 +457,32 @@ sub _parse_multipart {
     }
 
     while (length $buffer) {
-      if ($state{parsing_body}) {
+      if ($state{parsing_headers}) {
+        while ((my $pos = index $buffer, "\r\n") >= 0) {
+          if ($pos == 0) { # end of headers
+            $state{parsing_headers} = 0;
+            $state{parsing_body} = 1;
+            $state{parsed_optional_crlf} = 0;
+            last;
+          }
+
+          my $header = substr $buffer, 0, $pos + 2, '';
+          my ($name, $value) = split /\s*:\s*/, $header, 2;
+          return undef unless defined $value;
+          $value =~ s/\s*\z//;
+
+          $state{part}{headers}{lc $name} = $value;
+          if (lc $name eq 'content-disposition') {
+            if (my ($name_quoted, $name_unquoted) = $value =~ m/;\s*name\s*=\s*(?:"((?:\\"|[^";])*)"|([^";]*))/i) {
+              $state{part}{name} = defined $name_quoted ? $name_quoted : $name_unquoted;
+            }
+            if (my ($filename_quoted, $filename_unquoted) = $value =~ m/;\s*filename\s*=\s*(?:"((?:\\"|[^"])*)"|([^";]*))/i) {
+              $state{part}{filename} = defined $filename_quoted ? $filename_quoted : $filename_unquoted;
+            }
+          }
+        }
+        next READER if $state{parsing_headers}; # read more to find end of headers
+      } else {
         my $append = '';
         my $next_pos = index $buffer, $next_boundary;
         my $end_pos = index $buffer, $end_boundary;
@@ -470,6 +495,7 @@ sub _parse_multipart {
           $append = substr $buffer, 0, $next_pos, '';
           substr $buffer, 0, length($next_boundary), '';
           $state{parsing_body} = 0;
+          $state{parsing_headers} = 1;
         } elsif ($end_pos >= 0) {
           if (!$state{parsed_optional_crlf} and $end_pos >= 2) {
             substr $buffer, 0, 2, '';
@@ -515,30 +541,6 @@ sub _parse_multipart {
 
         # new part started
         push @parts, $state{part} = {headers => {}, name => undef, filename => undef, size => 0};
-      } else { # part headers
-        while ((my $pos = index $buffer, "\r\n") >= 0) {
-          if ($pos == 0) { # end of headers
-            $state{parsing_body} = 1;
-            $state{parsed_optional_crlf} = 0;
-            last;
-          }
-
-          my $header = substr $buffer, 0, $pos + 2, '';
-          my ($name, $value) = split /\s*:\s*/, $header, 2;
-          return undef unless defined $value;
-          $value =~ s/\s*\z//;
-
-          $state{part}{headers}{lc $name} = $value;
-          if (lc $name eq 'content-disposition') {
-            if (my ($name_quoted, $name_unquoted) = $value =~ m/;\s*name\s*=\s*(?:"((?:\\"|[^";])*)"|([^";]*))/i) {
-              $state{part}{name} = defined $name_quoted ? $name_quoted : $name_unquoted;
-            }
-            if (my ($filename_quoted, $filename_unquoted) = $value =~ m/;\s*filename\s*=\s*(?:"((?:\\"|[^"])*)"|([^";]*))/i) {
-              $state{part}{filename} = defined $filename_quoted ? $filename_quoted : $filename_unquoted;
-            }
-          }
-        }
-        next READER unless $state{parsing_body}; # read more to find end of headers
       }
     }
   }
