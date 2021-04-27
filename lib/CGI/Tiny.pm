@@ -427,6 +427,8 @@ sub _body_multipart {
 sub _parse_multipart {
   my ($input, $length, $boundary, $buffer_size) = @_;
   my $buffer = "\r\n";
+  my $next_boundary = "\r\n--$boundary\r\n";
+  my $end_boundary = "\r\n--$boundary--";
   my (%state, @parts);
   READER: while ($length > 0) {
     if (ref $input eq 'SCALAR') {
@@ -440,11 +442,13 @@ sub _parse_multipart {
     }
 
     unless ($state{started}) {
-      if ((my $pos = index $buffer, "\r\n--$boundary\r\n") >= 0) {
-        substr $buffer, 0, $pos + length($boundary) + 6, '';
+      my $next_pos = index $buffer, $next_boundary;
+      my $end_pos = index $buffer, $end_boundary;
+      if ($next_pos >= 0 and ($end_pos < 0 or $end_pos > $next_pos)) {
+        substr $buffer, 0, $next_pos + length($next_boundary), '';
         $state{started} = 1;
         push @parts, $state{part} = {headers => {}, name => undef, filename => undef, size => 0};
-      } elsif ((index $buffer, "\r\n--$boundary--") >= 0) {
+      } elsif ($end_pos >= 0) {
         @state{'started','done'} = (1,1);
         last; # end of multipart data
       } else {
@@ -455,17 +459,32 @@ sub _parse_multipart {
     while (length $buffer) {
       if ($state{parsing_body}) {
         my $append = '';
-        my $pos;
-        if (($pos = index $buffer, "\r\n--$boundary\r\n") >= 0) {
-          $append = substr $buffer, 0, $pos, '';
-          substr $buffer, 0, length($boundary) + 6, '';
+        my $next_pos = index $buffer, $next_boundary;
+        my $end_pos = index $buffer, $end_boundary;
+        if ($next_pos >= 0 and ($end_pos < 0 or $end_pos > $next_pos)) {
+          if (!$state{parsed_optional_crlf} and $next_pos >= 2) {
+            substr $buffer, 0, 2, '';
+            $next_pos -= 2;
+            $state{parsed_optional_crlf} = 1;
+          }
+          $append = substr $buffer, 0, $next_pos, '';
+          substr $buffer, 0, length($next_boundary), '';
           $state{parsing_body} = 0;
-        } elsif (($pos = index $buffer, "\r\n--$boundary--") >= 0) {
-          $append = substr $buffer, 0, $pos; # no replacement, we're done here
+        } elsif ($end_pos >= 0) {
+          if (!$state{parsed_optional_crlf} and $end_pos >= 2) {
+            substr $buffer, 0, 2, '';
+            $end_pos -= 2;
+            $state{parsed_optional_crlf} = 1;
+          }
+          $append = substr $buffer, 0, $end_pos; # no replacement, we're done here
           $state{parsing_body} = 0;
           $state{done} = 1;
-        } elsif (length($buffer) > length($boundary) + 6) {
-          $append = substr $buffer, 0, length($buffer) - length($boundary) - 6, '';
+        } elsif (length($buffer) > length($next_boundary) + 2) {
+          if (!$state{parsed_optional_crlf}) {
+            substr $buffer, 0, 2, '';
+            $state{parsed_optional_crlf} = 1;
+          }
+          $append = substr $buffer, 0, length($buffer) - length($next_boundary), '';
         }
 
         if (defined $state{part}{filename}) {
@@ -499,8 +518,8 @@ sub _parse_multipart {
       } else { # part headers
         while ((my $pos = index $buffer, "\r\n") >= 0) {
           if ($pos == 0) { # end of headers
-            substr $buffer, 0, 2, '';
             $state{parsing_body} = 1;
+            $state{parsed_optional_crlf} = 0;
             last;
           }
 

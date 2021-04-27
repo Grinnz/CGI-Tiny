@@ -610,6 +610,9 @@ Content-Disposition: form-data; name="newline"\r
 --delimiter\r
 Content-Disposition: form-data; name="empty"\r
 \r
+--delimiter\r
+Content-Disposition: form-data; name="empty"\r
+\r
 \r
 --delimiter\r
 Content-Disposition: form-data; name="file"; filename="test.dat"\r
@@ -675,6 +678,8 @@ EOB
       name => 'newline', filename => undef, size => 1, content => "\n"},
     {headers => {'content-disposition' => 'form-data; name="empty"'},
       name => 'empty', filename => undef, size => 0, content => ''},
+    {headers => {'content-disposition' => 'form-data; name="empty"'},
+      name => 'empty', filename => undef, size => 0, content => ''},
     {headers => {'content-disposition' => 'form-data; name="file"; filename="test.dat"', 'content-type' => 'application/octet-stream'},
       name => 'file', filename => 'test.dat', size => 18, file_contents => "00000000\n11111111\0"},
     {headers => {'content-disposition' => 'form-data; name="file"; filename="test2.dat"', 'content-type' => 'application/json'},
@@ -683,7 +688,7 @@ EOB
       name => 'snowman', filename => 'snowman.txt', size => length($utf16le_snowman), file_contents => $utf16le_snowman},
   ], 'right multipart body parts';
 
-  is_deeply $params, [['snowman', '☃!'], ['snowman', "☃...\n"], ['newline', "\n"], ['empty', '']], 'right multipart body params';
+  is_deeply $params, [['snowman', '☃!'], ['snowman', "☃...\n"], ['newline', "\n"], ['empty', ''], ['empty', '']], 'right multipart body params';
   is_deeply [sort @$param_names], [sort 'snowman', 'newline', 'empty'], 'right multipart body param names';
   is $param_snowman, "☃...\n", 'right multipart body param value';
   is_deeply $param_snowman_array, ['☃!', "☃...\n"], 'right multipart body param values';
@@ -782,6 +787,11 @@ preamble\r
 -------\r
 \r
 postamble\r
+-----\r
+Content-Disposition: should-be-ignored\r
+\r
+\r
+-------\r
 EOB
   local $ENV{CONTENT_TYPE} = 'multipart/form-data; boundary="---"';
   local $ENV{CONTENT_LENGTH} = length $body_string;
@@ -809,6 +819,72 @@ EOB
   is_deeply $param_names, [], 'no multipart body param names';
   is_deeply $uploads, [], 'no uploads';
   is_deeply $upload_names, [], 'no upload names';
+};
+
+subtest 'Malformed multipart body' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  my $body_string = <<"EOB";
+--fribble\r
+not a header\r
+\r
+--fribble--\r
+EOB
+  local $ENV{CONTENT_TYPE} = 'multipart/form-data; boundary="fribble"';
+  local $ENV{CONTENT_LENGTH} = length $body_string;
+  open my $in_fh, '<', \$body_string or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my $error;
+  cgi {
+    $_->set_error_handler(sub { $error = $_[1] });
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->body_parts;
+    $_->render;
+  };
+
+  ok defined($error), 'error logged';
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  like $response->{status}, qr/^400\b/, '400 response status';
+};
+
+subtest 'Unterminated multipart body' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  my $body_string = <<"EOB";
+--fribble\r
+\r
+\r
+--fribble\r
+EOB
+  local $ENV{CONTENT_TYPE} = 'multipart/form-data; boundary="fribble"';
+  local $ENV{CONTENT_LENGTH} = length $body_string;
+  open my $in_fh, '<', \$body_string or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my $error;
+  cgi {
+    $_->set_error_handler(sub { $error = $_[1] });
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->body_parts;
+    $_->render;
+  };
+
+  ok defined($error), 'error logged';
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  like $response->{status}, qr/^400\b/, '400 response status';
 };
 
 subtest 'Body JSON' => sub {
