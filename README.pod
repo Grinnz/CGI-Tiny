@@ -605,7 +605,7 @@ decoded to Unicode characters.
 Note that this will read the text form fields into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
 
-File uploads are returned as a hash reference containing the following keys:
+File uploads are represented as a hash reference containing the following keys:
 
 =over
 
@@ -648,7 +648,7 @@ Retrieve a named C<multipartE<sol>form-data> file upload. If the upload name
 was passed multiple times, returns the last value. Use L</"upload_array">
 to get multiple uploads with the same name.
 
-See L</"uploads"> for details on the format of the returned upload.
+See L</"uploads"> for details on the representation of the upload.
 
 Note that this will read the text form fields into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
@@ -660,7 +660,7 @@ L</"set_request_body_limit"> can fit well within the available memory.
 Retrieve all C<multipartE<sol>form-data> file uploads of the specified name as
 an ordered array reference.
 
-See L</"uploads"> for details on the format of the returned uploads.
+See L</"uploads"> for details on the representation of the uploads.
 
 Note that this will read the text form fields into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
@@ -912,21 +912,22 @@ L</"set_error_handler">.
 Request query and body parameter accessors in CGI::Tiny are not context
 sensitive, as context sensitivity can lead to surprising behavior and
 L<vulnerabilities|https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-1572>.
-L</"query_param"> and L</"body_param"> always return a single value, and
-L</"query_param_array"> and L</"body_param_array"> must be used to retrieve
-multi-value parameters.
+L</"query_param">, L</"body_param">, and L</"upload"> always return a single
+value; L</"query_param_array">, L</"body_param_array">, and L</"upload_array">
+must be used to retrieve multi-value parameters.
 
 =item *
 
-CGI::Tiny does not have a method-sensitive C<param> accessor; query or body
-parameters must be accessed specifically. Uploaded files and their metadata are
-accessed with L</"upload"> and do not affect the text parameter accessors.
+CGI::Tiny does not have a method-sensitive C<param> accessor; query and body
+request parameters are accessed with L</"query_param"> and L</"body_param">
+respectively. Uploaded files and their metadata are accessed with L</"upload">
+and do not affect the text parameter accessors.
 
 =item *
 
-CGI::Tiny decodes request query and body parameters from UTF-8 to Unicode
-characters automatically, and L</"render"> provides methods to encode response
-data from Unicode characters to UTF-8 by default.
+CGI::Tiny decodes request query and body parameters to Unicode characters
+automatically, and L</"render"> provides methods to encode response data from
+Unicode characters to UTF-8 by default.
 
 =item *
 
