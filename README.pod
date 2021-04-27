@@ -495,9 +495,9 @@ Retrieve the request body as bytes.
 Note that this will read the whole request body into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
 
-Not available after calling L</"body_params"> or L</"uploads"> (or related
-accessors) on a C<multipartE<sol>form-data> request, since this type of request
-body is not retained in memory after parsing.
+Not available after calling L</"body_parts">, L</"body_params">, or
+L</"uploads"> (or related accessors) on a C<multipartE<sol>form-data> request,
+since this type of request body is not retained in memory after parsing.
 
 =head3 body_params
 
