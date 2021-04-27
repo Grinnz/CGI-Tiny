@@ -357,8 +357,8 @@ sub _body_uploads {
           $name = Encode::decode($default_charset, "$name");
           $filename = Encode::decode($default_charset, "$filename");
         }
-        my $content_type = $part->{headers}{content_type};
-        my $upload = {content_type => $content_type, filename => $filename, file => $file, size => $size};
+        my $upload = {filename => $filename, file => $file, size => $size};
+        $upload->{$_} = $part->{headers}{$_} for qw(content_disposition content_type);
         push @ordered, [$name, $upload];
         push @{$keyed{$name}}, $upload;
       }
@@ -497,8 +497,6 @@ sub _parse_multipart {
             if (my ($charset_quoted, $charset_unquoted) = $value =~ m/;\s*charset=(?:"([^"]+)"|([^";]+))/i) {
               $state{part}{charset} = defined $charset_quoted ? $charset_quoted : $charset_unquoted;
             }
-          } elsif (lc $name eq 'content-transfer-encoding') {
-            $state{part}{headers}{content_transfer_encoding} = $value;
           }
         }
         next READER unless $state{parsing_body}; # end of headers not read yet

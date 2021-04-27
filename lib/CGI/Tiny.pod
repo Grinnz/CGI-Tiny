@@ -583,6 +583,11 @@ with the C<seek> pointer at the start of the file for reading.
 
 File size in bytes.
 
+=item content_disposition
+
+C<Content-Disposition> of uploaded file including encoded field name and
+filename.
+
 =item content_type
 
 C<Content-Type> of uploaded file, undef if unspecified.
