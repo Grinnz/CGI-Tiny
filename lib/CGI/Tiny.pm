@@ -306,9 +306,7 @@ sub _body_params {
       foreach my $part (@{$self->_body_multipart}) {
         next if defined $part->{filename};
         my ($name, $value, $headers) = @$part{'name','content','headers'};
-        if (uc $default_charset eq 'UTF-8' and do { local $@; eval { require Unicode::UTF8; 1 } }) {
-          $name = Unicode::UTF8::decode_utf8($name);
-        } elsif (length $default_charset) {
+        if (length $default_charset) {
           require Encode;
           $name = Encode::decode($default_charset, "$name");
         }
@@ -320,9 +318,7 @@ sub _body_params {
               $value_charset = defined $charset_quoted ? $charset_quoted : $charset_unquoted;
             }
           }
-          if (uc $value_charset eq 'UTF-8' and do { local $@; eval { require Unicode::UTF8; 1 } }) {
-            $value = Unicode::UTF8::decode_utf8($value);
-          } elsif (length $value_charset) {
+          if (length $value_charset) {
             require Encode;
             $value = Encode::decode($value_charset, "$value");
           }
@@ -368,10 +364,7 @@ sub _body_uploads {
       foreach my $part (@{$self->_body_multipart}) {
         next unless defined $part->{filename};
         my ($name, $filename, $file, $size, $headers) = @$part{'name','filename','file','size','headers'};
-        if (uc $default_charset eq 'UTF-8' and do { local $@; eval { require Unicode::UTF8; 1 } }) {
-          $name = Unicode::UTF8::decode_utf8($name);
-          $filename = Unicode::UTF8::decode_utf8($filename);
-        } elsif (length $default_charset) {
+        if (length $default_charset) {
           require Encode;
           $name = Encode::decode($default_charset, "$name");
           $filename = Encode::decode($default_charset, "$filename");
@@ -425,11 +418,13 @@ sub _body_multipart {
       $input = defined $self->{input_handle} ? $self->{input_handle} : *STDIN;
       binmode $input;
     }
-    my $parts = _parse_multipart($input, $length, $boundary, $self->{request_body_buffer});
+
+    my $parts = _parse_multipart($input, $length, $boundary, $self->{request_body_buffer} || $ENV{CGI_TINY_REQUEST_BODY_BUFFER});
     unless (defined $parts) {
       $self->{response_status} = "400 $HTTP_STATUS{400}" unless $self->{headers_rendered};
       die "Malformed multipart/form-data request\n";
     }
+
     $self->{body_parts} = $parts;
   }
   return $self->{body_parts};
@@ -579,12 +574,11 @@ sub headers_rendered { $_[0]{headers_rendered} }
         my $value = 'attachment';
         if (defined $filename and length $filename) {
           require Encode;
-          my $quoted_filename = Encode::encode('ISO-8859-1', $filename);
+          my $quoted_filename = Encode::encode('ISO-8859-1', "$filename");
           $quoted_filename =~ tr/\r\n/  /;
           $quoted_filename =~ s/([\\"])/\\$1/g;
           $value .= "; filename=\"$quoted_filename\"";
-          my $ext_filename = $filename;
-          utf8::encode $ext_filename;
+          my $ext_filename = Encode::encode('UTF-8', "$filename");
           $ext_filename =~ s/([^a-zA-Z0-9!#\$&+\-.^_`|~])/sprintf '%%%02X', ord $1/ge;
           $value .= "; filename*=UTF-8''$ext_filename";
         }
@@ -665,7 +659,7 @@ sub _parse_multipart {
       $buffer .= $$input;
       $length = 0;
     } else {
-      my $chunk = $buffer_size || $ENV{CGI_TINY_REQUEST_BODY_BUFFER} || DEFAULT_REQUEST_BODY_BUFFER;
+      my $chunk = $buffer_size || DEFAULT_REQUEST_BODY_BUFFER;
       $chunk = $length if $length < $chunk;
       last unless my $read = read $input, $buffer, $chunk, length $buffer;
       $length -= $read;
