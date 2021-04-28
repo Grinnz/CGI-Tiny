@@ -997,19 +997,19 @@ does not reimplement the HTML generation helpers.
 =item *
 
 L<CGI::Thin> is ancient and only implements parsing of request query or body
-parameters, without decoding them from UTF-8 bytes.
+parameters, without decoding them to Unicode characters.
 
 =item *
 
 L<CGI::Minimal> has context-sensitive parameter accessors, and only implements
-parsing of request query/body parameters (without decoding them from UTF-8
-bytes) and uploads.
+parsing of request query/body parameters (without decoding them to Unicode
+characters) and uploads.
 
 =item *
 
 L<CGI::Lite> has context-sensitive parameter accessors, and only implements
-parsing of request query/body parameters (without decoding them from UTF-8
-bytes), uploads, and cookies.
+parsing of request query/body parameters (without decoding them to Unicode
+characters), uploads, and cookies.
 
 =item *
 
