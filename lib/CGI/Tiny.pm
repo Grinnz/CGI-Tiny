@@ -475,7 +475,7 @@ sub set_response_content_type {
 
 sub set_response_charset {
   my ($self, $charset) = @_;
-  Carp::croak "Space characters not allowed in HTTP response charset" if $charset =~ m/\s/;
+  Carp::croak "Invalid characters in HTTP response charset" if $charset =~ m/[^a-zA-Z0-9!#\$%&'*+\-.^_`|~]/;
   $self->{response_charset} = $charset;
   return $self;
 }
