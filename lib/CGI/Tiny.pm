@@ -200,18 +200,19 @@ sub server_software   { defined $ENV{SERVER_SOFTWARE} ? $ENV{SERVER_SOFTWARE} : 
 *query = \&query_string;
 
 sub query_params      { [map { [@$_] } @{$_[0]->_query_params->{ordered}}] }
-sub query_param_names { [keys %{$_[0]->_query_params->{keyed}}] }
+sub query_param_names { [@{$_[0]->_query_params->{names}}] }
 sub query_param       { my $p = $_[0]->_query_params->{keyed}; exists $p->{$_[1]} ? $p->{$_[1]}[-1] : undef }
 sub query_param_array { my $p = $_[0]->_query_params->{keyed}; exists $p->{$_[1]} ? [@{$p->{$_[1]}}] : [] }
 
 sub _query_params {
   my ($self) = @_;
   unless (exists $self->{query_params}) {
-    $self->{query_params} = {ordered => \my @ordered, keyed => \my %keyed};
+    $self->{query_params} = {names => \my @names, ordered => \my @ordered, keyed => \my %keyed};
     foreach my $pair (split /[&;]/, $self->query) {
       my ($name, $value) = split /=/, $pair, 2;
       $value = '' unless defined $value;
       do { tr/+/ /; s/%([0-9a-fA-F]{2})/chr hex $1/ge; utf8::decode $_ } for $name, $value;
+      push @names, $name unless exists $keyed{$name};
       push @ordered, [$name, $value];
       push @{$keyed{$name}}, $value;
     }
@@ -237,24 +238,24 @@ sub headers {
 sub header { (my $name = $_[1]) =~ tr/-/_/; $ENV{"HTTP_\U$name"} }
 
 sub cookies      { [map { [@$_] } @{$_[0]->_cookies->{ordered}}] }
-sub cookie_names { [keys %{$_[0]->_cookies->{keyed}}] }
+sub cookie_names { [@{$_[0]->_cookies->{names}}] }
 sub cookie       { my $c = $_[0]->_cookies->{keyed}; exists $c->{$_[1]} ? $c->{$_[1]}[-1] : undef }
 sub cookie_array { my $c = $_[0]->_cookies->{keyed}; exists $c->{$_[1]} ? [@{$c->{$_[1]}}] : [] }
 
 sub _cookies {
   my ($self) = @_;
   unless (exists $self->{request_cookies}) {
-    my (@ordered, %keyed);
+    $self->{request_cookies} = {names => \my @names, ordered => \my @ordered, keyed => \my %keyed};
     if (defined $ENV{HTTP_COOKIE}) {
       foreach my $pair (split /\s*;\s*/, $ENV{HTTP_COOKIE}) {
         next unless length $pair;
         my ($name, $value) = split /=/, $pair, 2;
         next unless defined $value;
+        push @names, $name unless exists $keyed{$name};
         push @ordered, [$name, $value];
         push @{$keyed{$name}}, $value;
       }
     }
-    $self->{request_cookies} = {ordered => \@ordered, keyed => \%keyed};
   }
   return $self->{request_cookies};
 }
@@ -277,19 +278,20 @@ sub body {
 }
 
 sub body_params      { [map { [@$_] } @{$_[0]->_body_params->{ordered}}] }
-sub body_param_names { [keys %{$_[0]->_body_params->{keyed}}] }
+sub body_param_names { [@{$_[0]->_body_params->{names}}] }
 sub body_param       { my $p = $_[0]->_body_params->{keyed}; exists $p->{$_[1]} ? $p->{$_[1]}[-1] : undef }
 sub body_param_array { my $p = $_[0]->_body_params->{keyed}; exists $p->{$_[1]} ? [@{$p->{$_[1]}}] : [] }
 
 sub _body_params {
   my ($self) = @_;
   unless (exists $self->{body_params}) {
-    $self->{body_params} = {ordered => \my @ordered, keyed => \my %keyed};
+    $self->{body_params} = {names => \my @names, ordered => \my @ordered, keyed => \my %keyed};
     if ($ENV{CONTENT_TYPE} and $ENV{CONTENT_TYPE} =~ m/^application\/x-www-form-urlencoded\b/i) {
       foreach my $pair (split /&/, $self->body) {
         my ($name, $value) = split /=/, $pair, 2;
         $value = '' unless defined $value;
         do { tr/+/ /; s/%([0-9a-fA-F]{2})/chr hex $1/ge; utf8::decode $_ } for $name, $value;
+        push @names, $name unless exists $keyed{$name};
         push @ordered, [$name, $value];
         push @{$keyed{$name}}, $value;
       }
@@ -319,6 +321,7 @@ sub _body_params {
             $value = Encode::decode($value_charset, "$value");
           }
         }
+        push @names, $name unless exists $keyed{$name};
         push @ordered, [$name, $value];
         push @{$keyed{$name}}, $value;
       }
@@ -345,14 +348,14 @@ sub body_parts {
 }
 
 sub uploads      { [map { [@$_] } @{$_[0]->_body_uploads->{ordered}}] }
-sub upload_names { [keys %{$_[0]->_body_uploads->{keyed}}] }
+sub upload_names { [@{$_[0]->_body_uploads->{names}}] }
 sub upload       { my $u = $_[0]->_body_uploads->{keyed}; exists $u->{$_[1]} ? $u->{$_[1]}[-1] : undef }
 sub upload_array { my $u = $_[0]->_body_uploads->{keyed}; exists $u->{$_[1]} ? [@{$u->{$_[1]}}] : [] }
 
 sub _body_uploads {
   my ($self) = @_;
   unless (exists $self->{body_uploads}) {
-    $self->{body_uploads} = {ordered => \my @ordered, keyed => \my %keyed};
+    $self->{body_uploads} = {names => \my @names, ordered => \my @ordered, keyed => \my %keyed};
     if ($ENV{CONTENT_TYPE} and $ENV{CONTENT_TYPE} =~ m/^multipart\/form-data\b/i) {
       my $default_charset = $self->{multipart_form_charset};
       $default_charset = 'UTF-8' unless defined $default_charset;
@@ -373,6 +376,7 @@ sub _body_uploads {
           size         => $size,
           content_type => $headers->{'content-type'},
         };
+        push @names, $name unless exists $keyed{$name};
         push @ordered, [$name, $upload];
         push @{$keyed{$name}}, $upload;
       }

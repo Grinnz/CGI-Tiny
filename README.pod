@@ -435,7 +435,7 @@ are decoded to Unicode characters.
   my $arrayref = $cgi->query_param_names;
 
 Retrieve URL query string parameter names, decoded to Unicode characters, as an
-unsorted array reference.
+ordered array reference.
 
 =head3 query_param
 
@@ -478,7 +478,7 @@ represented as two-element array references.
 
   my $arrayref = $cgi->cookie_names;
 
-Retrieve request cookie names as an unsorted array reference.
+Retrieve request cookie names as an ordered array reference.
 
 =head3 cookie
 
@@ -525,7 +525,7 @@ L</"set_request_body_limit"> can fit well within the available memory.
 
 Retrieve C<applicationE<sol>x-www-form-urlencoded> or
 C<multipartE<sol>form-data> body parameter names, decoded to Unicode
-characters, as an unsorted array reference.
+characters, as an ordered array reference.
 
 Note that this will read the text form fields into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
@@ -643,7 +643,7 @@ with the C<seek> pointer at the start of the file for reading.
   my $arrayref = $cgi->upload_names;
 
 Retrieve C<multipartE<sol>form-data> file upload names, decoded to Unicode
-characters, as an unsorted array reference.
+characters, as an ordered array reference.
 
 Note that this will read the text form fields into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.

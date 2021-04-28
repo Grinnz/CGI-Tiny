@@ -572,7 +572,7 @@ subtest 'Query parameters' => sub {
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   like $response->{status}, qr/^200\b/, '200 response status';
   is_deeply $params, \@query_pairs, 'right query pairs';
-  is_deeply [sort @$param_names], [sort 'c', 'b', '☃'], 'right query param names';
+  is_deeply $param_names, ['c', 'b', '☃'], 'right query param names';
   is $param_snowman, '%', 'right query param value';
   is_deeply $param_c_array, [42, 'foo'], 'right query param values array';
 };
@@ -606,7 +606,7 @@ subtest 'Body parameters' => sub {
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   like $response->{status}, qr/^200\b/, '200 response status';
   is_deeply $params, \@body_pairs, 'right body pairs';
-  is_deeply [sort @$param_names], [sort 'c', 'b', '☃'], 'right body param names';
+  is_deeply $param_names, ['c', 'b', '☃'], 'right body param names';
   is $param_snowman, '%', 'right body param value';
   is_deeply $param_c_array, [42, 'foo'], 'right body param values array';
 };
@@ -717,7 +717,7 @@ EOB
   ], 'right multipart body parts';
 
   is_deeply $params, [['snowman', '☃!'], ['snowman', "☃...\n"], ['newline', "\n"], ['empty', ''], ['empty', '']], 'right multipart body params';
-  is_deeply [sort @$param_names], [sort 'snowman', 'newline', 'empty'], 'right multipart body param names';
+  is_deeply $param_names, ['snowman', 'newline', 'empty'], 'right multipart body param names';
   is $param_snowman, "☃...\n", 'right multipart body param value';
   is_deeply $param_snowman_array, ['☃!', "☃...\n"], 'right multipart body param values';
   is $uploads->[-1][0], 'snowman', 'right upload name';
@@ -727,7 +727,7 @@ EOB
   is $upload_snowman->{size}, length $utf16le_snowman, 'right upload size';
   is $upload_snowman->{content_type}, 'text/plain;charset=UTF-16LE', 'right upload Content-Type';
   is do { local $/; seek $upload_snowman->{file}, 0, 0; scalar readline $upload_snowman->{file} }, $utf16le_snowman, 'right upload contents';
-  is_deeply [sort @$upload_names], [sort 'file', 'snowman'], 'right upload names';
+  is_deeply $upload_names, ['file', 'snowman'], 'right upload names';
   is $upload_file->{filename}, 'test2.dat', 'right upload filename';
   is $upload_file->{content_type}, 'application/json', 'right upload Content-Type';
   is $upload_file_array->[0]{filename}, 'test.dat', 'right upload filename';
@@ -1039,7 +1039,7 @@ subtest 'Cookies' => sub {
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   like $response->{status}, qr/^200\b/, '200 response status';
   is_deeply $cookies, [['a', 'b'], ['c', 42], ['x', ''], ['a', 'c']], 'right cookies';
-  is_deeply [sort @$cookie_names], [sort 'a', 'c', 'x'], 'right cookie names';
+  is_deeply $cookie_names, ['a', 'c', 'x'], 'right cookie names';
   is $a_cookie, 'c', 'right cookie value';
   is_deeply $a_cookies, ['b', 'c'], 'right cookie values';
   ok !defined $b_cookie, 'no cookie value';
