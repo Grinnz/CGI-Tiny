@@ -390,6 +390,40 @@ subtest 'File response' => sub {
   is $response->{body}, $data, 'right response body';
 };
 
+subtest 'File response (download)' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my $data = "\x01\x02\x03\x04\r\n\xFF";
+  my $tempdir = File::Temp->newdir;
+  my $filepath = "$tempdir/test.dat";
+  open my $fh, '>', $filepath or die "Failed to open $filepath for writing: $!";
+  binmode $fh;
+  print $fh $data;
+  close $fh;
+
+  my $filename = '"test☃".dat';
+  cgi {
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->set_response_download($filename);
+    $_->render(file => $filepath);
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  is $response->{headers}{'content-type'}, 'application/octet-stream', 'right content type';
+  is $response->{headers}{'content-disposition'}, 'attachment; filename="\"test?\".dat"; filename*=UTF-8\'\'%22test%E2%98%83%22.dat', 'right content disposition';
+  like $response->{status}, qr/^200\b/, '200 response status';
+  is $response->{body}, $data, 'right response body';
+};
+
 subtest 'Filehandle response' => sub {
   local @ENV{@env_keys} = ('')x@env_keys;
   local $ENV{PATH_INFO} = '/';

@@ -29,6 +29,7 @@ CGI::Tiny - Common Gateway Interface, with no frills
         }
       }
     });
+
     my $method = $cgi->method;
     my $fribble;
     if ($method eq 'GET') {
@@ -40,6 +41,10 @@ CGI::Tiny - Common Gateway Interface, with no frills
       exit;
     }
     die "Invalid fribble parameter" unless length $fribble;
+
+    if ($cgi->query_param('download')) {
+      $cgi->set_response_download('fribble.json');
+    }
     $cgi->render(json => {fribble => $fribble});
   };
 
@@ -159,6 +164,41 @@ CGI::Tiny has built in support for parsing and rendering JSON content with
 L<JSON::PP>. CGI scripts that deal with JSON content will greatly benefit from
 installing L<Cpanel::JSON::XS> version C<4.09> or newer for efficient encoding
 and decoding, which will be used automatically if available.
+
+=head2 Files
+
+Modules like L<Path::Tiny> and L<MIME::Types> can help with file responses. Be
+aware that Perl and some operating systems work with filenames in encoded
+bytes, so non-ASCII filenames make things trickier.
+
+  #!/usr/bin/perl
+  use strict;
+  use warnings;
+  use utf8;
+  use CGI::Tiny;
+  use Path::Tiny;
+  use MIME::Types;
+
+  cgi {
+    my $cgi = $_;
+    my $filename = $cgi->query_param('filename');
+    # get files from public/ next to cgi-bin/
+    my $public_dir = path(__FILE__)->realpath->parent->sibling('public');
+    my $filepath = $public_dir->child($filename);
+    # ensure file exists, is readable, and is not a directory
+    unless (-r $filepath and !-d _) {
+      $cgi->set_response_status(404)->render(text => 'Not Found');
+      exit;
+    }
+    # ensure file path doesn't escape the public/ directory
+    unless ($public_dir->subsumes($filepath->realpath)) {
+      $cgi->set_response_status(404)->render(text => 'Not Found');
+      exit;
+    }
+    my $mime = MIME::Types->new->mimeTypeOf($filepath->basename);
+    $cgi->set_response_content_type($mime->type) if defined $mime;
+    $cgi->set_response_download($filepath->basename)->render(file => $filepath);
+  };
 
 =head2 Templating
 
@@ -723,6 +763,15 @@ L</"render">. No effect after response headers have been rendered.
 
 Set charset to use when rendering C<text>, C<html>, or C<xml> response data,
 defaults to C<UTF-8>.
+
+=head3 set_response_download
+
+  $cgi = $cgi->set_response_download;
+  $cgi = $cgi->set_response_download($filename);
+
+Sets the response C<Content-Disposition> header to indicate to the client that
+the response is a file download, with an optional filename specified in Unicode
+characters. No effect after response headers have been rendered.
 
 =head3 add_response_header
 
