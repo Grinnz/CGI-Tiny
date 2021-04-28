@@ -578,7 +578,7 @@ sub headers_rendered { $_[0]{headers_rendered} }
         if (defined $filename and length $filename) {
           require Encode;
           my $quoted_filename = Encode::encode('ISO-8859-1', $filename);
-          $quoted_filename =~ tr/\r\n//d;
+          $quoted_filename =~ tr/\r\n/  /;
           $quoted_filename =~ s/([\\"])/\\$1/g;
           $value .= "; filename=\"$quoted_filename\"";
           my $ext_filename = $filename;
