@@ -10,7 +10,8 @@ use Exporter 'import';
 our $VERSION = '0.009';
 
 use constant DEFAULT_REQUEST_BODY_LIMIT => 16777216;
-use constant DEFAULT_REQUEST_BODY_BUFFER => 131072;
+use constant DEFAULT_REQUEST_BODY_BUFFER => 262144;
+use constant DEFAULT_RESPONSE_BODY_BUFFER => 131072;
 
 our @EXPORT = 'cgi';
 
@@ -442,6 +443,8 @@ sub set_nph {
   return $self;
 }
 
+sub set_response_body_buffer { $_[0]{response_body_buffer} = $_[1]; $_[0] }
+
 sub set_response_status {
   my ($self, $status) = @_;
   if ($self->{headers_rendered}) {
@@ -526,7 +529,7 @@ sub response_status_code {
 sub headers_rendered { $_[0]{headers_rendered} }
 
 {
-  my %RENDER_TYPES = (json => 1, html => 1, xml => 1, text => 1, data => 1, redirect => 1);
+  my %RENDER_TYPES = (json => 1, html => 1, xml => 1, text => 1, data => 1, file => 1, handle => 1, redirect => 1);
   sub render {
     my ($self, $type, $data) = @_;
     $type = '' unless defined $type;
@@ -591,6 +594,19 @@ sub headers_rendered { $_[0]{headers_rendered} }
       }
     } elsif ($type eq 'data') {
       $out_fh->printflush($data);
+    } elsif ($type eq 'file' or $type eq 'handle') {
+      my $in_fh;
+      if ($type eq 'file') {
+        open $in_fh, '<', $data or Carp::croak "Failed to open file '$data' for rendering: $!";
+      } else {
+        $in_fh = $data;
+      }
+      binmode $in_fh;
+      my $chunk = $self->{response_body_buffer} || $ENV{CGI_TINY_RESPONSE_BODY_BUFFER} || DEFAULT_RESPONSE_BODY_BUFFER;
+      while (read $in_fh, my $buffer, $chunk) {
+        $out_fh->print($buffer);
+      }
+      $out_fh->flush;
     }
   }
 }

@@ -359,6 +359,62 @@ subtest 'Data response' => sub {
   is $response->{body}, $data, 'right response body';
 };
 
+subtest 'File response' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my $data = "\x01\x02\x03\x04\r\n\xFF";
+  my $tempdir = File::Temp->newdir;
+  my $filepath = "$tempdir/test.dat";
+  open my $fh, '>', $filepath or die "Failed to open $filepath for writing: $!";
+  binmode $fh;
+  print $fh $data;
+  close $fh;
+
+  cgi {
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->render(file => $filepath);
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  is $response->{headers}{'content-type'}, 'application/octet-stream', 'right content type';
+  like $response->{status}, qr/^200\b/, '200 response status';
+  is $response->{body}, $data, 'right response body';
+};
+
+subtest 'Filehandle response' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my $data = "\x01\x02\x03\x04\r\n\xFF";
+  cgi {
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    open my $fh, '<', \$data or die "Failed to open scalar data handle: $!";
+    $_->render(handle => $fh);
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  is $response->{headers}{'content-type'}, 'application/octet-stream', 'right content type';
+  like $response->{status}, qr/^200\b/, '200 response status';
+  is $response->{body}, $data, 'right response body';
+};
+
 subtest 'Text response' => sub {
   local @ENV{@env_keys} = ('')x@env_keys;
   local $ENV{PATH_INFO} = '/';

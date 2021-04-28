@@ -304,11 +304,11 @@ error handler completes or dies, a default error response will be rendered.
 
 =head3 set_request_body_buffer
 
-  $cgi = $cgi->set_request_body_buffer(128*1024);
+  $cgi = $cgi->set_request_body_buffer(256*1024);
 
-Sets the buffer size for reading the request body (number of bytes to read at
-once). Defaults to the value of the C<CGI_TINY_REQUEST_BODY_BUFFER> environment
-variable or 131072 (128 KiB). A value of 0 will use the default value.
+Sets the buffer size (number of bytes to read at once) for reading the request
+body. Defaults to the value of the C<CGI_TINY_REQUEST_BODY_BUFFER> environment
+variable or 262144 (256 KiB). A value of 0 will use the default value.
 
 =head3 set_request_body_limit
 
@@ -687,6 +687,15 @@ CGI server.
 
 No effect after response headers have been rendered.
 
+=head3 set_response_body_buffer
+
+  $cgi = $cgi->set_response_body_buffer(128*1024);
+
+Sets the buffer size (number of bytes to read at once) for streaming a C<file>
+or C<handle> response body with L</"render">. Defaults to the value of the
+C<CGI_TINY_RESPONSE_BODY_BUFFER> environment variable or 131072 (128 KiB). A
+value of 0 will use the default value.
+
 =head3 set_response_status
 
   $cgi = $cgi->set_response_status(404);
@@ -824,11 +833,13 @@ to L</"render">.
 =head3 render
 
   $cgi->render;
-  $cgi->render(html => $html);
-  $cgi->render(xml  => $xml);
-  $cgi->render(text => $text);
-  $cgi->render(data => $bytes);
-  $cgi->render(json => $ref);
+  $cgi->render(html     => $html);
+  $cgi->render(xml      => $xml);
+  $cgi->render(text     => $text);
+  $cgi->render(data     => $bytes);
+  $cgi->render(file     => $filepath);
+  $cgi->render(handle   => $filehandle);
+  $cgi->render(json     => $ref);
   $cgi->render(redirect => $url);
 
 Renders response data of a type indicated by the first parameter, if any. The
@@ -844,6 +855,10 @@ there is no more appropriate value.
 C<html>, C<xml>, or C<text> data is expected to be decoded Unicode characters,
 and will be encoded according to L</"set_response_charset"> (UTF-8 by default).
 L<Unicode::UTF8> will be used for efficient UTF-8 encoding if available.
+
+C<data>, C<file>, or C<handle> will render bytes from a string, local file
+path, or open filehandle respectively. A C<handle> will have C<binmode> applied
+to remove any translation layers, and its contents will be streamed until EOF.
 
 C<json> data structures will be encoded to JSON and UTF-8.
 
@@ -896,6 +911,10 @@ Default value for L</"set_request_body_buffer">.
 =head2 CGI_TINY_REQUEST_BODY_LIMIT
 
 Default value for L</"set_request_body_limit">.
+
+=head2 CGI_TINY_RESPONSE_BODY_BUFFER
+
+Default value for L</"set_response_body_buffer">.
 
 =head1 COMPARISON TO CGI.PM
 
