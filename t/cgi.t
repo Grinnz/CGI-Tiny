@@ -69,18 +69,44 @@ subtest 'No render' => sub {
   open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
   open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
 
-  my $error;
+  my ($error, $code);
   cgi {
-    $_->set_error_handler(sub { $error = $_[1] });
+    $_->set_error_handler(sub { $error = $_[1]; $code = $_[0]->response_status_code });
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
   };
 
   ok defined($error), 'error logged';
+  is $code, 500, '500 response status code';
   ok length($out_data), 'response rendered';
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   like $response->{status}, qr/^5[0-9]{2}\b/, '500 response status';
+};
+
+subtest 'No render (custom response status)' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my ($error, $code);
+  cgi {
+    $_->set_error_handler(sub { $error = $_[1]; $code = $_[0]->response_status_code });
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->set_response_status(403);
+  };
+
+  ok defined($error), 'error logged';
+  is $code, 403, '403 response status code';
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  like $response->{status}, qr/^403\b/, '403 response status';
 };
 
 subtest 'No render (object lost)' => sub {
@@ -211,9 +237,9 @@ subtest 'Exception before render' => sub {
   open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
   open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
 
-  my ($error, $headers_rendered);
+  my ($error, $headers_rendered, $code);
   cgi {
-    $_->set_error_handler(sub { $error = $_[1]; $headers_rendered = $_[0]->headers_rendered; });
+    $_->set_error_handler(sub { $error = $_[1]; $headers_rendered = $_[0]->headers_rendered; $code = $_[0]->response_status_code });
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
     die 'Error 42';
@@ -222,6 +248,7 @@ subtest 'Exception before render' => sub {
   ok defined($error), 'error logged';
   like $error, qr/Error 42/, 'right error';
   ok !$headers_rendered, 'headers were not rendered';
+  is $code, 500, '500 response status code';
   ok length($out_data), 'response rendered';
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
@@ -266,9 +293,9 @@ subtest 'Excessive request body' => sub {
   open my $in_fh, '<', \$in_data or die "failed to open handle for input: $!";
   open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
 
-  my $error;
+  my ($error, $code);
   cgi {
-    $_->set_error_handler(sub { $error = $_[1] });
+    $_->set_error_handler(sub { $error = $_[1]; $code = $_[0]->response_status_code });
     $_->set_request_body_limit(100);
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
@@ -277,6 +304,7 @@ subtest 'Excessive request body' => sub {
   };
 
   ok defined($error), 'error logged';
+  is $code, 413, '413 response status code';
   ok length($out_data), 'response rendered';
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';

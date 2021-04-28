@@ -19,7 +19,15 @@ CGI::Tiny - Common Gateway Interface, with no frills
     $cgi->set_error_handler(sub {
       my ($cgi, $error) = @_;
       warn $error;
-      $cgi->render(json => {error => 'Internal Error'}) unless $cgi->headers_rendered;
+      unless ($cgi->headers_rendered) {
+        if ($cgi->response_status_code == 413) {
+          $cgi->render(json => {error => 'Request body limit exceeded'});
+        } elsif ($cgi->response_status_code == 400) {
+          $cgi->render(json => {error => 'Bad request'});
+        } else {
+          $cgi->render(json => {error => 'Internal server error'});
+        }
+      }
     });
     my $method = $cgi->method;
     my $fribble;
@@ -287,12 +295,12 @@ warned or logged.
 
 Exceptions may occur before or after response headers have been rendered, so
 error handlers should render some response if L</"headers_rendered"> is
-false.
+false. L</"response_status_code"> may be set by some errors and can be
+inspected if headers have not been rendered yet.
 
 If the error handler itself throws an exception, that error and the original
 error will be emitted as a warning. If no response has been rendered after the
-error handler completes or dies, the default 500 Internal Server Error response
-will be rendered.
+error handler completes or dies, a default error response will be rendered.
 
 =head3 set_request_body_buffer
 
@@ -797,6 +805,14 @@ supported by most browsers.
 If set to a true value, the cookie will be restricted to HTTPS requests.
 
 =back
+
+=head3 response_status_code
+
+  my $code = $cgi->response_status_code;
+
+Numerical response HTTP status code that will be sent when headers are
+rendered, as set by L</"set_response_status"> or an error occurring. Defaults
+to C<200>.
 
 =head3 headers_rendered
 

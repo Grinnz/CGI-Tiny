@@ -630,6 +630,14 @@ sub add_response_cookie {
   return $self;
 }
 
+sub response_status_code {
+  my ($self) = @_;
+  if (defined $self->{response_status} and $self->{response_status} =~ m/\A([0-9]+)/) {
+    return 0+$1;
+  }
+  return 200;
+}
+
 sub headers_rendered { $_[0]{headers_rendered} }
 
 my %known_types = (json => 1, html => 1, xml => 1, text => 1, data => 1, redirect => 1);
@@ -670,7 +678,7 @@ sub render {
       $headers_str = "Date: $date_str\r\n$headers_str";
     }
     my $status = $self->{response_status};
-    $status = "302 $HTTP_STATUS{302}" if !defined $status and $type eq 'redirect';
+    $status = $self->{response_status} = "302 $HTTP_STATUS{302}" if !defined $status and $type eq 'redirect';
     if ($self->{nph}) {
       $status = "200 $HTTP_STATUS{200}" unless defined $status;
       my $protocol = $ENV{SERVER_PROTOCOL};
