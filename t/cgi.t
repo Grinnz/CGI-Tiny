@@ -419,7 +419,8 @@ subtest 'File response (download)' => sub {
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   is $response->{headers}{'content-type'}, 'application/octet-stream', 'right content type';
-  is $response->{headers}{'content-disposition'}, 'attachment; filename="\"test?\".dat"; filename*=UTF-8\'\'%22test%E2%98%83%22.dat', 'right content disposition';
+  is $response->{headers}{'content-disposition'},
+    'attachment; filename="\"test?\".dat"; filename*=UTF-8\'\'%22test%E2%98%83%22.dat', 'right content disposition';
   like $response->{status}, qr/^200\b/, '200 response status';
   is $response->{body}, $data, 'right response body';
 };
@@ -721,7 +722,7 @@ Content-Type: text/plain;charset=UTF-16LE\r
 \r
 $utf16le_snowman\r
 --delimiter\r
-Content-Disposition: form-data; name="newline"\r
+Content-Disposition: form-data; name="newline\\\\\\""\r
 \r
 
 \r
@@ -744,7 +745,7 @@ Content-Type: application/json\r
 \r
 {"test":42}\r
 --delimiter\r
-Content-Disposition: form-data; name="snowman"; filename="snowman.txt"\r
+Content-Disposition: form-data; name="snowman"; filename="snowman\\\\\\".txt"\r
 Content-Type: text/plain;charset=UTF-16LE\r
 \r
 $utf16le_snowman\r
@@ -792,8 +793,8 @@ EOB
       name => 'snowman', filename => undef, size => length($utf8_snowman) + 1, content => "$utf8_snowman!"},
     {headers => {'content-disposition' => 'form-data; name=snowman', 'content-type' => 'text/plain;charset=UTF-16LE'},
       name => 'snowman', filename => undef, size => length($utf16le_snowman), content => $utf16le_snowman},
-    {headers => {'content-disposition' => 'form-data; name="newline"'},
-      name => 'newline', filename => undef, size => 1, content => "\n"},
+    {headers => {'content-disposition' => 'form-data; name="newline\\\\\\""'},
+      name => 'newline\"', filename => undef, size => 1, content => "\n"},
     {headers => {'content-disposition' => 'form-data; name="empty"'},
       name => 'empty', filename => undef, size => 0, content => ''},
     {headers => {'content-disposition' => 'form-data; name="empty"'},
@@ -802,18 +803,18 @@ EOB
       name => 'file', filename => 'test.dat', size => 18, file_contents => "00000000\n11111111\0"},
     {headers => {'content-disposition' => 'form-data; name="file"; filename="test2.dat"', 'content-type' => 'application/json'},
       name => 'file', filename => 'test2.dat', size => 11, file_contents => '{"test":42}'},
-    {headers => {'content-disposition' => 'form-data; name="snowman"; filename="snowman.txt"', 'content-type' => 'text/plain;charset=UTF-16LE'},
-      name => 'snowman', filename => 'snowman.txt', size => length($utf16le_snowman), file_contents => $utf16le_snowman},
+    {headers => {'content-disposition' => 'form-data; name="snowman"; filename="snowman\\\\\\".txt"', 'content-type' => 'text/plain;charset=UTF-16LE'},
+      name => 'snowman', filename => 'snowman\".txt', size => length($utf16le_snowman), file_contents => $utf16le_snowman},
   ], 'right multipart body parts';
 
-  is_deeply $params, [['snowman', '☃!'], ['snowman', "☃...\n"], ['newline', "\n"], ['empty', ''], ['empty', '']], 'right multipart body params';
-  is_deeply $param_names, ['snowman', 'newline', 'empty'], 'right multipart body param names';
+  is_deeply $params, [['snowman', '☃!'], ['snowman', "☃...\n"], ['newline\"', "\n"], ['empty', ''], ['empty', '']], 'right multipart body params';
+  is_deeply $param_names, ['snowman', 'newline\"', 'empty'], 'right multipart body param names';
   is $param_snowman, "☃...\n", 'right multipart body param value';
   is_deeply $param_snowman_array, ['☃!', "☃...\n"], 'right multipart body param values';
   is $uploads->[-1][0], 'snowman', 'right upload name';
   my $upload_snowman = $uploads->[-1][1];
   ok defined $upload_snowman, 'last upload';
-  is $upload_snowman->{filename}, 'snowman.txt', 'right upload filename';
+  is $upload_snowman->{filename}, 'snowman\".txt', 'right upload filename';
   is $upload_snowman->{size}, length $utf16le_snowman, 'right upload size';
   is $upload_snowman->{content_type}, 'text/plain;charset=UTF-16LE', 'right upload Content-Type';
   is do { local $/; seek $upload_snowman->{file}, 0, 0; scalar readline $upload_snowman->{file} }, $utf16le_snowman, 'right upload contents';
@@ -833,11 +834,11 @@ subtest 'Multipart body read into memory' => sub {
   my $utf8_snowman = encode 'UTF-8', '☃!';
   my $body_string = <<"EOB";
 --fffff\r
-Content-Disposition: form-data; name="snowman"\r
+Content-Disposition: form-data; name="snowman\\\\"\r
 \r
 $utf8_snowman\r
 --fffff\r
-Content-Disposition: form-data; name="file"; filename="test.txt"\r
+Content-Disposition: form-data; name="file"; filename="test.txt\\\\"\r
 Content-Type: text/plain;charset=UTF-8\r
 \r
 $utf8_snowman
@@ -857,7 +858,7 @@ EOB
     $parts = $_->body_parts;
     $params = $_->body_params;
     $param_names = $_->body_param_names;
-    $param_snowman = $_->body_param('snowman');
+    $param_snowman = $_->body_param('snowman\\');
     $uploads = $_->uploads;
     $upload_names = $_->upload_names;
     $upload_snowman = $_->upload('file');
@@ -878,18 +879,18 @@ EOB
     }
   }
   is_deeply $parts, [
-    {headers => {'content-disposition' => 'form-data; name="snowman"'},
-      name => 'snowman', filename => undef, size => length($utf8_snowman), content => $utf8_snowman},
-    {headers => {'content-disposition' => 'form-data; name="file"; filename="test.txt"', 'content-type' => 'text/plain;charset=UTF-8'},
-      name => 'file', filename => 'test.txt', size => length($utf8_snowman) + 1, file_contents => "$utf8_snowman\n"},
+    {headers => {'content-disposition' => 'form-data; name="snowman\\\\"'},
+      name => 'snowman\\', filename => undef, size => length($utf8_snowman), content => $utf8_snowman},
+    {headers => {'content-disposition' => 'form-data; name="file"; filename="test.txt\\\\"', 'content-type' => 'text/plain;charset=UTF-8'},
+      name => 'file', filename => 'test.txt\\', size => length($utf8_snowman) + 1, file_contents => "$utf8_snowman\n"},
   ], 'right multipart body parts';
 
-  is_deeply $params, [['snowman', '☃!']], 'right multipart body params';
-  is_deeply $param_names, ['snowman'], 'right multipart body param names';
+  is_deeply $params, [['snowman\\', '☃!']], 'right multipart body params';
+  is_deeply $param_names, ['snowman\\'], 'right multipart body param names';
   is $param_snowman, '☃!', 'right multipart body param value';
   is $uploads->[0][0], 'file', 'right upload name';
   is_deeply $upload_names, ['file'], 'right upload names';
-  is $upload_snowman->{filename}, 'test.txt', 'right upload filename';
+  is $upload_snowman->{filename}, 'test.txt\\', 'right upload filename';
   is $upload_snowman->{content_type}, 'text/plain;charset=UTF-8', 'right upload Content-Type';
 };
 

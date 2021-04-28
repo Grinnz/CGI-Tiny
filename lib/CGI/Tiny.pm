@@ -315,7 +315,8 @@ sub _body_params {
         if (!defined $headers->{'content-type'} or $headers->{'content-type'} =~ m/^text\/plain\b/i) {
           my $value_charset = $default_charset;
           if (defined $headers->{'content-type'}) {
-            if (my ($charset_quoted, $charset_unquoted) = $headers->{'content-type'} =~ m/;\s*charset=(?:"([^"]+)"|([^";]+))/i) {
+            if (my ($charset_quoted, $charset_unquoted) = $headers->{'content-type'} =~ m/;\s*charset=(?:"((?:\\[\\"]|[^"])+)"|([^";]+))/i) {
+              $charset_quoted =~ s/\\([\\"])/$1/g if defined $charset_quoted;
               $value_charset = defined $charset_quoted ? $charset_quoted : $charset_unquoted;
             }
           }
@@ -407,7 +408,8 @@ sub _body_multipart {
   my ($self) = @_;
   unless (exists $self->{body_parts}) {
     $self->{body_parts} = [];
-    my ($boundary_quoted, $boundary_unquoted) = $ENV{CONTENT_TYPE} =~ m/;\s*boundary\s*=\s*(?:"([^"]+)"|([^";]+))/i;
+    my ($boundary_quoted, $boundary_unquoted) = $ENV{CONTENT_TYPE} =~ m/;\s*boundary\s*=\s*(?:"((?:\\[\\"]|[^"])+)"|([^";]+))/i;
+    $boundary_quoted =~ s/\\([\\"])/$1/g if defined $boundary_quoted;
     my $boundary = defined $boundary_quoted ? $boundary_quoted : $boundary_unquoted;
     unless (defined $boundary) {
       $self->{response_status} = "400 $HTTP_STATUS{400}" unless $self->{headers_rendered};
@@ -701,10 +703,12 @@ sub _parse_multipart {
 
           $state{part}{headers}{lc $name} = $value;
           if (lc $name eq 'content-disposition') {
-            if (my ($name_quoted, $name_unquoted) = $value =~ m/;\s*name\s*=\s*(?:"((?:\\"|[^";])*)"|([^";]*))/i) {
+            if (my ($name_quoted, $name_unquoted) = $value =~ m/;\s*name\s*=\s*(?:"((?:\\[\\"]|[^"])*)"|([^";]*))/i) {
+              $name_quoted =~ s/\\([\\"])/$1/g if defined $name_quoted;
               $state{part}{name} = defined $name_quoted ? $name_quoted : $name_unquoted;
             }
-            if (my ($filename_quoted, $filename_unquoted) = $value =~ m/;\s*filename\s*=\s*(?:"((?:\\"|[^"])*)"|([^";]*))/i) {
+            if (my ($filename_quoted, $filename_unquoted) = $value =~ m/;\s*filename\s*=\s*(?:"((?:\\[\\"]|[^"])*)"|([^";]*))/i) {
+              $filename_quoted =~ s/\\([\\"])/$1/g if defined $filename_quoted;
               $state{part}{filename} = defined $filename_quoted ? $filename_quoted : $filename_unquoted;
             }
           }
