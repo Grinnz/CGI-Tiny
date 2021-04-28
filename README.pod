@@ -181,24 +181,29 @@ bytes, so non-ASCII filenames make things trickier.
 
   cgi {
     my $cgi = $_;
+
     my $filename = $cgi->query_param('filename');
     unless (length $filename) {
       $cgi->set_response_status(404)->render(text => 'Not Found');
       exit;
     }
+
     # get files from public/ next to cgi-bin/
     my $public_dir = path(__FILE__)->realpath->parent->sibling('public');
     my $filepath = $public_dir->child($filename);
+
     # ensure file exists, is readable, and is not a directory
     unless (-r $filepath and !-d _) {
       $cgi->set_response_status(404)->render(text => 'Not Found');
       exit;
     }
+
     # ensure file path doesn't escape the public/ directory
     unless ($public_dir->subsumes($filepath->realpath)) {
       $cgi->set_response_status(404)->render(text => 'Not Found');
       exit;
     }
+
     my $mime = MIME::Types->new->mimeTypeOf($filepath->basename);
     $cgi->set_response_content_type($mime->type) if defined $mime;
     $cgi->set_response_download($filepath->basename)->render(file => $filepath);
