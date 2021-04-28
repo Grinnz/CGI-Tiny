@@ -483,7 +483,6 @@ sub set_response_download {
   if ($self->{headers_rendered}) {
     Carp::carp "Attempted to set HTTP response content disposition but headers have already been rendered";
   } else {
-    Carp::croak "Newline characters not allowed in HTTP response filename" if defined $filename and $filename =~ tr/\r\n//;
     $self->{response_attachment} = 1;
     $self->{response_filename} = $filename;
   }
@@ -579,6 +578,7 @@ sub headers_rendered { $_[0]{headers_rendered} }
         if (defined $filename and length $filename) {
           require Encode;
           my $quoted_filename = Encode::encode('ISO-8859-1', $filename);
+          $quoted_filename =~ tr/\r\n//d;
           $quoted_filename =~ s/([\\"])/\\$1/g;
           $value .= "; filename=\"$quoted_filename\"";
           my $ext_filename = $filename;
