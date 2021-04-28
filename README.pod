@@ -182,6 +182,10 @@ bytes, so non-ASCII filenames make things trickier.
   cgi {
     my $cgi = $_;
     my $filename = $cgi->query_param('filename');
+    unless (length $filename) {
+      $cgi->set_response_status(404)->render(text => 'Not Found');
+      exit;
+    }
     # get files from public/ next to cgi-bin/
     my $public_dir = path(__FILE__)->realpath->parent->sibling('public');
     my $filepath = $public_dir->child($filename);
