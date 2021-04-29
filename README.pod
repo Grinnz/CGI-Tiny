@@ -165,50 +165,6 @@ L<JSON::PP>. CGI scripts that deal with JSON content will greatly benefit from
 installing L<Cpanel::JSON::XS> version C<4.09> or newer for efficient encoding
 and decoding, which will be used automatically if available.
 
-=head2 Files
-
-Modules like L<Path::Tiny> and L<MIME::Types> can help with file responses. Be
-aware that Perl and some operating systems work with filenames in encoded
-bytes, so non-ASCII filenames make things trickier.
-
-  #!/usr/bin/perl
-  use strict;
-  use warnings;
-  use utf8;
-  use CGI::Tiny;
-  use Path::Tiny;
-  use MIME::Types;
-
-  cgi {
-    my $cgi = $_;
-
-    my $filename = $cgi->query_param('filename');
-    unless (length $filename) {
-      $cgi->set_response_status(404)->render(text => 'Not Found');
-      exit;
-    }
-
-    # get files from public/ next to cgi-bin/
-    my $public_dir = path(__FILE__)->realpath->parent->sibling('public');
-    my $filepath = $public_dir->child($filename);
-
-    # ensure file exists, is readable, and is not a directory
-    unless (-r $filepath and !-d _) {
-      $cgi->set_response_status(404)->render(text => 'Not Found');
-      exit;
-    }
-
-    # ensure file path doesn't escape the public/ directory
-    unless ($public_dir->subsumes($filepath->realpath)) {
-      $cgi->set_response_status(404)->render(text => 'Not Found');
-      exit;
-    }
-
-    my $mime = MIME::Types->new->mimeTypeOf($filepath->basename);
-    $cgi->set_response_content_type($mime->type) if defined $mime;
-    $cgi->set_response_content_disposition(attachment => $filepath->basename)->render(file => $filepath);
-  };
-
 =head2 Templating
 
 HTML and XML responses are most easily managed with templating. A number of
@@ -270,6 +226,54 @@ toolkit.
   __DATA__
   @@ index.html.ep
   <html><body><h1><%= $foo %></h1></body></html>
+
+=head2 Files
+
+Modules like L<Path::Tiny> and L<MIME::Types> can help with file responses. Be
+aware that Perl and some operating systems work with filenames in encoded
+bytes (usually UTF-8), but this module works with parameters in Unicode
+characters, so non-ASCII filenames make things trickier.
+
+  #!/usr/bin/perl
+  use strict;
+  use warnings;
+  use utf8;
+  use CGI::Tiny;
+  use Path::Tiny;
+  use MIME::Types;
+  use Unicode::UTF8 qw(encode_utf8 decode_utf8);
+
+  cgi {
+    my $cgi = $_;
+
+    my $filename = $cgi->query_param('filename');
+    unless (length $filename) {
+      $cgi->set_response_status(404)->render(text => 'Not Found');
+      exit;
+    }
+
+    # get files from public/ next to cgi-bin/
+    my $public_dir = path(__FILE__)->realpath->parent->sibling('public');
+    my $encoded_filename = encode_utf8 $filename;
+    my $filepath = $public_dir->child($encoded_filename);
+
+    # ensure file exists, is readable, and is not a directory
+    unless (-r $filepath and !-d _) {
+      $cgi->set_response_status(404)->render(text => 'Not Found');
+      exit;
+    }
+
+    # ensure file path doesn't escape the public/ directory
+    unless ($public_dir->subsumes($filepath->realpath)) {
+      $cgi->set_response_status(404)->render(text => 'Not Found');
+      exit;
+    }
+
+    my $basename = decode_utf8 $filepath->basename;
+    my $mime = MIME::Types->new->mimeTypeOf($basename);
+    $cgi->set_response_content_type($mime->type) if defined $mime;
+    $cgi->set_response_content_disposition(attachment => $basename)->render(file => $filepath);
+  };
 
 =head2 Routing
 
