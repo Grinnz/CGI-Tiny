@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.010     2021-04-28 23:14:59 EDT
   - Replace set_response_download method with set_response_content_disposition
   - Add reset_response_headers method
 
