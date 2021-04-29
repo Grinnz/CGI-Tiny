@@ -834,7 +834,7 @@ subtest 'Multipart body read into memory' => sub {
   my $utf8_snowman = encode 'UTF-8', '☃!';
   my $body_string = <<"EOB";
 --fffff\r
-Content-Disposition: form-data; name="snowman\\\\"\r
+Content-Disposition: form-data; name="; filename=snowman\\\\"\r
 \r
 $utf8_snowman\r
 --fffff\r
@@ -858,7 +858,7 @@ EOB
     $parts = $_->body_parts;
     $params = $_->body_params;
     $param_names = $_->body_param_names;
-    $param_snowman = $_->body_param('snowman\\');
+    $param_snowman = $_->body_param('; filename=snowman\\');
     $uploads = $_->uploads;
     $upload_names = $_->upload_names;
     $upload_snowman = $_->upload('file');
@@ -879,14 +879,14 @@ EOB
     }
   }
   is_deeply $parts, [
-    {headers => {'content-disposition' => 'form-data; name="snowman\\\\"'},
-      name => 'snowman\\', filename => undef, size => length($utf8_snowman), content => $utf8_snowman},
+    {headers => {'content-disposition' => 'form-data; name="; filename=snowman\\\\"'},
+      name => '; filename=snowman\\', filename => undef, size => length($utf8_snowman), content => $utf8_snowman},
     {headers => {'content-disposition' => 'form-data; name="file"; filename="test.txt\\\\"', 'content-type' => 'text/plain;charset=UTF-8'},
       name => 'file', filename => 'test.txt\\', size => length($utf8_snowman) + 1, file_contents => "$utf8_snowman\n"},
   ], 'right multipart body parts';
 
-  is_deeply $params, [['snowman\\', '☃!']], 'right multipart body params';
-  is_deeply $param_names, ['snowman\\'], 'right multipart body param names';
+  is_deeply $params, [['; filename=snowman\\', '☃!']], 'right multipart body params';
+  is_deeply $param_names, ['; filename=snowman\\'], 'right multipart body param names';
   is $param_snowman, '☃!', 'right multipart body param value';
   is $uploads->[0][0], 'file', 'right upload name';
   is_deeply $upload_names, ['file'], 'right upload names';

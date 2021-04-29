@@ -697,13 +697,11 @@ sub _parse_multipart {
 
           $state{part}{headers}{lc $name} = $value;
           if (lc $name eq 'content-disposition') {
-            if (my ($name_quoted, $name_unquoted) = $value =~ m/;\s*name\s*=\s*(?:"((?:\\[\\"]|[^"])*)"|([^";]*))/i) {
-              $name_quoted =~ s/\\([\\"])/$1/g if defined $name_quoted;
-              $state{part}{name} = defined $name_quoted ? $name_quoted : $name_unquoted;
-            }
-            if (my ($filename_quoted, $filename_unquoted) = $value =~ m/;\s*filename\s*=\s*(?:"((?:\\[\\"]|[^"])*)"|([^";]*))/i) {
-              $filename_quoted =~ s/\\([\\"])/$1/g if defined $filename_quoted;
-              $state{part}{filename} = defined $filename_quoted ? $filename_quoted : $filename_unquoted;
+            while ($value =~ m/;\s*([^=\s]+)\s*=\s*(?:"((?:\\[\\"]|[^"])*)"|([^";]*))/ig) {
+              my ($field_name, $field_quoted, $field_unquoted) = ($1, $2, $3);
+              next unless lc $field_name eq 'name' or lc $field_name eq 'filename';
+              $field_quoted =~ s/\\([\\"])/$1/g if defined $field_quoted;
+              $state{part}{lc $field_name} = defined $field_quoted ? $field_quoted : $field_unquoted;
             }
           }
         }
