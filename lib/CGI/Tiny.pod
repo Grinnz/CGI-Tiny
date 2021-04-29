@@ -793,7 +793,7 @@ defaults to C<UTF-8>.
 
 =head3 add_response_header
 
-  $cgi = $cgi->add_response_header('Content-Disposition' => 'attachment');
+  $cgi = $cgi->add_response_header('Content-Language' => 'en');
 
 Adds a custom response header. No effect after response headers have been
 rendered.
