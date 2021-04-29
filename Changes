@@ -1,5 +1,5 @@
 {{$NEXT}}
-  - Rename set_response_download method to set_response_attachment, add set_response_inline method
+  - Replace set_response_download method with set_response_content_disposition
   - Add reset_response_headers method
 
 0.009     2021-04-28 03:03:52 EDT
