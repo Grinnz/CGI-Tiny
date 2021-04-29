@@ -461,17 +461,20 @@ sub set_response_status {
   return $self;
 }
 
-sub set_response_disposition {
-  my ($self, $disposition, $filename) = @_;
-  if ($self->{headers_rendered}) {
-    Carp::carp "Attempted to set HTTP response content disposition but headers have already been rendered";
-  } else {
-    Carp::croak "Invalid characters in HTTP response content disposition" if defined $disposition and $disposition =~ m/[^a-zA-Z0-9!#\$%&'*+\-.^_`|~]/;
-    $self->{response_disposition} = $disposition;
-    # filename will be quoted/escaped later
-    $self->{response_filename} = $filename;
+{
+  my %DISPOSITIONS = (attachment => 1, inline => 1);
+  sub set_response_disposition {
+    my ($self, $disposition, $filename) = @_;
+    if ($self->{headers_rendered}) {
+      Carp::carp "Attempted to set HTTP response content disposition but headers have already been rendered";
+    } else {
+      Carp::croak "Attempted to set unknown Content-Disposition value '$disposition'" unless exists $DISPOSITIONS{lc $disposition};
+      $self->{response_disposition} = $disposition;
+      # filename will be quoted/escaped later
+      $self->{response_filename} = $filename;
+    }
+    return $self;
   }
-  return $self;
 }
 
 sub set_response_type {
