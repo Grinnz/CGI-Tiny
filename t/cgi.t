@@ -411,7 +411,7 @@ subtest 'File response (download)' => sub {
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
-    $_->set_response_download($filename);
+    $_->set_response_attachment($filename);
     $_->render(file => $filepath);
   };
 
@@ -620,6 +620,7 @@ subtest 'Response headers' => sub {
     foreach my $header (@headers) { $_->add_response_header(@$header) }
     foreach my $cookie (@cookies) { $_->add_response_cookie(@$cookie) }
     $_->set_response_content_type('image/gif');
+    $_->set_response_attachment('foo.gif');
     $_->set_response_status(202);
     $_->render;
   };
@@ -628,11 +629,53 @@ subtest 'Response headers' => sub {
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   is $response->{headers}{'content-type'}, 'image/gif', 'right content type';
+  is $response->{headers}{'content-disposition'}, 'attachment; filename="foo.gif"; filename*=UTF-8\'\'foo.gif', 'right Content-Disposition';
   like $response->{status}, qr/^202\b/, '202 response status';
   is_deeply $response->{headers}{'x-test'}, ['some value', 'another value'], 'right custom headers';
   is_deeply $response->{headers}{'set-cookie'},
     ['foo=bar; Domain=example.com; HttpOnly; Max-Age=3600; Path=/test; SameSite=Strict; Secure',
      'x=; Expires=Sun, 06 Nov 1994 08:49:37 GMT; SameSite=Lax'], 'right Set-Cookie headers';
+};
+
+subtest 'Reset response headers' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my @headers = (
+    ['X-Test', 'some value'],
+    ['X-test', 'another value'],
+  );
+  my @cookies = (
+    ['foo', 'bar'],
+  );
+  cgi {
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    foreach my $header (@headers) { $_->add_response_header(@$header) }
+    foreach my $cookie (@cookies) { $_->add_response_cookie(@$cookie) }
+    $_->set_response_content_type('image/gif');
+    $_->set_response_status(400);
+    $_->set_response_attachment('foo.gif');
+    $_->reset_response_headers;
+    $_->set_response_content_type(undef);
+    $_->set_response_status(200);
+    $_->set_response_inline;
+    $_->render;
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  is $response->{headers}{'content-type'}, 'application/octet-stream', 'default content type';
+  ok !defined $response->{headers}{'content-disposition'}, 'Content-Disposition not set';
+  like $response->{status}, qr/^200\b/, '200 response status';
+  ok !defined $response->{headers}{'x-test'}, 'custom headers reset';
+  ok !defined $response->{headers}{'set-cookie'}, 'Set-Cookie headers reset';
 };
 
 subtest 'Query parameters' => sub {

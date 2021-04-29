@@ -43,7 +43,7 @@ CGI::Tiny - Common Gateway Interface, with no frills
     die "Invalid fribble parameter" unless length $fribble;
 
     if ($cgi->query_param('download')) {
-      $cgi->set_response_download('fribble.json');
+      $cgi->set_response_attachment('fribble.json');
     }
     $cgi->render(json => {fribble => $fribble});
   };
@@ -206,7 +206,7 @@ bytes, so non-ASCII filenames make things trickier.
 
     my $mime = MIME::Types->new->mimeTypeOf($filepath->basename);
     $cgi->set_response_content_type($mime->type) if defined $mime;
-    $cgi->set_response_download($filepath->basename)->render(file => $filepath);
+    $cgi->set_response_attachment($filepath->basename)->render(file => $filepath);
   };
 
 =head2 Templating
@@ -764,7 +764,8 @@ The CGI protocol assumes a status of C<200 OK> if no response status is set.
   $cgi = $cgi->set_response_content_type('application/xml');
 
 Sets the response C<Content-Type> header, to override autodetection in
-L</"render">. No effect after response headers have been rendered.
+L</"render">. C<undef> will remove the override. No effect after response
+headers have been rendered.
 
 =head3 set_response_charset
 
@@ -773,14 +774,24 @@ L</"render">. No effect after response headers have been rendered.
 Set charset to use when rendering C<text>, C<html>, or C<xml> response data,
 defaults to C<UTF-8>.
 
-=head3 set_response_download
+=head3 set_response_attachment
 
-  $cgi = $cgi->set_response_download;
-  $cgi = $cgi->set_response_download($filename);
+  $cgi = $cgi->set_response_attachment;
+  $cgi = $cgi->set_response_attachment($filename);
 
 Sets the response C<Content-Disposition> header to indicate to the client that
 the response is a file download, with an optional filename specified in Unicode
 characters. No effect after response headers have been rendered.
+
+=head3 set_response_inline
+
+  $cgi = $cgi->set_response_inline;
+  $cgi = $cgi->set_response_inline($filename);
+
+Sets the response C<Content-Disposition> header to indicate that the response
+should be displayed inline (the default behavior), with an optional filename
+specified in Unicode characters. No effect after response headers have been
+rendered.
 
 =head3 add_response_header
 
@@ -872,6 +883,13 @@ supported by most browsers.
 If set to a true value, the cookie will be restricted to HTTPS requests.
 
 =back
+
+=head3 reset_response_headers
+
+  $cgi = $cgi->reset_response_headers;
+
+Remove any pending response headers set by L</"add_response_header"> or
+L</"add_response_cookie">. No effect after response headers have been rendered.
 
 =head3 response_status_code
 

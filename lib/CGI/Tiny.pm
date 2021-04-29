@@ -447,11 +447,13 @@ sub set_response_status {
   if ($self->{headers_rendered}) {
     Carp::carp "Attempted to set HTTP response status but headers have already been rendered";
   } else {
-    if ($status =~ m/\A[0-9]+ [^\r\n]*\z/) {
+    if (defined $status and $status =~ m/\A[0-9]+ [^\r\n]*\z/) {
       $self->{response_status} = $status;
-    } else {
+    } elsif (defined $status) {
       Carp::croak "Attempted to set unknown HTTP response status $status" unless exists $HTTP_STATUS{$status};
       $self->{response_status} = "$status $HTTP_STATUS{$status}";
+    } else {
+      delete $self->{response_status};
     }
   }
   return $self;
@@ -462,7 +464,7 @@ sub set_response_content_type {
   if ($self->{headers_rendered}) {
     Carp::carp "Attempted to set HTTP response content type but headers have already been rendered";
   } else {
-    Carp::croak "Newline characters not allowed in HTTP response content type" if $content_type =~ tr/\r\n//;
+    Carp::croak "Newline characters not allowed in HTTP response content type" if defined $content_type and $content_type =~ tr/\r\n//;
     $self->{response_content_type} = $content_type;
   }
   return $self;
@@ -470,17 +472,28 @@ sub set_response_content_type {
 
 sub set_response_charset {
   my ($self, $charset) = @_;
-  Carp::croak "Invalid characters in HTTP response charset" if $charset =~ m/[^a-zA-Z0-9!#\$%&'*+\-.^_`|~]/;
+  Carp::croak "Invalid characters in HTTP response charset" if defined $charset and $charset =~ m/[^a-zA-Z0-9!#\$%&'*+\-.^_`|~]/;
   $self->{response_charset} = $charset;
   return $self;
 }
 
-sub set_response_download {
+sub set_response_attachment {
   my ($self, $filename) = @_;
   if ($self->{headers_rendered}) {
     Carp::carp "Attempted to set HTTP response content disposition but headers have already been rendered";
   } else {
     $self->{response_attachment} = 1;
+    $self->{response_filename} = $filename;
+  }
+  return $self;
+}
+
+sub set_response_inline {
+  my ($self, $filename) = @_;
+  if ($self->{headers_rendered}) {
+    Carp::carp "Attempted to set HTTP response content disposition but headers have already been rendered";
+  } else {
+    $self->{response_attachment} = 0;
     $self->{response_filename} = $filename;
   }
   return $self;
@@ -526,6 +539,8 @@ sub add_response_header {
   }
 }
 
+sub reset_response_headers { delete $_[0]{response_headers}; $_[0] }
+
 sub response_status_code {
   my ($self) = @_;
   if (defined $self->{response_status} and $self->{response_status} =~ m/\A([0-9]+)/) {
@@ -554,6 +569,21 @@ sub headers_rendered { $_[0]{headers_rendered} }
         $headers_str .= "$name: $value\r\n";
         $headers_set{lc $name} = 1;
       }
+      if (!$headers_set{'content-disposition'} and ($self->{response_attachment} or defined $self->{response_filename})) {
+        my $filename = $self->{response_filename};
+        my $value = $self->{response_attachment} ? 'attachment' : 'inline';
+        if (defined $filename) {
+          require Encode;
+          my $quoted_filename = Encode::encode('ISO-8859-1', "$filename");
+          $quoted_filename =~ tr/\r\n/  /;
+          $quoted_filename =~ s/([\\"])/\\$1/g;
+          $value .= "; filename=\"$quoted_filename\"";
+          my $ext_filename = Encode::encode('UTF-8', "$filename");
+          $ext_filename =~ s/([^a-zA-Z0-9!#\$&+\-.^_`|~])/sprintf '%%%02X', ord $1/ge;
+          $value .= "; filename*=UTF-8''$ext_filename";
+        }
+        $headers_str = "Content-Disposition: $value\r\n$headers_str";
+      }
       if (!$headers_set{location} and $type eq 'redirect') {
         Carp::croak "Newline characters not allowed in HTTP redirect" if $data =~ tr/\r\n//;
         $headers_str = "Location: $data\r\n$headers_str";
@@ -568,21 +598,6 @@ sub headers_rendered { $_[0]{headers_rendered} }
           : 'application/octet-stream'
           unless defined $content_type;
         $headers_str = "Content-Type: $content_type\r\n$headers_str";
-      }
-      if (!$headers_set{'content-disposition'} and $self->{response_attachment}) {
-        my $filename = $self->{response_filename};
-        my $value = 'attachment';
-        if (defined $filename and length $filename) {
-          require Encode;
-          my $quoted_filename = Encode::encode('ISO-8859-1', "$filename");
-          $quoted_filename =~ tr/\r\n/  /;
-          $quoted_filename =~ s/([\\"])/\\$1/g;
-          $value .= "; filename=\"$quoted_filename\"";
-          my $ext_filename = Encode::encode('UTF-8', "$filename");
-          $ext_filename =~ s/([^a-zA-Z0-9!#\$&+\-.^_`|~])/sprintf '%%%02X', ord $1/ge;
-          $value .= "; filename*=UTF-8''$ext_filename";
-        }
-        $headers_str .= "Content-Disposition: $value\r\n";
       }
       if (!$headers_set{date}) {
         my $date_str = epoch_to_date(time);

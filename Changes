@@ -1,4 +1,6 @@
 {{$NEXT}}
+  - Rename set_response_download method to set_response_attachment, add set_response_inline method
+  - Add reset_response_headers method
 
 0.009     2021-04-28 03:03:52 EDT
   - query_param_names, body_param_names, cookie_names, and upload_names now return names in the original request order
