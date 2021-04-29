@@ -411,7 +411,7 @@ subtest 'File response (download)' => sub {
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
-    $_->set_response_content_disposition(attachment => $filename);
+    $_->set_response_disposition(attachment => $filename);
     $_->render(file => $filepath);
   };
 
@@ -619,8 +619,8 @@ subtest 'Response headers' => sub {
     $_->set_output_handle($out_fh);
     foreach my $header (@headers) { $_->add_response_header(@$header) }
     foreach my $cookie (@cookies) { $_->add_response_cookie(@$cookie) }
-    $_->set_response_content_type('image/gif');
-    $_->set_response_content_disposition(attachment => 'foo.gif');
+    $_->set_response_type('image/gif');
+    $_->set_response_disposition(attachment => 'foo.gif');
     $_->set_response_status(202);
     $_->render;
   };
@@ -658,13 +658,13 @@ subtest 'Reset response headers' => sub {
     $_->set_output_handle($out_fh);
     foreach my $header (@headers) { $_->add_response_header(@$header) }
     foreach my $cookie (@cookies) { $_->add_response_cookie(@$cookie) }
-    $_->set_response_content_type('image/gif');
+    $_->set_response_type('image/gif');
     $_->set_response_status(400);
-    $_->set_response_content_disposition(attachment => 'foo.gif');
+    $_->set_response_disposition(attachment => 'foo.gif');
     $_->reset_response_headers;
-    $_->set_response_content_type(undef);
+    $_->set_response_type(undef);
     $_->set_response_status(200);
-    $_->set_response_content_disposition('inline');
+    $_->set_response_disposition('inline');
     $_->render;
   };
 
@@ -1222,7 +1222,7 @@ subtest 'NPH error response' => sub {
     $_->set_output_handle($out_fh);
     $_->set_nph(1);
     $_->set_response_status(404);
-    $_->set_response_content_type('text/plain');
+    $_->set_response_type('text/plain');
     $_->render;
   };
 

@@ -459,26 +459,26 @@ sub set_response_status {
   return $self;
 }
 
-sub set_response_content_disposition {
+sub set_response_disposition {
   my ($self, $disposition, $filename) = @_;
   if ($self->{headers_rendered}) {
     Carp::carp "Attempted to set HTTP response content disposition but headers have already been rendered";
   } else {
     Carp::croak "Invalid characters in HTTP response content disposition" if defined $disposition and $disposition =~ m/[^a-zA-Z0-9!#\$%&'*+\-.^_`|~]/;
-    $self->{response_content_disposition} = $disposition;
+    $self->{response_disposition} = $disposition;
     # filename will be quoted/escaped later
     $self->{response_filename} = $filename;
   }
   return $self;
 }
 
-sub set_response_content_type {
+sub set_response_type {
   my ($self, $content_type) = @_;
   if ($self->{headers_rendered}) {
     Carp::carp "Attempted to set HTTP response content type but headers have already been rendered";
   } else {
     Carp::croak "Newline characters not allowed in HTTP response content type" if defined $content_type and $content_type =~ tr/\r\n//;
-    $self->{response_content_type} = $content_type;
+    $self->{response_type} = $content_type;
   }
   return $self;
 }
@@ -560,8 +560,8 @@ sub headers_rendered { $_[0]{headers_rendered} }
         $headers_str .= "$name: $value\r\n";
         $headers_set{lc $name} = 1;
       }
-      if (!$headers_set{'content-disposition'} and (defined $self->{response_content_disposition} or defined $self->{response_filename})) {
-        my $value = defined $self->{response_content_disposition} ? $self->{response_content_disposition} : 'inline';
+      if (!$headers_set{'content-disposition'} and (defined $self->{response_disposition} or defined $self->{response_filename})) {
+        my $value = defined $self->{response_disposition} ? $self->{response_disposition} : 'inline';
         if (defined(my $filename = $self->{response_filename})) {
           require Encode;
           my $quoted_filename = Encode::encode('ISO-8859-1', "$filename");
@@ -579,7 +579,7 @@ sub headers_rendered { $_[0]{headers_rendered} }
         $headers_str = "Location: $data\r\n$headers_str";
       }
       if (!$headers_set{'content-type'} and $type ne 'redirect') {
-        my $content_type = $self->{response_content_type};
+        my $content_type = $self->{response_type};
         $content_type =
             $type eq 'json' ? 'application/json;charset=UTF-8'
           : $type eq 'html' ? "text/html;charset=$charset"
