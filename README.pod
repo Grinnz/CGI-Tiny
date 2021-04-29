@@ -768,8 +768,8 @@ The CGI protocol assumes a status of C<200 OK> if no response status is set.
 
 Sets the response C<Content-Disposition> header to indicate how the client
 should present the response, with an optional filename specified in Unicode
-characters. C<inline> suggests to display the content inline (the default
-behavior), and C<attachment> suggests to download the content as a file. No
+characters. C<attachment> suggests to download the content as a file, and
+C<inline> suggests to display the content inline (the default behavior). No
 effect after response headers have been rendered.
 
 =head3 set_response_content_type
