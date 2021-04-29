@@ -310,17 +310,19 @@ sub _body_params {
           require Encode;
           $name = Encode::decode($default_charset, "$name");
         }
-        if (!defined $headers->{'content-type'} or $headers->{'content-type'} =~ m/^text\/plain\b/i) {
-          my $value_charset = $default_charset;
-          if (defined $headers->{'content-type'}) {
-            if (my ($charset_quoted, $charset_unquoted) = $headers->{'content-type'} =~ m/;\s*charset=(?:"((?:\\[\\"]|[^"])+)"|([^";]+))/i) {
-              $charset_quoted =~ s/\\([\\"])/$1/g if defined $charset_quoted;
-              $value_charset = defined $charset_quoted ? $charset_quoted : $charset_unquoted;
-            }
+        my $value_charset;
+        if (defined $headers->{'content-type'}) {
+          if (my ($charset_quoted, $charset_unquoted) = $headers->{'content-type'} =~ m/;\s*charset=(?:"((?:\\[\\"]|[^"])+)"|([^";]+))/i) {
+            $charset_quoted =~ s/\\([\\"])/$1/g if defined $charset_quoted;
+            $value_charset = defined $charset_quoted ? $charset_quoted : $charset_unquoted;
           }
-          if (length $value_charset) {
-            require Encode;
+        }
+        if (defined $value_charset or !defined $headers->{'content-type'} or $headers->{'content-type'} =~ m/^text\/plain\b/i) {
+          require Encode;
+          if (defined $value_charset) {
             $value = Encode::decode($value_charset, "$value");
+          } elsif (length $default_charset) {
+            $value = Encode::decode($default_charset, "$value");
           }
         }
         push @names, $name unless exists $keyed{$name};
