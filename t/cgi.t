@@ -60,6 +60,33 @@ subtest 'Empty response' => sub {
   ok !length($response->{body}), 'empty response body';
 };
 
+subtest 'Empty response (fixed length)' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  cgi {
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->set_response_fixed_length(1);
+    $_->render;
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  is $response->{headers}{'content-type'}, 'application/octet-stream', 'right content type';
+  is $response->{headers}{'content-length'}, 0, 'right content length';
+  like $response->{status}, qr/^200\b/, '200 response status';
+  ok defined($response->{headers}{date}), 'Date set';
+  ok defined(CGI::Tiny::date_to_epoch $response->{headers}{date}), 'valid HTTP date';
+  ok !length($response->{body}), 'empty response body';
+};
+
 subtest 'No render' => sub {
   local @ENV{@env_keys} = ('')x@env_keys;
   local $ENV{PATH_INFO} = '/';
@@ -335,7 +362,33 @@ subtest 'Not found' => sub {
   ok !length($response->{body}), 'empty response body';
 };
 
-subtest 'Data response' => sub {
+subtest 'Data response (fixed length)' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my $data = "\x01\x02\x03\x04\r\n\xFF";
+  cgi {
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->set_response_fixed_length(1);
+    $_->render(data => $data);
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  is $response->{headers}{'content-length'}, length($data), 'right content length';
+  is $response->{headers}{'content-type'}, 'application/octet-stream', 'right content type';
+  like $response->{status}, qr/^200\b/, '200 response status';
+  is $response->{body}, $data, 'right response body';
+};
+
+subtest 'Data response (multiple renders)' => sub {
   local @ENV{@env_keys} = ('')x@env_keys;
   local $ENV{PATH_INFO} = '/';
   local $ENV{REQUEST_METHOD} = 'GET';
@@ -349,6 +402,7 @@ subtest 'Data response' => sub {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
     $_->render(data => $data);
+    $_->render(data => $data);
   };
 
   ok length($out_data), 'response rendered';
@@ -356,7 +410,7 @@ subtest 'Data response' => sub {
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   is $response->{headers}{'content-type'}, 'application/octet-stream', 'right content type';
   like $response->{status}, qr/^200\b/, '200 response status';
-  is $response->{body}, $data, 'right response body';
+  is $response->{body}, $data . $data, 'right response body';
 };
 
 subtest 'File response' => sub {
@@ -379,6 +433,7 @@ subtest 'File response' => sub {
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
+    $_->set_response_fixed_length(1);
     $_->render(file => $filepath);
   };
 
@@ -386,6 +441,7 @@ subtest 'File response' => sub {
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   is $response->{headers}{'content-type'}, 'application/octet-stream', 'right content type';
+  is $response->{headers}{'content-length'}, length $data, 'right content length';
   like $response->{status}, qr/^200\b/, '200 response status';
   is $response->{body}, $data, 'right response body';
 };
@@ -463,6 +519,7 @@ subtest 'Text response' => sub {
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
+    $_->set_response_fixed_length(1);
     $_->render(text => $text);
   };
 
@@ -470,6 +527,7 @@ subtest 'Text response' => sub {
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   like $response->{headers}{'content-type'}, qr/^text\/plain.*UTF-8/i, 'right content type';
+  is $response->{headers}{'content-length'}, length(encode 'UTF-8', $text), 'right content length';
   like $response->{status}, qr/^200\b/, '200 response status';
   is decode('UTF-8', $response->{body}), $text, 'right response body';
 };
@@ -512,6 +570,7 @@ subtest 'HTML response' => sub {
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
+    $_->set_response_fixed_length(1);
     $_->render(html => $html);
   };
 
@@ -519,8 +578,35 @@ subtest 'HTML response' => sub {
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
   like $response->{headers}{'content-type'}, qr/^text\/html.*UTF-8/i, 'right content type';
+  is $response->{headers}{'content-length'}, length(encode 'UTF-8', $html), 'right content length';
   like $response->{status}, qr/^200\b/, '200 response status';
   is decode('UTF-8', $response->{body}), $html, 'right response body';
+};
+
+subtest 'HTML response (multiple renders)' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my $html1 = "<html><head><title>♥</title></head>";
+  my $html2 = "<body><p>☃&nbsp;&amp;</p></body></html>";
+  cgi {
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->render(html => $html1);
+    $_->render(html => $html2);
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  like $response->{headers}{'content-type'}, qr/^text\/html.*UTF-8/i, 'right content type';
+  like $response->{status}, qr/^200\b/, '200 response status';
+  is decode('UTF-8', $response->{body}), $html1 . $html2, 'right response body';
 };
 
 subtest 'XML response' => sub {

@@ -740,6 +740,18 @@ CGI server.
 
 No effect after response headers have been rendered.
 
+=head3 set_response_fixed_length
+
+  $cgi = $cgi->set_response_fixed_length(1);
+
+If set to a true value before rendering response headers, a C<Content-Length>
+header will be set to the size of the encoded content on the first call to
+L</"render">, unless it streams the response data from a C<handle> and thus
+can't predetermine the content size. L</"render"> cannot be used to provide
+additional response data if a C<Content-Length> header was rendered.
+
+No effect after response headers have been rendered.
+
 =head3 set_response_body_buffer
 
   $cgi = $cgi->set_response_body_buffer(128*1024);
@@ -906,20 +918,21 @@ to L</"render">.
 
 =head3 render
 
-  $cgi->render;
-  $cgi->render(html     => $html);
-  $cgi->render(xml      => $xml);
-  $cgi->render(text     => $text);
-  $cgi->render(data     => $bytes);
-  $cgi->render(file     => $filepath);
-  $cgi->render(handle   => $filehandle);
-  $cgi->render(json     => $ref);
-  $cgi->render(redirect => $url);
+  $cgi = $cgi->render;
+  $cgi = $cgi->render(html     => $html);
+  $cgi = $cgi->render(xml      => $xml);
+  $cgi = $cgi->render(text     => $text);
+  $cgi = $cgi->render(data     => $bytes);
+  $cgi = $cgi->render(file     => $filepath);
+  $cgi = $cgi->render(handle   => $filehandle);
+  $cgi = $cgi->render(json     => $ref);
+  $cgi = $cgi->render(redirect => $url);
 
 Renders response data of a type indicated by the first parameter, if any. The
 first time it is called will render response headers and set
-L</"headers_rendered">, and it may be called additional times with more
-response data.
+L</"headers_rendered">. It may be called additional times with more response
+data, unless a C<Content-Length> header was generated due to
+L</"set_response_fixed_length">.
 
 The C<Content-Type> response header will be set according to
 L</"set_response_type">, or autodetected depending on the data type passed in
@@ -938,8 +951,9 @@ C<json> data structures will be encoded to JSON and UTF-8.
 
 C<redirect> will set a C<Location> header if response headers have not yet been
 rendered, and will set a response status of 302 if none has been set by
-L</"set_response_status">. It will not set a C<Content-Type> response header.
-If response headers have already been rendered a warning will be emitted.
+L</"set_response_status">. It will set a C<Content-Length> of 0, and it will
+not set a C<Content-Type> response header. If response headers have already
+been rendered a warning will be emitted.
 
 The C<Date> response header will be set to the current time as an HTTP date
 string if not set manually.

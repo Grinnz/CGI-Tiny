@@ -1,5 +1,6 @@
 {{$NEXT}}
   - Rename set_response_content_type and set_response_content_disposition to set_response_type and set_response_disposition
+  - Add set_response_fixed_length method
 
 0.010     2021-04-28 23:14:59 EDT
   - Replace set_response_download method with set_response_content_disposition
