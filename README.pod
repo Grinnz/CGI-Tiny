@@ -293,11 +293,14 @@ create and write to the logging target.
   use warnings;
   use utf8;
   use CGI::Tiny;
-  use Log::Any '$log';
+  use Log::Any;
   use Log::Any::Adapter
+    {category => 'cgi_script'},
     File => '/path/to/log/file.log',
     binmode => ':encoding(UTF-8)',
     log_level => $ENV{MY_CGI_LOG_LEVEL} || 'info';
+
+  my $log = Log::Any->get_logger(category => 'cgi_script');
 
   local $SIG{__WARN__} = sub {
     my ($warning) = @_;
