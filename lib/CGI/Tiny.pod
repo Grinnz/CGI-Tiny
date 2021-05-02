@@ -276,6 +276,50 @@ characters, so non-ASCII filenames make things trickier.
     $cgi->set_response_disposition(attachment => $basename)->render(file => $filepath);
   };
 
+=head2 Logging
+
+CGI scripts can usually log errors directly to STDERR with the C<warn>
+function, and rely on the CGI server to log them to a file, but you will likely
+need to encode errors to UTF-8 if you expect them to contain non-ASCII text.
+
+Minimal loggers like L<Log::Any> can also be used to redirect errors and
+warnings to a file or other logging mechanism specific to the CGI script,
+encode them to bytes automatically, and also log debugging information when the
+log level is set to C<debug>. Just make sure the CGI server has permission to
+create and write to the logging target if necessary.
+
+  #!/usr/bin/perl
+  use strict;
+  use warnings;
+  use utf8;
+  use CGI::Tiny;
+  use Log::Any '$log';
+  use Log::Any::Adapter
+    File => '/path/to/log/file.log',
+    binmode => ':encoding(UTF-8)',
+    log_level => $ENV{MY_CGI_LOG_LEVEL} || 'info';
+
+  cgi {
+    my $cgi = $_;
+
+    local $SIG{__WARN__} = sub {
+      my ($warning) = @_;
+      chomp $warning;
+      $log->warn($warning);
+    };
+
+    $cgi->set_error_handler(sub {
+      my ($cgi, $error) = @_;
+      chomp $error;
+      $log->error($error);
+    });
+
+    # only logged if MY_CGI_LOG_LEVEL=debug set in CGI server environment
+    $log->debugf('Method: %s, Path: %s, Query: %s', $cgi->method, $cgi->path, $cgi->query);
+
+    # handle the actual request
+  };
+
 =head2 Routing
 
 Web applications use routing to serve multiple types of requests from one
