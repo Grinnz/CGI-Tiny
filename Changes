@@ -1,5 +1,6 @@
 {{$NEXT}}
   - set_nph and set_response_fixed_length now set a true value if called without a value
+  - Gracefully handle premature exit before the cgi block
 
 0.011     2021-04-29 02:12:59 EDT
   - Rename set_response_content_type and set_response_content_disposition to set_response_type and set_response_disposition

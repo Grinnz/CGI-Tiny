@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Carp ();
 use IO::Handle ();
-use Exporter 'import';
+use Exporter ();
 
 our $VERSION = '0.012';
 
@@ -122,14 +122,17 @@ my %HTTP_STATUS = (
 }
 
 {
-  # for cleanup in END in case of premature exit
-  my %PENDING_CGI;
+  my $cgi;
+
+  sub import {
+    # for cleanup in END in case of premature exit
+    $cgi ||= bless {pid => $$}, $_[0];
+    goto &Exporter::import;
+  }
 
   sub cgi (&) {
     my ($handler) = @_;
-    my $cgi = bless {pid => $$}, __PACKAGE__;
-    my $cgi_key = 0+$cgi;
-    $PENDING_CGI{$cgi_key} = $cgi; # don't localize, so premature exit can clean up in END
+    $cgi ||= bless {pid => $$}, __PACKAGE__;
     my ($error, $errored);
     {
       local $@;
@@ -140,7 +143,7 @@ my %HTTP_STATUS = (
     } elsif (!$cgi->{headers_rendered}) {
       _handle_error($cgi, "cgi completed without rendering a response\n");
     }
-    delete $PENDING_CGI{$cgi_key};
+    undef $cgi;
     1;
   }
 
@@ -148,9 +151,9 @@ my %HTTP_STATUS = (
   # ModPerl::Registry or CGI::Compile won't run END after each request,
   # but they override exit to throw an exception which we handle already
   END {
-    foreach my $key (keys %PENDING_CGI) {
-      my $cgi = delete $PENDING_CGI{$key};
+    if (defined $cgi) {
       _handle_error($cgi, "cgi exited without rendering a response\n") unless $cgi->{headers_rendered};
+      undef $cgi;
     }
   }
 }
@@ -173,7 +176,7 @@ sub _handle_error {
   } else {
     warn $error;
   }
-  $cgi->render(text => $cgi->{response_status}) unless $cgi->{headers_rendered};
+  $cgi->set_response_type('text/plain')->render(data => $cgi->{response_status}) unless $cgi->{headers_rendered};
 }
 
 sub set_error_handler          { $_[0]{on_error} = $_[1]; $_[0] }

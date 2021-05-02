@@ -18,6 +18,7 @@ my @env_keys = qw(
 
 sub _parse_response {
   my ($response, $nph) = @_;
+  return {} unless length $response;
   my ($headers_str, $body) = split /\r\n\r\n/, $response, 2;
   my (%headers, $start_line, $response_status);
   foreach my $header (split /\r\n/, $headers_str) {
@@ -249,6 +250,50 @@ subtest 'No render (premature exit with persistent object)' => sub {
   ok length($error), 'error logged';
   seek $outfile, 0, 0;
   my $out_data = do { local $/; readline $outfile };
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  like $response->{status}, qr/^5[0-9]{2}\b/, '500 response status';
+};
+
+subtest 'No render (premature exit before cgi block)' => sub {
+  my $pid = open my $out_fh, '-|';
+  plan skip_all => "fork failed: $!" unless defined $pid;
+  unless ($pid) {
+    local @ENV{@env_keys} = ('')x@env_keys;
+    local $ENV{PATH_INFO} = '/';
+    local $ENV{REQUEST_METHOD} = 'GET';
+    local $ENV{SCRIPT_NAME} = '/';
+    local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+    CGI::Tiny->import; # init handler
+    $SIG{__WARN__} = sub {}; # suppress stderr in child
+    exit;
+  }
+  my $out_data = do { local $/; readline $out_fh };
+  close $out_fh;
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  like $response->{status}, qr/^5[0-9]{2}\b/, '500 response status';
+};
+
+subtest 'Exception before cgi block' => sub {
+  my $pid = open my $out_fh, '-|';
+  plan skip_all => "fork failed: $!" unless defined $pid;
+  unless ($pid) {
+    local @ENV{@env_keys} = ('')x@env_keys;
+    local $ENV{PATH_INFO} = '/';
+    local $ENV{REQUEST_METHOD} = 'GET';
+    local $ENV{SCRIPT_NAME} = '/';
+    local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+    CGI::Tiny->import; # init handler
+    $SIG{__WARN__} = sub {}; # suppress stderr in child
+    die;
+  }
+  my $out_data = do { local $/; readline $out_fh };
+  close $out_fh;
+
   ok length($out_data), 'response rendered';
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';

@@ -110,6 +110,7 @@ incompatibly if needed.
 
 CGI::Tiny's interface is a regular function called C<cgi> exported by default.
 
+  use CGI::Tiny;
   cgi {
     my $cgi = $_;
     # set up error handling on $cgi
@@ -125,7 +126,9 @@ response.
 If an exception is thrown within the code block, or the code block does not
 render a response, it will run the handler set by L</"set_error_handler"> if
 any, or by default emit the error as a warning and (if nothing has been
-rendered yet) render a 500 Internal Server Error.
+rendered yet) render a 500 Internal Server Error. The default server error
+will also be rendered if the process ends abnormally between importing from
+CGI::Tiny and the start of the C<cgi> block.
 
 Note that the C<cgi> block's current implementation as a regular exported
 subroutine is an implementation detail, and future implementations reserve the
@@ -1068,10 +1071,10 @@ fills a similar need but has a number of interface differences to be aware of.
 
 =item *
 
-There is no global CGI::Tiny object; the object is constructed for the scope of
-the C<cgi> block, only reads request data from the environment once it is
-accessed, and once the block completes (normally or abnormally), it ensures
-that a valid response is rendered to avoid gateway errors.
+There is no CGI::Tiny object constructor; the object is accessible within the
+C<cgi> block, only reads request data from the environment once it is accessed,
+and ensures that a valid response is rendered to avoid gateway errors even in
+the event of an exception or premature exit.
 
 =item *
 
