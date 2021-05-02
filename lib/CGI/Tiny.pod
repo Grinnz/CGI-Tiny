@@ -450,7 +450,7 @@ Sets the output handle to print the response to. If not set, prints to
 C<STDOUT>. The handle will have C<binmode> applied before printing to remove
 any translation layers.
 
-=head2 Request
+=head2 Request Environment
 
 =head3 auth_type
 
@@ -519,6 +519,8 @@ missing and empty values, missing values will be normalized to an empty string.
   my $query  = $cgi->query;  # QUERY_STRING
 
 Short aliases for a few request meta-variables.
+
+=head2 Request Parsing
 
 =head3 query_params
 
