@@ -299,14 +299,14 @@ create and write to the logging target.
     binmode => ':encoding(UTF-8)',
     log_level => $ENV{MY_CGI_LOG_LEVEL} || 'info';
 
+  local $SIG{__WARN__} = sub {
+    my ($warning) = @_;
+    chomp $warning;
+    $log->warn($warning);
+  };
+
   cgi {
     my $cgi = $_;
-
-    local $SIG{__WARN__} = sub {
-      my ($warning) = @_;
-      chomp $warning;
-      $log->warn($warning);
-    };
 
     $cgi->set_error_handler(sub {
       my ($cgi, $error) = @_;
