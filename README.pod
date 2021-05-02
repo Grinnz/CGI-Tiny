@@ -295,12 +295,12 @@ create and write to the logging target.
   use CGI::Tiny;
   use Log::Any;
   use Log::Any::Adapter
-    {category => 'cgi_script'}, # only log our category here
+    {category => 'cgi-script'}, # only log our category here
     File => '/path/to/log/file.log',
     binmode => ':encoding(UTF-8)',
     log_level => $ENV{MY_CGI_LOG_LEVEL} || 'info';
 
-  my $log = Log::Any->get_logger(category => 'cgi_script');
+  my $log = Log::Any->get_logger(category => 'cgi-script');
 
   local $SIG{__WARN__} = sub {
     my ($warning) = @_;
