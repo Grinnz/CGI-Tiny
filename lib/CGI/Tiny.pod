@@ -286,7 +286,7 @@ Minimal loggers like L<Log::Any> can also be used to redirect errors and
 warnings to a file or other logging mechanism specific to the CGI script,
 encode them to bytes automatically, and also log debugging information when the
 log level is set to C<debug>. Just make sure the CGI server has permission to
-create and write to the logging target if necessary.
+create and write to the logging target.
 
   #!/usr/bin/perl
   use strict;
