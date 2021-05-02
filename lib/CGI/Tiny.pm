@@ -437,12 +437,12 @@ sub set_nph {
   if ($self->{headers_rendered}) {
     Carp::carp "Attempted to set NPH response mode but headers have already been rendered";
   } else {
-    $self->{nph} = $value;
+    $self->{nph} = @_ < 2 ? 1 : $value;
   }
   return $self;
 }
 
-sub set_response_fixed_length { $_[0]{response_fixed_length} = $_[1]; $_[0] }
+sub set_response_fixed_length { $_[0]{response_fixed_length} = @_ < 2 ? 1 : $_[1]; $_[0] }
 
 sub set_response_body_buffer { $_[0]{response_body_buffer} = $_[1]; $_[0] }
 

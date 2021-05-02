@@ -375,7 +375,7 @@ subtest 'Data response (fixed length)' => sub {
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
-    $_->set_response_fixed_length(1);
+    $_->set_response_fixed_length;
     $_->render(data => $data);
   };
 
@@ -546,6 +546,7 @@ subtest 'Text response (UTF-16LE)' => sub {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
     $_->set_response_charset('UTF-16LE');
+    $_->set_response_fixed_length(0);
     $_->render(text => $text);
   };
 
@@ -1278,7 +1279,7 @@ subtest 'NPH response' => sub {
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
-    $_->set_nph(1);
+    $_->set_nph;
     $_->render;
   };
 

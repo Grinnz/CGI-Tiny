@@ -16,6 +16,7 @@ CGI::Tiny - Common Gateway Interface, with no frills
 
   cgi {
     my $cgi = $_;
+    $cgi->set_response_fixed_length;
     $cgi->set_error_handler(sub {
       my ($cgi, $error) = @_;
       warn $error;
@@ -730,11 +731,13 @@ L</"set_request_body_limit"> can fit well within the available memory.
 
 =head3 set_nph
 
+  $cgi = $cgi->set_nph;
   $cgi = $cgi->set_nph(1);
 
-If set to a true value before rendering response headers, CGI::Tiny will act as
-a L<NPH (Non-Parsed Header)|https://tools.ietf.org/html/rfc3875#section-5>
-script and render full HTTP response headers. This may be required for some CGI
+If set to a true value or called without a value before rendering response
+headers, CGI::Tiny will act as a
+L<NPH (Non-Parsed Header)|https://tools.ietf.org/html/rfc3875#section-5> script
+and render full HTTP response headers. This may be required for some CGI
 servers, or enable unbuffered responses or HTTP extensions not supported by the
 CGI server.
 
@@ -742,13 +745,15 @@ No effect after response headers have been rendered.
 
 =head3 set_response_fixed_length
 
+  $cgi = $cgi->set_response_fixed_length;
   $cgi = $cgi->set_response_fixed_length(1);
 
-If set to a true value before rendering response headers, a C<Content-Length>
-header will be set to the size of the encoded content on the first call to
-L</"render">, unless it streams the response data from a C<handle> and thus
-can't predetermine the content size. L</"render"> cannot be used to provide
-additional response data if a C<Content-Length> header was rendered.
+If set to a true value or called without a value before rendering response
+headers, a C<Content-Length> header will be set to the size of the encoded
+content on the first call to L</"render">, unless it streams the response data
+from a C<handle> and thus can't predetermine the content size. L</"render">
+cannot be used to provide additional response data if a C<Content-Length>
+header was rendered.
 
 No effect after response headers have been rendered.
 
