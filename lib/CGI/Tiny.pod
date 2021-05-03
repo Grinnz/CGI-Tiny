@@ -975,7 +975,8 @@ Renders response headers (setting L</"headers_rendered">) and then fixed-length
 response data of a type indicated by the first parameter, if any. A
 C<Content-Length> header will be set to the length of the encoded response
 content, and further calls to C<render> or L</"render_chunk"> will throw an
-exception.
+exception. Use L</"render_chunk"> instead to render without a C<Content-Length>
+header.
 
 The C<Content-Type> response header will be set according to
 L</"set_response_type">, or autodetected depending on the data type passed, or
