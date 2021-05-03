@@ -1,4 +1,5 @@
 {{$NEXT}}
+  - Rendering a redirect will now set the response status to 302 if any non-300 status was set
 
 0.012     2021-05-02 23:28:28 EDT
   - Remove set_response_fixed_length

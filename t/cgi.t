@@ -742,6 +742,60 @@ subtest 'Redirect response' => sub {
   ok !length($response->{body}), 'empty response body';
 };
 
+subtest 'Redirect response (301)' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my $url = '/foo';
+  cgi {
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->set_response_status(301)->render(redirect => $url);
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok !defined($response->{headers}{'content-type'}), 'Content-Type not set';
+  is $response->{headers}{'content-length'}, 0, 'right Content-Length';
+  is $response->{headers}{location}, $url, 'Location set';
+  like $response->{status}, qr/^301\b/, '301 response status';
+  ok defined($response->{headers}{date}), 'Date set';
+  ok defined(CGI::Tiny::date_to_epoch $response->{headers}{date}), 'valid HTTP date';
+  ok !length($response->{body}), 'empty response body';
+};
+
+subtest 'Redirect response (non-300)' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my $url = '/foo';
+  cgi {
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->set_response_status(100)->render(redirect => $url);
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok !defined($response->{headers}{'content-type'}), 'Content-Type not set';
+  is $response->{headers}{'content-length'}, 0, 'right Content-Length';
+  is $response->{headers}{location}, $url, 'Location set';
+  like $response->{status}, qr/^302\b/, '302 response status';
+  ok defined($response->{headers}{date}), 'Date set';
+  ok defined(CGI::Tiny::date_to_epoch $response->{headers}{date}), 'valid HTTP date';
+  ok !length($response->{body}), 'empty response body';
+};
+
 subtest 'Response headers' => sub {
   local @ENV{@env_keys} = ('')x@env_keys;
   local $ENV{PATH_INFO} = '/';

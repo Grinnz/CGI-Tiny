@@ -706,7 +706,8 @@ sub _response_headers {
     $headers_str = "Date: $date_str\r\n$headers_str";
   }
   my $status = $self->{response_status};
-  $status = $self->{response_status} = "302 $HTTP_STATUS{302}" if !defined $status and $type eq 'redirect';
+  $status = $self->{response_status} = "302 $HTTP_STATUS{302}" if $type eq 'redirect'
+    and !(defined $status and $status =~ m/^3[0-9]{2} /);
   if ($self->{nph}) {
     $status = "200 $HTTP_STATUS{200}" unless defined $status;
     my $protocol = $ENV{SERVER_PROTOCOL};
