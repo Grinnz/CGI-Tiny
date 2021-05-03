@@ -25,7 +25,7 @@ CGI::Tiny - Common Gateway Interface, with no frills
         } elsif ($cgi->response_status_code == 400) {
           $cgi->render(json => {error => 'Bad request'});
         } else {
-          $cgi->render(json => {error => 'Internal server error'});
+          $cgi->set_response_status(500)->render(json => {error => 'Internal server error'});
         }
       }
     });
@@ -388,9 +388,8 @@ C<cgi> code block.
     ...
   });
 
-Sets an error handler to run in the event of an exception. If the response
-status has not been set by L</"set_response_status"> or rendering headers, it
-will default to 500 when this handler is called.
+Sets an error handler to run in the event of an exception or if the script ends
+without rendering a response.
 
 The error value can be any exception thrown by Perl or user code. It should
 generally not be included in any response rendered to the client, but instead
