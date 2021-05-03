@@ -597,8 +597,8 @@ sub headers_rendered { $_[0]{headers_rendered} }
     if ($type eq 'file') {
       open my $in_fh, '<', $data or Carp::croak "Failed to open file '$data' for rendering: $!";
       binmode $in_fh;
-      my $chunk = 0 + ($self->{response_body_buffer} || $ENV{CGI_TINY_RESPONSE_BODY_BUFFER} || DEFAULT_RESPONSE_BODY_BUFFER);
-      while (read $in_fh, my $buffer, $chunk) {
+      my $buffer_size = 0 + ($self->{response_body_buffer} || $ENV{CGI_TINY_RESPONSE_BODY_BUFFER} || DEFAULT_RESPONSE_BODY_BUFFER);
+      while (read $in_fh, my $buffer, $buffer_size) {
         $out_fh->print($buffer);
       }
       $out_fh->flush;
@@ -647,8 +647,8 @@ sub headers_rendered { $_[0]{headers_rendered} }
         $in_fh = $data;
       }
       binmode $in_fh;
-      my $chunk = 0 + ($self->{response_body_buffer} || $ENV{CGI_TINY_RESPONSE_BODY_BUFFER} || DEFAULT_RESPONSE_BODY_BUFFER);
-      while (read $in_fh, my $buffer, $chunk) {
+      my $buffer_size = 0 + ($self->{response_body_buffer} || $ENV{CGI_TINY_RESPONSE_BODY_BUFFER} || DEFAULT_RESPONSE_BODY_BUFFER);
+      while (read $in_fh, my $buffer, $buffer_size) {
         $out_fh->print($buffer);
       }
       $out_fh->flush;
