@@ -161,7 +161,6 @@ my %HTTP_STATUS = (
 sub _handle_error {
   my ($cgi, $error) = @_;
   return unless $cgi->{pid} == $$; # in case of fork
-  $cgi->{response_status} = "500 $HTTP_STATUS{500}" unless $cgi->{headers_rendered} or defined $cgi->{response_status};
   if (defined(my $handler = $cgi->{on_error})) {
     my ($error_error, $error_errored);
     {
@@ -176,7 +175,10 @@ sub _handle_error {
   } else {
     warn $error;
   }
-  $cgi->set_response_type('text/plain')->render(data => $cgi->{response_status}) unless $cgi->{headers_rendered};
+  unless ($cgi->{headers_rendered}) {
+    $cgi->{response_status} = "500 $HTTP_STATUS{500}" unless defined $cgi->{response_status};
+    $cgi->set_response_type('text/plain')->render(data => $cgi->{response_status});
+  }
 }
 
 sub set_error_handler          { $_[0]{on_error} = $_[1]; $_[0] }

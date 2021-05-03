@@ -105,7 +105,7 @@ subtest 'No render' => sub {
   };
 
   ok defined($error), 'error logged';
-  is $code, 500, '500 response status code';
+  is $code, 200, 'response status code not set';
   ok length($out_data), 'response rendered';
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
@@ -328,7 +328,7 @@ subtest 'Exception before render' => sub {
   ok defined($error), 'error logged';
   like $error, qr/Error 42/, 'right error';
   ok !$headers_rendered, 'headers were not rendered';
-  is $code, 500, '500 response status code';
+  is $code, 200, 'response status code not set';
   ok length($out_data), 'response rendered';
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
