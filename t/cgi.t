@@ -105,7 +105,7 @@ subtest 'No render' => sub {
   };
 
   ok defined($error), 'error logged';
-  is $code, 200, 'response status code not set';
+  is $code, 500, '500 response status code';
   ok length($out_data), 'response rendered';
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
@@ -328,7 +328,65 @@ subtest 'Exception before render' => sub {
   ok defined($error), 'error logged';
   like $error, qr/Error 42/, 'right error';
   ok !$headers_rendered, 'headers were not rendered';
-  is $code, 200, 'response status code not set';
+  is $code, 500, '500 response status code';
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  ok defined($response->{headers}{'content-length'}), 'Content-Length set';
+  like $response->{status}, qr/^5[0-9]{2}\b/, '500 response status';
+};
+
+subtest 'Exception before render (set error code)' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my ($error, $headers_rendered, $code);
+  cgi {
+    $_->set_error_handler(sub { $error = $_[1]; $headers_rendered = $_[0]->headers_rendered; $code = $_[0]->response_status_code });
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->set_response_status(501);
+    die 'Error 42';
+  };
+
+  ok defined($error), 'error logged';
+  like $error, qr/Error 42/, 'right error';
+  ok !$headers_rendered, 'headers were not rendered';
+  is $code, 501, '501 response status code';
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{'content-type'}), 'Content-Type set';
+  ok defined($response->{headers}{'content-length'}), 'Content-Length set';
+  like $response->{status}, qr/^5[0-9]{2}\b/, '500 response status';
+};
+
+subtest 'Exception before render (set non-error code)' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'GET';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  open my $in_fh, '<', \(my $in_data = '') or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my ($error, $headers_rendered, $code);
+  cgi {
+    $_->set_error_handler(sub { $error = $_[1]; $headers_rendered = $_[0]->headers_rendered; $code = $_[0]->response_status_code });
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->set_response_status(301);
+    die 'Error 42';
+  };
+
+  ok defined($error), 'error logged';
+  like $error, qr/Error 42/, 'right error';
+  ok !$headers_rendered, 'headers were not rendered';
+  is $code, 500, '500 response status code';
   ok length($out_data), 'response rendered';
   my $response = _parse_response($out_data);
   ok defined($response->{headers}{'content-type'}), 'Content-Type set';
