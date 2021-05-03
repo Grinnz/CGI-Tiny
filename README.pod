@@ -675,6 +675,9 @@ Retrieve C<multipartE<sol>form-data> request body parts as an ordered array
 reference. Most applications should retrieve multipart form data through
 L</"body_params"> and L</"uploads"> (or related accessors) instead.
 
+Note that this will read the text form fields into memory, so make sure the
+L</"set_request_body_limit"> can fit well within the available memory.
+
 Body parts are represented as hash references containing:
 
 =over
