@@ -275,9 +275,9 @@ sub body {
     my $length = $self->_body_length;
     my $in_fh = defined $self->{input_handle} ? $self->{input_handle} : *STDIN;
     binmode $in_fh;
+    my $buffer_size = 0 + ($self->{request_body_buffer} || $ENV{CGI_TINY_REQUEST_BODY_BUFFER} || DEFAULT_REQUEST_BODY_BUFFER);
     while ($length > 0) {
-      my $chunk = $self->{request_body_buffer} || $ENV{CGI_TINY_REQUEST_BODY_BUFFER} || DEFAULT_REQUEST_BODY_BUFFER;
-      $chunk = $length if $length < $chunk;
+      my $chunk = $length < $buffer_size ? $length : $buffer_size;
       last unless my $read = read $in_fh, $self->{body_content}, $chunk, length $self->{body_content};
       $length -= $read;
     }
@@ -399,7 +399,7 @@ sub _body_length {
     $self->{response_status} = "413 $HTTP_STATUS{413}" unless $self->{headers_rendered};
     die "Request body limit exceeded\n";
   }
-  return $length;
+  return 0 + $length;
 }
 
 sub _body_multipart {
@@ -597,7 +597,7 @@ sub headers_rendered { $_[0]{headers_rendered} }
     if ($type eq 'file') {
       open my $in_fh, '<', $data or Carp::croak "Failed to open file '$data' for rendering: $!";
       binmode $in_fh;
-      my $chunk = $self->{response_body_buffer} || $ENV{CGI_TINY_RESPONSE_BODY_BUFFER} || DEFAULT_RESPONSE_BODY_BUFFER;
+      my $chunk = 0 + ($self->{response_body_buffer} || $ENV{CGI_TINY_RESPONSE_BODY_BUFFER} || DEFAULT_RESPONSE_BODY_BUFFER);
       while (read $in_fh, my $buffer, $chunk) {
         $out_fh->print($buffer);
       }
@@ -647,7 +647,7 @@ sub headers_rendered { $_[0]{headers_rendered} }
         $in_fh = $data;
       }
       binmode $in_fh;
-      my $chunk = $self->{response_body_buffer} || $ENV{CGI_TINY_RESPONSE_BODY_BUFFER} || DEFAULT_RESPONSE_BODY_BUFFER;
+      my $chunk = 0 + ($self->{response_body_buffer} || $ENV{CGI_TINY_RESPONSE_BODY_BUFFER} || DEFAULT_RESPONSE_BODY_BUFFER);
       while (read $in_fh, my $buffer, $chunk) {
         $out_fh->print($buffer);
       }
@@ -734,6 +734,7 @@ sub _json {
 
 sub _parse_multipart {
   my ($input, $length, $boundary, $buffer_size) = @_;
+  $buffer_size = 0 + ($buffer_size || DEFAULT_REQUEST_BODY_BUFFER);
   my $buffer = "\r\n";
   my $next_boundary = "\r\n--$boundary\r\n";
   my $end_boundary = "\r\n--$boundary--";
@@ -743,8 +744,7 @@ sub _parse_multipart {
       $buffer .= $$input;
       $length = 0;
     } else {
-      my $chunk = $buffer_size || DEFAULT_REQUEST_BODY_BUFFER;
-      $chunk = $length if $length < $chunk;
+      my $chunk = $length < $buffer_size ? $length : $buffer_size;
       last unless my $read = read $input, $buffer, $chunk, length $buffer;
       $length -= $read;
     }
