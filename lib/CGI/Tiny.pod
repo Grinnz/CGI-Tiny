@@ -997,8 +997,8 @@ its C<Content-Length> cannot be determined beforehand.
 
 C<json> data structures will be encoded to JSON and UTF-8.
 
-C<redirect> will set a C<Location> header if response headers have not yet been
-rendered, and will set a response status of 302 unless a different 300-level
+C<redirect> will set a C<Location> header to redirect the client to another
+URL. The response status will be set to 302 Found unless a different 300-level
 status has been set with L</"set_response_status">. It will set a
 C<Content-Length> of 0, and it will not set a C<Content-Type> response header.
 
