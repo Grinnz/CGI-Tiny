@@ -69,8 +69,8 @@ provides easy access to the most commonly needed features.
 
 =item * Robust
 
-CGI::Tiny's interface is designed to help the developer avoid common pitfalls
-and vulnerabilities by default.
+CGI::Tiny's interface is designed to help the developer follow best practices
+and avoid common pitfalls and vulnerabilities by default.
 
 =item * Lazy
 
