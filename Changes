@@ -1,4 +1,7 @@
 {{$NEXT}}
+
+0.013     2021-05-03 23:32:56 EDT
+  - Skip tests that don't work on Windows
   - Rendering a redirect will now set the response status to 302 if any non-300 status was set
   - Exceptions and failure to render now set a 500 response status unless any error status was set
 
