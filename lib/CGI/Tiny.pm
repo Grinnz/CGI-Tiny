@@ -84,44 +84,6 @@ my %HTTP_STATUS = (
 );
 
 {
-  my @DAYS_OF_WEEK = qw(Sun Mon Tue Wed Thu Fri Sat);
-  my @MONTH_NAMES = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
-  my %MONTH_NUMS;
-  @MONTH_NUMS{@MONTH_NAMES} = 0..11;
-
-  sub epoch_to_date {
-    my ($sec,$min,$hour,$mday,$mon,$year,$wday) = gmtime $_[0];
-    return sprintf '%s, %02d %s %04d %02d:%02d:%02d GMT',
-      $DAYS_OF_WEEK[$wday], $mday, $MONTH_NAMES[$mon], $year + 1900, $hour, $min, $sec;
-  }
-
-  sub date_to_epoch {
-    # RFC 1123 (Sun, 06 Nov 1994 08:49:37 GMT)
-    my ($mday,$mon,$year,$hour,$min,$sec) = $_[0] =~ m/^ (?:Sun|Mon|Tue|Wed|Thu|Fri|Sat),
-      [ ] ([0-9]{2}) [ ] (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [ ] ([0-9]{4})
-      [ ] ([0-9]{2}) : ([0-9]{2}) : ([0-9]{2}) [ ] GMT $/x;
-
-    # RFC 850 (Sunday, 06-Nov-94 08:49:37 GMT)
-    ($mday,$mon,$year,$hour,$min,$sec) = $_[0] =~ m/^ (?:Sun|Mon|Tues|Wednes|Thurs|Fri|Satur)day,
-      [ ] ([0-9]{2}) - (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) - ([0-9]{2})
-      [ ] ([0-9]{2}) : ([0-9]{2}) : ([0-9]{2}) [ ] GMT $/x unless defined $mday;
-
-    # asctime (Sun Nov  6 08:49:37 1994)
-    ($mon,$mday,$hour,$min,$sec,$year) = $_[0] =~ m/^ (?:Sun|Mon|Tue|Wed|Thu|Fri|Sat)
-      [ ] (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [ ]{1,2} ([0-9]{1,2})
-      [ ] ([0-9]{2}) : ([0-9]{2}) : ([0-9]{2}) [ ] ([0-9]{4}) $/x unless defined $mday;
-
-    return undef unless defined $mday;
-
-    require Time::Local;
-    # 4 digit years interpreted literally, but may have leading zeroes
-    # 2 digit years interpreted with best effort heuristic
-    return scalar Time::Local::timegm($sec, $min, $hour, $mday, $MONTH_NUMS{$mon},
-      (length($year) == 4 && $year < 1900) ? $year - 1900 : $year);
-  }
-}
-
-{
   my $cgi;
 
   sub import {
@@ -855,6 +817,44 @@ sub _parse_multipart {
   return undef unless $state{done};
 
   return \@parts;
+}
+
+{
+  my @DAYS_OF_WEEK = qw(Sun Mon Tue Wed Thu Fri Sat);
+  my @MONTH_NAMES = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
+  my %MONTH_NUMS;
+  @MONTH_NUMS{@MONTH_NAMES} = 0..11;
+
+  sub epoch_to_date {
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday) = gmtime $_[0];
+    return sprintf '%s, %02d %s %04d %02d:%02d:%02d GMT',
+      $DAYS_OF_WEEK[$wday], $mday, $MONTH_NAMES[$mon], $year + 1900, $hour, $min, $sec;
+  }
+
+  sub date_to_epoch {
+    # RFC 1123 (Sun, 06 Nov 1994 08:49:37 GMT)
+    my ($mday,$mon,$year,$hour,$min,$sec) = $_[0] =~ m/^ (?:Sun|Mon|Tue|Wed|Thu|Fri|Sat),
+      [ ] ([0-9]{2}) [ ] (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [ ] ([0-9]{4})
+      [ ] ([0-9]{2}) : ([0-9]{2}) : ([0-9]{2}) [ ] GMT $/x;
+
+    # RFC 850 (Sunday, 06-Nov-94 08:49:37 GMT)
+    ($mday,$mon,$year,$hour,$min,$sec) = $_[0] =~ m/^ (?:Sun|Mon|Tues|Wednes|Thurs|Fri|Satur)day,
+      [ ] ([0-9]{2}) - (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) - ([0-9]{2})
+      [ ] ([0-9]{2}) : ([0-9]{2}) : ([0-9]{2}) [ ] GMT $/x unless defined $mday;
+
+    # asctime (Sun Nov  6 08:49:37 1994)
+    ($mon,$mday,$hour,$min,$sec,$year) = $_[0] =~ m/^ (?:Sun|Mon|Tue|Wed|Thu|Fri|Sat)
+      [ ] (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [ ]{1,2} ([0-9]{1,2})
+      [ ] ([0-9]{2}) : ([0-9]{2}) : ([0-9]{2}) [ ] ([0-9]{4}) $/x unless defined $mday;
+
+    return undef unless defined $mday;
+
+    require Time::Local;
+    # 4 digit years interpreted literally, but may have leading zeroes
+    # 2 digit years interpreted with best effort heuristic
+    return scalar Time::Local::timegm($sec, $min, $hour, $mday, $MONTH_NUMS{$mon},
+      (length($year) == 4 && $year < 1900) ? $year - 1900 : $year);
+  }
 }
 
 1;
