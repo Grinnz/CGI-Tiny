@@ -400,9 +400,8 @@ warned or logged.
 Exceptions may occur before or after response headers have been rendered. If
 response headers have not been rendered, error handlers may inspect
 L</"response_status_code"> and/or render some error response. The response
-status code may be set to a specific error status by some errors, and will
-default to 500 when this handler is called if it has not been set to a 400- or
-500-level error status.
+status code will be set to 500 when this handler is called if it has not been
+set to a specific 400- or 500-level error status.
 
 If the error handler itself throws an exception, that error and the original
 error will be emitted as a warning. If no response has been rendered after the
