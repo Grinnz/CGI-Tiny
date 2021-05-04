@@ -964,13 +964,13 @@ to C<200>.
 
 =head3 render
 
-  $cgi = $cgi->render;
-  $cgi = $cgi->render(html     => $html);
-  $cgi = $cgi->render(xml      => $xml);
-  $cgi = $cgi->render(text     => $text);
-  $cgi = $cgi->render(data     => $bytes);
-  $cgi = $cgi->render(file     => $filepath);
-  $cgi = $cgi->render(json     => $ref);
+  $cgi = $cgi->render;                        # default Content-Type:
+  $cgi = $cgi->render(text     => $text);     # text/plain;charset=$charset
+  $cgi = $cgi->render(html     => $html);     # text/html;charset=$charset
+  $cgi = $cgi->render(xml      => $xml);      # application/xml;charset=$charset
+  $cgi = $cgi->render(json     => $ref);      # application/json;charset=UTF-8
+  $cgi = $cgi->render(data     => $bytes);    # application/octet-stream
+  $cgi = $cgi->render(file     => $filepath); # application/octet-stream
   $cgi = $cgi->render(redirect => $url);
 
 Renders response headers and then fixed-length response data of a type
@@ -986,16 +986,16 @@ to C<application/octet-stream> if there is no more appropriate value.
 The C<Date> response header will be set to the current time as an HTTP date
 string if not set manually.
 
-C<html>, C<xml>, or C<text> data is expected to be decoded Unicode characters,
+C<text>, C<html>, or C<xml> data is expected to be decoded Unicode characters,
 and will be encoded according to L</"set_response_charset"> (UTF-8 by default).
 L<Unicode::UTF8> will be used for efficient UTF-8 encoding if available.
+
+C<json> data structures will be encoded to JSON and UTF-8.
 
 C<data> or C<file> will render bytes from a string or local file path
 respectively. A C<handle>, or a C<file> whose size cannot be determined
 accurately from the filesystem, must be rendered using L</"render_chunk"> since
 its C<Content-Length> cannot be determined beforehand.
-
-C<json> data structures will be encoded to JSON and UTF-8.
 
 C<redirect> will set a C<Location> header to redirect the client to another
 URL. The response status will be set to 302 Found unless a different 300-level
@@ -1004,14 +1004,14 @@ C<Content-Length> of 0, and it will not set a C<Content-Type> response header.
 
 =head3 render_chunk
 
-  $cgi = $cgi->render_chunk;
-  $cgi = $cgi->render_chunk(html   => $html);
-  $cgi = $cgi->render_chunk(xml    => $xml);
-  $cgi = $cgi->render_chunk(text   => $text);
-  $cgi = $cgi->render_chunk(data   => $bytes);
-  $cgi = $cgi->render_chunk(file   => $filepath);
-  $cgi = $cgi->render_chunk(handle => $filehandle);
-  $cgi = $cgi->render_chunk(json   => $ref);
+  $cgi = $cgi->render_chunk;                        # default Content-Type:
+  $cgi = $cgi->render_chunk(text   => $text);       # text/plain;charset=$charset
+  $cgi = $cgi->render_chunk(html   => $html);       # text/html;charset=$charset
+  $cgi = $cgi->render_chunk(xml    => $xml);        # application/xml;charset=$charset
+  $cgi = $cgi->render_chunk(json   => $ref);        # application/json;charset=UTF-8
+  $cgi = $cgi->render_chunk(data   => $bytes);      # application/octet-stream
+  $cgi = $cgi->render_chunk(file   => $filepath);   # application/octet-stream
+  $cgi = $cgi->render_chunk(handle => $filehandle); # application/octet-stream
 
 Renders response headers the first time it is called, and then chunked response
 data of a type indicated by the first parameter, if any. No C<Content-Length>
@@ -1033,15 +1033,15 @@ is no more appropriate value.
 The C<Date> response header will be set to the current time as an HTTP date
 string if not set manually.
 
-C<html>, C<xml>, or C<text> data is expected to be decoded Unicode characters,
+C<text>, C<html>, or C<xml> data is expected to be decoded Unicode characters,
 and will be encoded according to L</"set_response_charset"> (UTF-8 by default).
 L<Unicode::UTF8> will be used for efficient UTF-8 encoding if available.
+
+C<json> data structures will be encoded to JSON and UTF-8.
 
 C<data>, C<file>, or C<handle> will render bytes from a string, local file
 path, or open filehandle respectively. A C<handle> will have C<binmode> applied
 to remove any translation layers, and its contents will be streamed until EOF.
-
-C<json> data structures will be encoded to JSON and UTF-8.
 
 C<redirect> responses must be rendered with L</"render">.
 

@@ -550,7 +550,7 @@ sub response_status_code {
 }
 
 {
-  my %RENDER_TYPES = (json => 1, html => 1, xml => 1, text => 1, data => 1, file => 1, handle => 1, redirect => 1);
+  my %RENDER_TYPES = (text => 1, html => 1, xml => 1, json => 1, data => 1, file => 1, handle => 1, redirect => 1);
 
   sub render {
     my ($self, $type, $data) = @_;
@@ -560,10 +560,7 @@ sub response_status_code {
     Carp::croak "Cannot render from an open filehandle with ->render; use ->render_chunk" if $type eq 'handle';
 
     my ($response_body, $response_length, $redirect_url);
-    if ($type eq 'json') {
-      $response_body = $self->_json->encode($data);
-      $response_length = length $response_body;
-    } elsif ($type eq 'html' or $type eq 'xml' or $type eq 'text') {
+    if ($type eq 'text' or $type eq 'html' or $type eq 'xml') {
       my $charset = $self->{response_charset};
       $charset = 'UTF-8' unless defined $charset;
       if (uc $charset eq 'UTF-8' and do { local $@; eval { require Unicode::UTF8; 1 } }) {
@@ -572,6 +569,9 @@ sub response_status_code {
         require Encode;
         $response_body = Encode::encode($charset, "$data");
       }
+      $response_length = length $response_body;
+    } elsif ($type eq 'json') {
+      $response_body = $self->_json->encode($data);
       $response_length = length $response_body;
     } elsif ($type eq 'data') {
       $response_body = $data;
@@ -622,10 +622,7 @@ sub response_status_code {
       $self->{headers_rendered} = 1;
     }
 
-    if ($type eq 'json') {
-      my $response_body = $self->_json->encode($data);
-      $out_fh->printflush($response_body);
-    } elsif ($type eq 'html' or $type eq 'xml' or $type eq 'text') {
+    if ($type eq 'text' or $type eq 'html' or $type eq 'xml') {
       my $charset = $self->{response_charset};
       $charset = 'UTF-8' unless defined $charset;
       my $response_body;
@@ -635,6 +632,9 @@ sub response_status_code {
         require Encode;
         $response_body = Encode::encode($charset, "$data");
       }
+      $out_fh->printflush($response_body);
+    } elsif ($type eq 'json') {
+      my $response_body = $self->_json->encode($data);
       $out_fh->printflush($response_body);
     } elsif ($type eq 'data') {
       $out_fh->printflush($data);
@@ -690,10 +690,10 @@ sub _response_headers {
     my $charset = $self->{response_charset};
     $charset = 'UTF-8' unless defined $charset;
     $content_type =
-        $type eq 'json' ? 'application/json;charset=UTF-8'
+        $type eq 'text' ? "text/plain;charset=$charset"
       : $type eq 'html' ? "text/html;charset=$charset"
       : $type eq 'xml'  ? "application/xml;charset=$charset"
-      : $type eq 'text' ? "text/plain;charset=$charset"
+      : $type eq 'json' ? 'application/json;charset=UTF-8'
       : 'application/octet-stream'
       unless defined $content_type;
     $headers_str = "Content-Type: $content_type\r\n$headers_str";
