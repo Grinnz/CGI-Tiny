@@ -8,6 +8,17 @@ use File::Temp;
 use JSON::PP 'decode_json', 'encode_json';
 use MIME::Base64 'encode_base64';
 
+my $skip_pipe_open;
+BEGIN {
+  if (defined(my $pid = open my $out, '-|')) {
+    exit unless $pid;
+    close $out;
+    $skip_pipe_open = 1 if $?;
+  } else {
+    $skip_pipe_open = 1;
+  }
+}
+
 my @env_keys = qw(
   AUTH_TYPE CONTENT_LENGTH CONTENT_TYPE GATEWAY_INTERFACE
   PATH_INFO PATH_TRANSLATED QUERY_STRING
@@ -263,6 +274,7 @@ subtest 'No render (premature exit with persistent object)' => sub {
 };
 
 subtest 'No render (premature exit before cgi block)' => sub {
+  plan skip_all => 'fork pipe open not supported' if $skip_pipe_open;
   my $pid = open my $out_fh, '-|';
   plan skip_all => "fork failed: $!" unless defined $pid;
   unless ($pid) {
@@ -286,6 +298,7 @@ subtest 'No render (premature exit before cgi block)' => sub {
 };
 
 subtest 'Exception before cgi block' => sub {
+  plan skip_all => 'fork pipe open not supported' if $skip_pipe_open;
   my $pid = open my $out_fh, '-|';
   plan skip_all => "fork failed: $!" unless defined $pid;
   unless ($pid) {
