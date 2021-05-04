@@ -167,7 +167,7 @@ sub _handle_error {
     my ($error_error, $error_errored);
     {
       local $@;
-      eval { $handler->($cgi, $error); 1 } or do { $error_error = $@; $error_errored = 1 };
+      eval { $handler->($cgi, $error, !!$cgi->{headers_rendered}); 1 } or do { $error_error = $@; $error_errored = 1 };
     }
     return unless $cgi->{pid} == $$; # in case of fork in error handler
     if ($error_errored) {
@@ -523,7 +523,7 @@ sub add_response_header {
         my ($key, $val) = @attrs[$i, $i+1];
         my $has_value = $COOKIE_ATTR_VALUE{lc $key};
         if (!defined $has_value) {
-          Carp::carp "Attempted to set unknown cookie attribute '$key' for HTTP response cookie '$name'";
+          Carp::croak "Attempted to set unknown cookie attribute '$key' for HTTP response cookie '$name'";
         } elsif ($has_value) {
           $cookie_str .= "; $key=$val" if defined $val;
         } else {
@@ -548,8 +548,6 @@ sub response_status_code {
   }
   return 200;
 }
-
-sub headers_rendered { $_[0]{headers_rendered} }
 
 {
   my %RENDER_TYPES = (json => 1, html => 1, xml => 1, text => 1, data => 1, file => 1, handle => 1, redirect => 1);

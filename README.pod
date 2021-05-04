@@ -17,9 +17,9 @@ CGI::Tiny - Common Gateway Interface, with no frills
   cgi {
     my $cgi = $_;
     $cgi->set_error_handler(sub {
-      my ($cgi, $error) = @_;
+      my ($cgi, $error, $rendered) = @_;
       warn $error;
-      unless ($cgi->headers_rendered) {
+      unless ($rendered) {
         if ($cgi->response_status_code == 413) {
           $cgi->render(json => {error => 'Request body limit exceeded'});
         } elsif ($cgi->response_status_code == 400) {
@@ -314,7 +314,7 @@ create and write to the logging target.
     my $cgi = $_;
 
     $cgi->set_error_handler(sub {
-      my ($cgi, $error) = @_;
+      my ($cgi, $error, $rendered) = @_;
       chomp $error;
       $log->error($error);
     });
@@ -384,24 +384,25 @@ C<cgi> code block.
 =head3 set_error_handler
 
   $cgi = $cgi->set_error_handler(sub {
-    my ($cgi, $error) = @_;
+    my ($cgi, $error, $rendered) = @_;
     ...
   });
 
 Sets an error handler to run in the event of an exception or if the script ends
-without rendering a response.
+without rendering a response. The handler will be called with the CGI::Tiny
+object, the error value, and a boolean indicating whether response headers have
+been rendered yet.
 
 The error value can be any exception thrown by Perl or user code. It should
 generally not be included in any response rendered to the client, but instead
 warned or logged.
 
-Exceptions may occur before or after response headers have been rendered, so
-error handlers may choose to render some response if L</"headers_rendered"> is
-false.
-
-L</"response_status_code"> may be set to a specific error status by some errors
-if headers have not been rendered yet, and will default to 500 when this
-handler is called if it has not been set to a 400- or 500-level error status.
+Exceptions may occur before or after response headers have been rendered. If
+response headers have not been rendered, error handlers may inspect
+L</"response_status_code"> and/or render some error response. The response
+status code may be set to a specific error status by some errors, and will
+default to 500 when this handler is called if it has not been set to a 400- or
+500-level error status.
 
 If the error handler itself throws an exception, that error and the original
 error will be emitted as a warning. If no response has been rendered after the
@@ -962,13 +963,6 @@ Numerical response HTTP status code that will be sent when headers are
 rendered, as set by L</"set_response_status"> or an error occurring. Defaults
 to C<200>.
 
-=head3 headers_rendered
-
-  my $bool = $cgi->headers_rendered;
-
-Returns true if response headers have been rendered, such as by L</"render"> or
-the first call to L</"render_chunk">.
-
 =head3 render
 
   $cgi = $cgi->render;
@@ -980,12 +974,11 @@ the first call to L</"render_chunk">.
   $cgi = $cgi->render(json     => $ref);
   $cgi = $cgi->render(redirect => $url);
 
-Renders response headers (setting L</"headers_rendered">) and then fixed-length
-response data of a type indicated by the first parameter, if any. A
-C<Content-Length> header will be set to the length of the encoded response
-content, and further calls to C<render> or L</"render_chunk"> will throw an
-exception. Use L</"render_chunk"> instead to render without a C<Content-Length>
-header.
+Renders response headers and then fixed-length response data of a type
+indicated by the first parameter, if any. A C<Content-Length> header will be
+set to the length of the encoded response content, and further calls to
+C<render> or L</"render_chunk"> will throw an exception. Use L</"render_chunk">
+instead to render without a C<Content-Length> header.
 
 The C<Content-Type> response header will be set according to
 L</"set_response_type">, or autodetected depending on the data type passed, or
@@ -1021,10 +1014,10 @@ C<Content-Length> of 0, and it will not set a C<Content-Type> response header.
   $cgi = $cgi->render_chunk(handle => $filehandle);
   $cgi = $cgi->render_chunk(json   => $ref);
 
-Renders response headers (setting L</"headers_rendered">) the first time it is
-called, and then chunked response data of a type indicated by the first
-parameter, if any. No C<Content-Length> header will be set, and C<render_chunk>
-may be called additional times with more response data.
+Renders response headers the first time it is called, and then chunked response
+data of a type indicated by the first parameter, if any. No C<Content-Length>
+header will be set, and C<render_chunk> may be called additional times with
+more response data.
 
 C<render_chunk> does not impose a chunked response, it simply does not generate
 a C<Content-Length> header. For content where the total encoded content length

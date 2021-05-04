@@ -332,7 +332,7 @@ subtest 'Exception before render' => sub {
 
   my ($error, $headers_rendered, $code);
   cgi {
-    $_->set_error_handler(sub { $error = $_[1]; $headers_rendered = $_[0]->headers_rendered; $code = $_[0]->response_status_code });
+    $_->set_error_handler(sub { $error = $_[1]; $headers_rendered = $_[2]; $code = $_[0]->response_status_code });
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
     die 'Error 42';
@@ -360,7 +360,7 @@ subtest 'Exception before render (set error code)' => sub {
 
   my ($error, $headers_rendered, $code);
   cgi {
-    $_->set_error_handler(sub { $error = $_[1]; $headers_rendered = $_[0]->headers_rendered; $code = $_[0]->response_status_code });
+    $_->set_error_handler(sub { $error = $_[1]; $headers_rendered = $_[2]; $code = $_[0]->response_status_code });
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
     $_->set_response_status(501);
@@ -389,7 +389,7 @@ subtest 'Exception before render (set non-error code)' => sub {
 
   my ($error, $headers_rendered, $code);
   cgi {
-    $_->set_error_handler(sub { $error = $_[1]; $headers_rendered = $_[0]->headers_rendered; $code = $_[0]->response_status_code });
+    $_->set_error_handler(sub { $error = $_[1]; $headers_rendered = $_[2]; $code = $_[0]->response_status_code });
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
     $_->set_response_status(301);
@@ -418,7 +418,7 @@ subtest 'Exception after render' => sub {
 
   my ($error, $headers_rendered);
   cgi {
-    $_->set_error_handler(sub { $error = $_[1]; $headers_rendered = $_[0]->headers_rendered; });
+    $_->set_error_handler(sub { $error = $_[1]; $headers_rendered = $_[2]; });
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
     $_->render;
