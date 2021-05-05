@@ -631,6 +631,8 @@ are decoded to Unicode characters.
 
 Note that this will read the text form fields into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
+C<multipartE<sol>form-data> file uploads will be streamed to temporary files
+accessible via L</"uploads"> and related methods.
 
 =head3 body_param_names
 
@@ -642,6 +644,8 @@ characters, as an ordered array reference.
 
 Note that this will read the text form fields into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
+C<multipartE<sol>form-data> file uploads will be streamed to temporary files
+accessible via L</"uploads"> and related methods.
 
 =head3 body_param
 
@@ -654,6 +658,8 @@ L</"body_param_array"> to get multiple values of a parameter.
 
 Note that this will read the text form fields into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
+C<multipartE<sol>form-data> file uploads will be streamed to temporary files
+accessible via L</"uploads"> and related methods.
 
 =head3 body_param_array
 
@@ -665,6 +671,8 @@ an ordered array reference.
 
 Note that this will read the text form fields into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
+C<multipartE<sol>form-data> file uploads will be streamed to temporary files
+accessible via L</"uploads"> and related methods.
 
 =head3 body_json
 
@@ -684,7 +692,8 @@ reference. Most applications should retrieve multipart form data through
 L</"body_params"> and L</"uploads"> (or related accessors) instead.
 
 Note that this will read the text form fields into memory, so make sure the
-L</"set_request_body_limit"> can fit well within the available memory.
+L</"set_request_body_limit"> can fit well within the available memory. File
+uploads will be streamed to temporary files.
 
 Body parts are represented as hash references containing:
 
@@ -1091,6 +1100,56 @@ Default value for L</"set_request_body_limit">.
 
 Default value for L</"set_response_body_buffer">.
 
+=head1 DEBUGGING COMMANDS
+
+CGI::Tiny scripts can be executed from the commandline for debugging purposes.
+A command can be passed as the first argument to help set up the CGI
+environment.
+
+These commands are considered a development interface and come with no
+stability guarantee, and should not be used for standard operation.
+
+  $ ./script.cgi get /?foo=bar
+  $ ./script.cgi head -v
+  $ ./script.cgi post -C 'one=value' -C 'two=value' --content='foo=bar+baz'
+      -H 'Content-Type: application/x-www-form-urlencoded' /form
+  $ ./script.cgi put -H 'Content-Length: '$(stat --printf='%s' foo.dat) <foo.dat
+  $ ./script.cgi delete /item/42
+
+The C<get>, C<head>, C<post>, C<put>, and C<delete> commands will emulate a
+request of the specified L</"request_method">. A following URL parameter will
+be passed as the L</"path_info"> and L</"query_string"> if present.
+
+Request content may be provided through STDIN but the C<Content-Length> request
+header must be set to the size of the input as required by the CGI spec. The
+response will be printed to STDOUT as normal.
+
+Options may follow the command:
+
+=over
+
+=item --content=<string>, -c <string>
+
+Passes the string value as request body content and sets the C<Content-Length>
+request header to its size.
+
+=item --cookie=<string>, -C <string>
+
+String values of the form C<name=value> will be passed as request cookies. Can
+appear multiple times.
+
+=item --header=<string>, -H <string>
+
+String values of the form C<Name: value> will be passed as request headers. Can
+appear multiple times.
+
+=item --verbose, -v
+
+Includes response CGI headers (or HTTP headers in L<NPH mode|/"set_nph">) in
+the output before response content.
+
+=back
+
 =head1 COMPARISON TO CGI.PM
 
 Traditionally, the L<CGI> module (referred to as CGI.pm to differentiate it
@@ -1234,7 +1293,7 @@ should be ASCII without double quotes or semicolons.
 
 =over
 
-=item * Debugging tools
+=item * Basic authentication
 
 =back
 

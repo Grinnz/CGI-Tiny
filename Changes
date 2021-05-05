@@ -1,4 +1,5 @@
 {{$NEXT}}
+  - Add debugging commands for commandline convenience
 
 0.014     2021-05-04 03:26:46 EDT
   - Remove headers_rendered method, instead pass rendered status to error handlers
