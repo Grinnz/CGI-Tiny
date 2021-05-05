@@ -1125,7 +1125,8 @@ stability guarantee.
   $ ./script.cgi head
   $ ./script.cgi post '/form' -C 'one=value' -C 'two=value' --content='foo=bar+baz'
       -H 'Content-Type: application/x-www-form-urlencoded'
-  $ ./script.cgi put -H 'Content-Length: '$(stat --printf='%s' foo.dat) <foo.dat
+  $ ./script.cgi put -H "Content-Length: $(stat --printf='%s' foo.dat)"
+      -H "Content-Type: $(file -bi foo.dat)" <foo.dat
   $ ./script.cgi delete -v '/item/42'
 
 The C<get>, C<head>, C<post>, C<put>, and C<delete> commands will emulate a
