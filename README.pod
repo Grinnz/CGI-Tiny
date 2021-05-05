@@ -1096,17 +1096,21 @@ C<undef> if the string does not parse as any of these formats.
 CGI::Tiny recognizes the following environment variables, in addition to the
 standard CGI environment variables.
 
-=head2 CGI_TINY_REQUEST_BODY_BUFFER
+=over
+
+=item CGI_TINY_REQUEST_BODY_BUFFER
 
 Default value for L</"set_request_body_buffer">.
 
-=head2 CGI_TINY_REQUEST_BODY_LIMIT
+=item CGI_TINY_REQUEST_BODY_LIMIT
 
 Default value for L</"set_request_body_limit">.
 
-=head2 CGI_TINY_RESPONSE_BODY_BUFFER
+=item CGI_TINY_RESPONSE_BODY_BUFFER
 
 Default value for L</"set_response_body_buffer">.
+
+=back
 
 =head1 DEBUGGING COMMANDS
 
