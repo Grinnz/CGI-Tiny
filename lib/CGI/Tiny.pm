@@ -155,21 +155,21 @@ sub content_length    { defined $ENV{CONTENT_LENGTH} ? $ENV{CONTENT_LENGTH} : ''
 sub content_type      { defined $ENV{CONTENT_TYPE} ? $ENV{CONTENT_TYPE} : '' }
 sub gateway_interface { defined $ENV{GATEWAY_INTERFACE} ? $ENV{GATEWAY_INTERFACE} : '' }
 sub path_info         { defined $ENV{PATH_INFO} ? $ENV{PATH_INFO} : '' }
+*path = \&path_info;
 sub path_translated   { defined $ENV{PATH_TRANSLATED} ? $ENV{PATH_TRANSLATED} : '' }
 sub query_string      { defined $ENV{QUERY_STRING} ? $ENV{QUERY_STRING} : '' }
+*query = \&query_string;
 sub remote_addr       { defined $ENV{REMOTE_ADDR} ? $ENV{REMOTE_ADDR} : '' }
 sub remote_host       { defined $ENV{REMOTE_HOST} ? $ENV{REMOTE_HOST} : '' }
 sub remote_ident      { defined $ENV{REMOTE_IDENT} ? $ENV{REMOTE_IDENT} : '' }
 sub remote_user       { defined $ENV{REMOTE_USER} ? $ENV{REMOTE_USER} : '' }
 sub request_method    { defined $ENV{REQUEST_METHOD} ? $ENV{REQUEST_METHOD} : '' }
+*method = \&request_method;
 sub script_name       { defined $ENV{SCRIPT_NAME} ? $ENV{SCRIPT_NAME} : '' }
 sub server_name       { defined $ENV{SERVER_NAME} ? $ENV{SERVER_NAME} : '' }
 sub server_port       { defined $ENV{SERVER_PORT} ? $ENV{SERVER_PORT} : '' }
 sub server_protocol   { defined $ENV{SERVER_PROTOCOL} ? $ENV{SERVER_PROTOCOL} : '' }
 sub server_software   { defined $ENV{SERVER_SOFTWARE} ? $ENV{SERVER_SOFTWARE} : '' }
-*method = \&request_method;
-*path = \&path_info;
-*query = \&query_string;
 
 sub query_params      { [map { [@$_] } @{$_[0]->_query_params->{ordered}}] }
 sub query_param_names { [@{$_[0]->_query_params->{names}}] }
@@ -249,6 +249,17 @@ sub body {
   return $self->{body_content};
 }
 
+sub body_json {
+  my ($self) = @_;
+  unless (exists $self->{body_json}) {
+    $self->{body_json} = undef;
+    if ($ENV{CONTENT_TYPE} and $ENV{CONTENT_TYPE} =~ m/^application\/json\b/i) {
+      $self->{body_json} = $self->_json->decode($self->body);
+    }
+  }
+  return $self->{body_json};
+}
+
 sub body_params      { [map { [@$_] } @{$_[0]->_body_params->{ordered}}] }
 sub body_param_names { [@{$_[0]->_body_params->{names}}] }
 sub body_param       { my $p = $_[0]->_body_params->{keyed}; exists $p->{$_[1]} ? $p->{$_[1]}[-1] : undef }
@@ -299,17 +310,6 @@ sub _body_params {
     }
   }
   return $self->{body_params};
-}
-
-sub body_json {
-  my ($self) = @_;
-  unless (exists $self->{body_json}) {
-    $self->{body_json} = undef;
-    if ($ENV{CONTENT_TYPE} and $ENV{CONTENT_TYPE} =~ m/^application\/json\b/i) {
-      $self->{body_json} = $self->_json->decode($self->body);
-    }
-  }
-  return $self->{body_json};
 }
 
 sub body_parts {

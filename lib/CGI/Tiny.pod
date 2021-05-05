@@ -465,73 +465,142 @@ any translation layers.
 
 =head2 Request Environment
 
+CGI::Tiny provides direct access to CGI
+L<request meta-variables|https://tools.ietf.org/html/rfc3875#section-4.1> via
+methods that map to the equivalent uppercase names (and a few short aliases).
+Since CGI does not distinguish between missing and empty values, missing values
+will be normalized to an empty string.
+
 =head3 auth_type
+
+  # AUTH_TYPE="Basic"
+  my $auth_type = $cgi->auth_type;
+
+The authentication scheme used in the C<Authorization> HTTP request header if
+any.
 
 =head3 content_length
 
+  # CONTENT_LENGTH="42"
+  my $content_length = $cgi->content_length;
+
+The size in bytes of the request body content if any.
+
 =head3 content_type
+
+  # CONTENT_TYPE="text/plain;charset=UTF-8"
+  my $content_type = $cgi->content_type;
+
+The MIME type of the request body content if any.
 
 =head3 gateway_interface
 
+  # GATEWAY_INTERFACE="CGI/1.1"
+  my $gateway_inteface = $cgi->gateway_interface;
+
+The CGI version used for communication with the CGI server.
+
 =head3 path_info
-
-=head3 path_translated
-
-=head3 query_string
-
-=head3 remote_addr
-
-=head3 remote_host
-
-=head3 remote_ident
-
-=head3 remote_user
-
-=head3 request_method
-
-=head3 script_name
-
-=head3 server_name
-
-=head3 server_port
-
-=head3 server_protocol
-
-=head3 server_software
-
-  my $auth_type      = $cgi->auth_type;         # AUTH_TYPE
-  my $content_length = $cgi->content_length;    # CONTENT_LENGTH
-  my $content_type   = $cgi->content_type;      # CONTENT_TYPE
-  my $gateway        = $cgi->gateway_interface; # GATEWAY_INTERFACE
-  my $path           = $cgi->path_info;         # PATH_INFO
-  my $file_path      = $cgi->path_translated;   # PATH_TRANSLATED
-  my $query          = $cgi->query_string;      # QUERY_STRING
-  my $remote_addr    = $cgi->remote_addr;       # REMOTE_ADDR
-  my $remote_host    = $cgi->remote_host;       # REMOTE_HOST
-  my $remote_ident   = $cgi->remote_ident;      # REMOTE_IDENT
-  my $remote_user    = $cgi->remote_user;       # REMOTE_USER
-  my $method         = $cgi->request_method;    # REQUEST_METHOD
-  my $script_name    = $cgi->script_name;       # SCRIPT_NAME
-  my $hostname       = $cgi->server_name;       # SERVER_NAME
-  my $port           = $cgi->server_port;       # SERVER_PORT
-  my $protocol       = $cgi->server_protocol;   # SERVER_PROTOCOL
-  my $server         = $cgi->server_software;   # SERVER_SOFTWARE
-
-Access to L<request meta-variables|https://tools.ietf.org/html/rfc3875#section-4.1>
-of the equivalent uppercase names. Since CGI does not distinguish between
-missing and empty values, missing values will be normalized to an empty string.
-
-=head3 method
 
 =head3 path
 
+  # PATH_INFO="/foo/42"
+  my $path = $cgi->path_info;
+  my $path = $cgi->path;
+
+The URL path following the C<SCRIPT_NAME> in the request URL if any.
+
+=head3 path_translated
+
+  # PATH_TRANSLATED="/var/www/htdocs/foo/42"
+  my $path_translated = $cgi->path_translated;
+
+A local file path derived from C<PATH_INFO> by the CGI server, as if it were
+a request to the document root, if it chooses to provide it.
+
+=head3 query_string
+
 =head3 query
 
-  my $method = $cgi->method; # REQUEST_METHOD
-  my $path   = $cgi->path;   # PATH_INFO
-  my $query  = $cgi->query;  # QUERY_STRING
+  # QUERY_STRING="foo=bar"
+  my $query = $cgi->query_string;
+  my $query = $cgi->query;
 
-Short aliases for a few request meta-variables.
+The query string component of the request URL.
+
+=head3 remote_addr
+
+  # REMOTE_ADDR="8.8.8.8"
+  my $remote_addr = $cgi->remote_addr;
+
+The IPv4 or IPv6 address of the requesting client.
+
+=head3 remote_host
+
+  # REMOTE_HOST="example.com"
+  my $remote_host = $cgi->remote_host;
+
+The domain name of the requesting client if available, or C<REMOTE_ADDR>.
+
+=head3 remote_ident
+
+  # REMOTE_IDENT="someuser"
+  my $remote_ident = $cgi->remote_ident;
+
+The identity of the client reported by an RFC 1413 ident request if available.
+
+=head3 remote_user
+
+  # REMOTE_USER="someuser"
+  my $remote_user = $cgi->remote_user;
+
+The user identity provided as part of an C<AUTH_TYPE> authenticated request.
+
+=head3 request_method
+
+=head3 method
+
+  # REQUEST_METHOD="GET"
+  my $method = $cgi->request_method;
+  my $method = $cgi->method;
+
+The HTTP request method verb.
+
+=head3 script_name
+
+  # SCRIPT_NAME="/cgi-bin/script.cgi"
+  my $script_name = $cgi->script_name;
+
+The host-relative URL path to the CGI script.
+
+=head3 server_name
+
+  # SERVER_NAME="example.com"
+  my $server_name = $cgi->server_name;
+
+The hostname of the server as the target of the request, such as from the
+C<Host> HTTP request header.
+
+=head3 server_port
+
+  # SERVER_PORT="443"
+  my $server_port = $cgi->server_port;
+
+The TCP port on which the server received the request.
+
+=head3 server_protocol
+
+  # SERVER_PROTOCOL="HTTP/1.1"
+  my $server_protocol = $cgi->server_protocol;
+
+The HTTP protocol version of the request.
+
+=head3 server_software
+
+  # SERVER_SOFTWARE="Apache/2.4.46"
+  my $server_software = $cgi->server_software;
+
+The name and version of the CGI server.
 
 =head2 Request Parsing
 
@@ -620,6 +689,15 @@ Not available after calling L</"body_parts">, L</"body_params">, or
 L</"uploads"> (or related accessors) on a C<multipartE<sol>form-data> request,
 since this type of request body is not retained in memory after parsing.
 
+=head3 body_json
+
+  my $data = $cgi->body_json;
+
+Decode an C<application/json> request body from UTF-8-encoded JSON.
+
+Note that this will read the whole request body into memory, so make sure the
+L</"set_request_body_limit"> can fit well within the available memory.
+
 =head3 body_params
 
   my $pairs = $cgi->body_params;
@@ -673,15 +751,6 @@ Note that this will read the text form fields into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory.
 C<multipartE<sol>form-data> file uploads will be streamed to temporary files
 accessible via L</"uploads"> and related methods.
-
-=head3 body_json
-
-  my $data = $cgi->body_json;
-
-Decode an C<application/json> request body from UTF-8-encoded JSON.
-
-Note that this will read the whole request body into memory, so make sure the
-L</"set_request_body_limit"> can fit well within the available memory.
 
 =head3 body_parts
 
