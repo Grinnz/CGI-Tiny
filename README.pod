@@ -1297,14 +1297,6 @@ attempt to decode these names from however the client passes them aside from
 L</"set_multipart_form_charset">. For best compatibility, form field names
 should be ASCII without double quotes or semicolons.
 
-=head1 TODO
-
-=over
-
-=item * Basic authentication
-
-=back
-
 =head1 BUGS
 
 Report any issues on the public bugtracker.
