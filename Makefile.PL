@@ -35,7 +35,7 @@ my %WriteMakefileArgs = (
     "MIME::Base64" => 0,
     "Test::More" => "0.96"
   },
-  "VERSION" => "0.015",
+  "VERSION" => "0.016",
   "test" => {
     "TESTS" => "t/*.t"
   }

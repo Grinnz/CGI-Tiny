@@ -32,7 +32,7 @@ CGI::Tiny - Common Gateway Interface, with no frills
 
     my $method = $cgi->method;
     my $fribble;
-    if ($method eq 'GET') {
+    if ($method eq 'GET' or $method eq 'HEAD') {
       $fribble = $cgi->query_param('fribble');
     } elsif ($method eq 'POST') {
       $fribble = $cgi->body_param('fribble');
