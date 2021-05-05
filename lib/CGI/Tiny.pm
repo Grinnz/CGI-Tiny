@@ -523,7 +523,12 @@ sub response_status_code {
     Carp::croak "Cannot render from an open filehandle with ->render; use ->render_chunk" if $type eq 'handle';
 
     my ($response_body, $response_length, $redirect_url);
-    if ($type eq 'text' or $type eq 'html' or $type eq 'xml') {
+    if ($type eq 'redirect') {
+      Carp::croak "Newline characters not allowed in HTTP redirect" if $data =~ tr/\r\n//;
+      $redirect_url = $data;
+    } elsif (uc($ENV{REQUEST_METHOD} || '') eq 'HEAD') {
+      # no response content
+    } elsif ($type eq 'text' or $type eq 'html' or $type eq 'xml') {
       my $charset = $self->{response_charset};
       $charset = 'UTF-8' unless defined $charset;
       if (uc $charset eq 'UTF-8' and do { local $@; eval { require Unicode::UTF8; 1 } }) {
@@ -542,9 +547,6 @@ sub response_status_code {
     } elsif ($type eq 'file') {
       $response_length = -s $data;
       Carp::croak "Failed to retrieve size of file '$data': $!" unless defined $response_length;
-    } elsif ($type eq 'redirect') {
-      Carp::croak "Newline characters not allowed in HTTP redirect" if $data =~ tr/\r\n//;
-      $redirect_url = $data;
     }
     $response_length = 0 unless defined $response_length;
 
@@ -585,7 +587,9 @@ sub response_status_code {
       $self->{headers_rendered} = 1;
     }
 
-    if ($type eq 'text' or $type eq 'html' or $type eq 'xml') {
+    if (uc($ENV{REQUEST_METHOD} || '') eq 'HEAD') {
+      # no response content
+    } elsif ($type eq 'text' or $type eq 'html' or $type eq 'xml') {
       my $charset = $self->{response_charset};
       $charset = 'UTF-8' unless defined $charset;
       my $response_body;
@@ -659,8 +663,8 @@ sub _response_headers {
       : $type eq 'xml'  ? "application/xml;charset=$charset"
       : $type eq 'json' ? 'application/json;charset=UTF-8'
       : 'application/octet-stream'
-      unless defined $content_type;
-    $headers_str = "Content-Type: $content_type\r\n$headers_str";
+      unless defined $content_type or (defined $content_length and $content_length == 0);
+    $headers_str = "Content-Type: $content_type\r\n$headers_str" if defined $content_type;
   }
   if (!$headers_set{date}) {
     my $date_str = epoch_to_date(time);
