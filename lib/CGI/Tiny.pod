@@ -1149,7 +1149,8 @@ appear multiple times.
 =item --header=<string>, -H <string>
 
 String values of the form C<Name: value> will be passed as request headers. Can
-appear multiple times.
+appear multiple times. If the same header name is provided multiple times, the
+values will be joined with commas, which is only valid for certain headers.
 
 =item --verbose, -v
 
