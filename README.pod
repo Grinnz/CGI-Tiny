@@ -1115,7 +1115,7 @@ A command can be passed as the first argument to help set up the CGI
 environment.
 
 These commands are considered a development interface and come with no
-stability guarantee, and should not be used for standard operation.
+stability guarantee.
 
   $ ./script.cgi get '/?foo=bar'
   $ ./script.cgi head
