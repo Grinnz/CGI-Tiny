@@ -1155,7 +1155,7 @@ values will be joined with commas, which is only valid for certain headers.
 =item --verbose, -v
 
 Includes response CGI headers (or HTTP headers in L<NPH mode|/"set_nph">) in
-the output before response content.
+the output before response content. Enabled automatically for C<head>.
 
 =back
 

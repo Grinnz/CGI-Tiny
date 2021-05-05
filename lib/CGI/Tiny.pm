@@ -95,7 +95,7 @@ my %HTTP_STATUS = (
   sub cgi (&) {
     my ($handler) = @_;
     $cgi ||= bless {pid => $$}, __PACKAGE__;
-    _debug_command($cgi, [@ARGV]) if @ARGV;
+    _debug_command($cgi, [@ARGV]) if @ARGV and !defined $ENV{REQUEST_METHOD};
     my ($error, $errored);
     {
       local $@;
@@ -871,6 +871,7 @@ sub _parse_multipart {
     my $command = shift @$argv;
     if (exists $methods{$command}) {
       $ENV{CGI_TINY_DEBUG_METHOD} = uc $command;
+      $ENV{CGI_TINY_DEBUG_VERBOSE} = 1 if uc($command) eq 'HEAD';
 
       require Getopt::Long;
       Getopt::Long::Configure('default', 'gnu_getopt', 'no_ignore_case');
