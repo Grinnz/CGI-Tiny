@@ -1118,11 +1118,11 @@ These commands are considered a development interface and come with no
 stability guarantee, and should not be used for standard operation.
 
   $ ./script.cgi get '/?foo=bar'
-  $ ./script.cgi head -v
+  $ ./script.cgi head
   $ ./script.cgi post '/form' -C 'one=value' -C 'two=value' --content='foo=bar+baz'
       -H 'Content-Type: application/x-www-form-urlencoded'
   $ ./script.cgi put -H 'Content-Length: '$(stat --printf='%s' foo.dat) <foo.dat
-  $ ./script.cgi delete '/item/42'
+  $ ./script.cgi delete -v '/item/42'
 
 The C<get>, C<head>, C<post>, C<put>, and C<delete> commands will emulate a
 request of the specified L</"request_method">. A following URL parameter will
