@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use utf8;
 use CGI::Tiny ();
 use Test::More;
 use Time::Local 'timegm';
@@ -14,5 +15,9 @@ is CGI::Tiny::date_to_epoch('arbitrary string'), undef, 'no epoch value';
 
 my $time = time;
 is CGI::Tiny::date_to_epoch(CGI::Tiny::epoch_to_date($time)), $time, 'round-trip epoch';
+
+is CGI::Tiny::escape_html('&<>"\''), '&amp;&lt;&gt;&quot;&#39;', 'escaped unsafe HTML characters';
+is CGI::Tiny::escape_html('&&&&&;'), '&amp;&amp;&amp;&amp;&amp;;', 'escaped many ampersands';
+is CGI::Tiny::escape_html('☃'), '☃', 'nothing to escape';
 
 done_testing;

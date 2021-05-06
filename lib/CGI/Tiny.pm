@@ -864,6 +864,11 @@ sub _parse_multipart {
 }
 
 {
+  my %ESCAPES = ('&' => '&amp;', '<' => '&lt;', '>' => '&gt;', '"' => '&quot;', '\'' => '&#39;');
+  sub escape_html { (my $escaped = $_[0]) =~ s/([&<>"'])/$ESCAPES{$1}/ge; $escaped }
+}
+
+{
   my %methods = (get => 1, head => 1, post => 1, put => 1, delete => 1);
   sub _debug_command {
     my ($cgi, $argv) = @_;

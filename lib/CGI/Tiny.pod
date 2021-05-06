@@ -512,7 +512,7 @@ The URL path following the C<SCRIPT_NAME> in the request URL if any.
 
 =head3 path_translated
 
-  # PATH_TRANSLATED="/var/www/htdocs/foo/42"
+  # PATH_TRANSLATED="/var/www/html/foo/42"
   my $path_translated = $cgi->path_translated;
 
 A local file path derived from C<PATH_INFO> by the CGI server, as if it were
@@ -597,7 +597,7 @@ The HTTP protocol version of the request.
 
 =head3 server_software
 
-  # SERVER_SOFTWARE="Apache/2.4.46"
+  # SERVER_SOFTWARE="Apache\/2.4.37 (centos)"
   my $server_software = $cgi->server_software;
 
 The name and version of the CGI server.
@@ -1159,6 +1159,18 @@ C<undef> if the string does not parse as any of these formats.
 
   # asctime
   my $epoch = CGI::Tiny::date_to_epoch 'Sun Nov  6 08:49:37 1994';
+
+=head2 escape_html
+
+  my $escaped = CGI::Tiny::escape_html $text;
+
+Escapes characters that are unsafe for embedding in HTML text. The characters
+C<&E<lt>E<gt>"'> will each be replaced with the corresponding HTML character
+reference (HTML entity).
+
+This functionality is built into most HTML template engines; see
+L</"Templating">. For more general HTML entity escaping and unescaping use
+L<HTML::Entities>.
 
 =head1 ENVIRONMENT
 
