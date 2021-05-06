@@ -1215,8 +1215,11 @@ request of the specified L</"request_method">. A following URL parameter will
 be passed as the L</"path_info"> and L</"query_string"> if present.
 
 Request content may be provided through STDIN but the C<Content-Length> request
-header must be set to the size of the input as required by the CGI spec. The
-response will be printed to STDOUT as normal.
+header must be set to the size of the input as required by the CGI spec.
+
+The response will be printed to STDOUT as normal. You may wish to redirect the
+output of the command to a file or hexdump program if the response is expected
+not to be printable text in the character encoding of your terminal.
 
 Options may follow the command:
 
