@@ -7,7 +7,7 @@ use Carp ();
 use IO::Handle ();
 use Exporter ();
 
-our $VERSION = '0.018';
+our $VERSION = '0.019';
 
 use constant DEFAULT_REQUEST_BODY_LIMIT => 16777216;
 use constant DEFAULT_REQUEST_BODY_BUFFER => 262144;
