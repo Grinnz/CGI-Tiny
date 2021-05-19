@@ -165,7 +165,7 @@ subtest 'parse_multipart_form_data (discard files)' => sub {
 };
 
 subtest 'parse_multipart_form_data (all tempfiles)' => sub {
-  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {all_tempfiles => 1});
+  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {tempfiles => 1});
 
   my @files;
   foreach my $i (0..$#$parts) {
@@ -195,7 +195,7 @@ subtest 'parse_multipart_form_data (all tempfiles)' => sub {
 };
 
 subtest 'parse_multipart_form_data (no tempfiles)' => sub {
-  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {no_tempfiles => 1});
+  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {tempfiles => 0});
 
   is_deeply $parts, [
     {headers => {'content-disposition' => 'form-data; name="snowman"'},
@@ -218,7 +218,7 @@ subtest 'parse_multipart_form_data (no tempfiles)' => sub {
 };
 
 subtest 'parse_multipart_form_data (all tempfiles, discard files)' => sub {
-  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {all_tempfiles => 1, discard_files => 1});
+  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {tempfiles => 1, discard_files => 1});
 
   my @files;
   foreach my $i (0..$#$parts) {
@@ -248,7 +248,7 @@ subtest 'parse_multipart_form_data (all tempfiles, discard files)' => sub {
 };
 
 subtest 'parse_multipart_form_data (no tempfiles, discard files)' => sub {
-  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {no_tempfiles => 1, discard_files => 1});
+  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {tempfiles => 0, discard_files => 1});
 
   is_deeply $parts, [
     {headers => {'content-disposition' => 'form-data; name="snowman"'},

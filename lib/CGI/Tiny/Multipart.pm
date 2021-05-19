@@ -112,7 +112,7 @@ sub parse_multipart_form_data {
         }
 
         unless (defined $state{part}{filename} and $options->{discard_files}) {
-          if ($options->{all_tempfiles} or (defined $state{part}{filename} and !$options->{no_tempfiles})) {
+          if ($options->{tempfiles} or (defined $state{part}{filename} and !defined $options->{tempfiles})) {
             # create temp file even if empty
             unless (defined $state{part}{file}) {
               require File::Temp;

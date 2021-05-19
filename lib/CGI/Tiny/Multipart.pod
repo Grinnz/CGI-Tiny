@@ -59,26 +59,23 @@ default value.
 Arguments to pass to the L<File::Temp> constructor when creating tempfiles for
 file uploads. By default no arguments are passed.
 
-=item all_tempfiles
+=item tempfiles
 
-  all_tempfiles => 1
+  tempfiles => 1
+  tempfiles => 0
 
 If set to a true value, all form field values will be stored in tempfiles
-instead of memory, not just file uploads.
-
-=item no_tempfiles
-
-  no_tempfiles => 1
-
-If set to a true value, all form field values will be stored in memory, even
-file uploads.
+instead of memory, not just file uploads. If set to a false (but defined)
+value, all form fields values will be stored in memory, even file uploads.
+By default, text field values will be stored in memory and file uploads will be
+stored in tempfiles.
 
 =item discard_files
 
   discard_files => 1
 
 If set to a true value, file upload field contents will be discarded, and
-neither C<content> nor C<file> will be provided.
+neither C<content> nor C<file> will be provided for those form fields.
 
 =back
 
@@ -105,14 +102,14 @@ Size of part contents in bytes.
 =item content
 
 Part contents as undecoded bytes, for parts without a defined C<filename>, or
-all parts if the C<no_tempfiles> option was passed. File uploads are stored in
-a temporary C<file> instead by default.
+for all parts if the C<tempfiles> option was set to a false value. File uploads
+are stored in a temporary C<file> instead by default.
 
 =item file
 
 L<File::Temp> object referencing temporary file containing the part contents,
-for parts with a defined C<filename>, or all parts if the C<all_tempfiles>
-option was passed.
+for parts with a defined C<filename>, or for all parts if the C<tempfiles>
+option was set to a true value.
 
 =back
 
