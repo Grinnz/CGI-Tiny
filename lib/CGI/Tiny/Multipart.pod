@@ -15,7 +15,9 @@ CGI::Tiny::Multipart - Tiny multipart/form-data parser
 
 =head1 DESCRIPTION
 
-CGI::Tiny::Multipart is a tiny multipart/form-data parser for L<CGI::Tiny>.
+CGI::Tiny::Multipart is a tiny C<multipart/form-data> parser for L<CGI::Tiny>,
+based on L<RFC 2388|https://datatracker.ietf.org/doc/html/rfc2388> and
+L<RFC 7578|https://datatracker.ietf.org/doc/html/rfc7578>.
 
 =head1 FUNCTIONS
 
