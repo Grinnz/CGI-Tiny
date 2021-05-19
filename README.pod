@@ -437,6 +437,16 @@ the limit. Files uploaded through a C<multipartE<sol>form-data> request body
 also count toward this limit, though they are streamed to temporary files when
 parsed.
 
+=head3 set_discard_form_files
+
+  $cgi = $cgi->set_discard_form_files;
+  $cgi = $cgi->set_discard_form_files(1);
+
+If set to a true value or called without a value before parsing a
+C<multipartE<sol>form-data> request body, file upload contents will be
+discarded and thus L</"uploads"> will not contain a C<file>. Defaults to the
+value of the C<CGI_TINY_DISCARD_FORM_FILES> environment variable.
+
 =head3 set_multipart_form_charset
 
   $cgi = $cgi->set_multipart_form_charset('UTF-8');
@@ -757,44 +767,13 @@ accessible via L</"uploads"> and related methods.
   my $parts = $cgi->body_parts;
 
 Retrieve C<multipartE<sol>form-data> request body parts as an ordered array
-reference. Most applications should retrieve multipart form data through
-L</"body_params"> and L</"uploads"> (or related accessors) instead.
+reference using L<CGI::Tiny::Multipart/"parse_multipart_form_data">. Most
+applications should retrieve multipart form data through L</"body_params"> and
+L</"uploads"> (or related accessors) instead.
 
 Note that this will read the text form fields into memory, so make sure the
 L</"set_request_body_limit"> can fit well within the available memory. File
 uploads will be streamed to temporary files.
-
-Body parts are represented as hash references containing:
-
-=over
-
-=item headers
-
-Hash reference of part headers. Header names are represented in lowercase.
-
-=item name
-
-Form field name from C<Content-Disposition> header, undecoded.
-
-=item filename
-
-Filename from C<Content-Disposition> header if present, undecoded.
-
-=item size
-
-Size of part contents in bytes.
-
-=item content
-
-Part contents as undecoded bytes, for parts without a defined C<filename>. File
-uploads are stored in a temporary C<file> instead.
-
-=item file
-
-L<File::Temp> object referencing temporary file containing the part contents,
-for parts with a defined C<filename>.
-
-=back
 
 =head3 uploads
 
