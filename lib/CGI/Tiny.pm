@@ -146,6 +146,7 @@ sub _handle_error {
 sub set_error_handler          { $_[0]{on_error} = $_[1]; $_[0] }
 sub set_request_body_buffer    { $_[0]{request_body_buffer} = $_[1]; $_[0] }
 sub set_request_body_limit     { $_[0]{request_body_limit} = $_[1]; $_[0] }
+sub set_discard_form_files     { $_[0]{discard_form_files} = @_ < 2 ? 1 : $_[1]; $_[0] }
 sub set_multipart_form_charset { $_[0]{multipart_form_charset} = $_[1]; $_[0] }
 sub set_input_handle           { $_[0]{input_handle} = $_[1]; $_[0] }
 sub set_output_handle          { $_[0]{output_handle} = $_[1]; $_[0] }
@@ -370,9 +371,8 @@ sub _body_multipart {
   my ($self) = @_;
   unless (exists $self->{body_parts}) {
     $self->{body_parts} = [];
-    my ($boundary_quoted, $boundary_unquoted) = $ENV{CONTENT_TYPE} =~ m/;\s*boundary\s*=\s*(?:"((?:\\[\\"]|[^"])+)"|([^";]+))/i;
-    $boundary_quoted =~ s/\\([\\"])/$1/g if defined $boundary_quoted;
-    my $boundary = defined $boundary_quoted ? $boundary_quoted : $boundary_unquoted;
+    require CGI::Tiny::Multipart;
+    my $boundary = CGI::Tiny::Multipart::extract_multipart_boundary($ENV{CONTENT_TYPE});
     unless (defined $boundary) {
       $self->{response_status} = "400 $HTTP_STATUS{400}" unless $self->{headers_rendered};
       die "Malformed multipart/form-data request\n";
@@ -385,10 +385,12 @@ sub _body_multipart {
     } else {
       $length = $self->_body_length;
       $input = defined $self->{input_handle} ? $self->{input_handle} : *STDIN;
-      binmode $input;
     }
 
-    my $parts = _parse_multipart($input, $length, $boundary, $self->{request_body_buffer} || $ENV{CGI_TINY_REQUEST_BODY_BUFFER});
+    my $parts = CGI::Tiny::Multipart::parse_multipart_form_data($input, $length, $boundary, {
+      buffer_size => $self->{request_body_buffer} || $ENV{CGI_TINY_REQUEST_BODY_BUFFER},
+      discard_files => $self->{discard_form_files} || $ENV{CGI_TINY_DISCARD_FORM_FILES},
+    });
     unless (defined $parts) {
       $self->{response_status} = "400 $HTTP_STATUS{400}" unless $self->{headers_rendered};
       die "Malformed multipart/form-data request\n";
@@ -698,131 +700,6 @@ sub _json {
     $self->{json}->utf8->canonical->allow_nonref->allow_unknown->allow_blessed->convert_blessed->escape_slash;
   }
   return $self->{json};
-}
-
-sub _parse_multipart {
-  my ($input, $length, $boundary, $buffer_size) = @_;
-  $buffer_size = 0 + ($buffer_size || DEFAULT_REQUEST_BODY_BUFFER);
-  my $buffer = "\r\n";
-  my $next_boundary = "\r\n--$boundary\r\n";
-  my $end_boundary = "\r\n--$boundary--";
-  my (%state, @parts);
-  READER: while ($length > 0) {
-    if (ref $input eq 'SCALAR') {
-      $buffer .= $$input;
-      $length = 0;
-    } else {
-      my $chunk = $length < $buffer_size ? $length : $buffer_size;
-      last unless my $read = read $input, $buffer, $chunk, length $buffer;
-      $length -= $read;
-    }
-
-    unless ($state{parsing_headers} or $state{parsing_body}) {
-      my $next_pos = index $buffer, $next_boundary;
-      my $end_pos = index $buffer, $end_boundary;
-      if ($next_pos >= 0 and ($end_pos < 0 or $end_pos > $next_pos)) {
-        substr $buffer, 0, $next_pos + length($next_boundary), '';
-        $state{parsing_headers} = 1;
-        push @parts, $state{part} = {headers => {}, name => undef, filename => undef, size => 0};
-      } elsif ($end_pos >= 0) {
-        $state{done} = 1;
-        last; # end of multipart data
-      } else {
-        next; # read more to find start of multipart data
-      }
-    }
-
-    while (length $buffer) {
-      if ($state{parsing_headers}) {
-        while ((my $pos = index $buffer, "\r\n") >= 0) {
-          if ($pos == 0) { # end of headers
-            $state{parsing_headers} = 0;
-            $state{parsing_body} = 1;
-            $state{parsed_optional_crlf} = 0;
-            last;
-          }
-
-          my $header = substr $buffer, 0, $pos + 2, '';
-          my ($name, $value) = split /\s*:\s*/, $header, 2;
-          return undef unless defined $value;
-          $value =~ s/\s*\z//;
-
-          $state{part}{headers}{lc $name} = $value;
-          if (lc $name eq 'content-disposition') {
-            while ($value =~ m/;\s*([^=\s]+)\s*=\s*(?:"((?:\\[\\"]|[^"])*)"|([^";]*))/ig) {
-              my ($field_name, $field_quoted, $field_unquoted) = ($1, $2, $3);
-              next unless lc $field_name eq 'name' or lc $field_name eq 'filename';
-              $field_quoted =~ s/\\([\\"])/$1/g if defined $field_quoted;
-              $state{part}{lc $field_name} = defined $field_quoted ? $field_quoted : $field_unquoted;
-            }
-          }
-        }
-        next READER if $state{parsing_headers}; # read more to find end of headers
-      } else {
-        my $append = '';
-        my $next_pos = index $buffer, $next_boundary;
-        my $end_pos = index $buffer, $end_boundary;
-        if ($next_pos >= 0 and ($end_pos < 0 or $end_pos > $next_pos)) {
-          if (!$state{parsed_optional_crlf} and $next_pos >= 2) {
-            substr $buffer, 0, 2, '';
-            $next_pos -= 2;
-            $state{parsed_optional_crlf} = 1;
-          }
-          $append = substr $buffer, 0, $next_pos, '';
-          substr $buffer, 0, length($next_boundary), '';
-          $state{parsing_body} = 0;
-          $state{parsing_headers} = 1;
-        } elsif ($end_pos >= 0) {
-          if (!$state{parsed_optional_crlf} and $end_pos >= 2) {
-            substr $buffer, 0, 2, '';
-            $end_pos -= 2;
-            $state{parsed_optional_crlf} = 1;
-          }
-          $append = substr $buffer, 0, $end_pos; # no replacement, we're done here
-          $state{parsing_body} = 0;
-          $state{done} = 1;
-        } elsif (length($buffer) > length($next_boundary) + 2) {
-          if (!$state{parsed_optional_crlf}) {
-            substr $buffer, 0, 2, '';
-            $state{parsed_optional_crlf} = 1;
-          }
-          $append = substr $buffer, 0, length($buffer) - length($next_boundary), '';
-        }
-
-        if (defined $state{part}{filename}) {
-          # create temp file even if empty
-          unless (defined $state{part}{file}) {
-            require File::Temp;
-            $state{part}{file} = File::Temp->new;
-            binmode $state{part}{file};
-          }
-          if (length $append) {
-            $state{part}{file}->print($append);
-            $state{part}{size} += length $append;
-          }
-          unless ($state{parsing_body}) { # finalize temp file
-            $state{part}{file}->flush;
-            seek $state{part}{file}, 0, 0;
-          }
-        } else {
-          $state{part}{content} = '' unless defined $state{part}{content};
-          if (length $append) {
-            $state{part}{content} .= $append;
-            $state{part}{size} += length $append;
-          }
-        }
-
-        last READER if $state{done};         # end of multipart data
-        next READER if $state{parsing_body}; # read more to find end of part
-
-        # new part started
-        push @parts, $state{part} = {headers => {}, name => undef, filename => undef, size => 0};
-      }
-    }
-  }
-  return undef unless $state{done};
-
-  return \@parts;
 }
 
 {

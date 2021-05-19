@@ -1,4 +1,6 @@
 {{$NEXT}}
+  - Split multipart/form-data parser into CGI::Tiny::Multipart module, which is reusable and only loaded if needed
+  - Add set_discard_form_files method
 
 0.016     2021-05-05 21:31:12 EDT
   - Add CGI::Tiny::escape_html convenience function
