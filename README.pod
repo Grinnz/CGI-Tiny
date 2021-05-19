@@ -162,6 +162,13 @@ Do not interpolate arbitrary data into database queries. Data can be safely
 passed to database queries using
 L<placeholders|https://metacpan.org/pod/DBI#Placeholders-and-Bind-Values>.
 
+=item * Regex
+
+Do not interpolate arbitrary data into regular expressions, such as the C<m//>
+or C<s///> operators, or the first argument to C<split>. Data can be safely
+included in a regex to match it as an exact string by escaping it with
+the C<quotemeta> function or equivalent C<\Q> escape sequence.
+
 =item * HTML
 
 Do not interpolate arbitrary data into HTML. Data can be safely included in
