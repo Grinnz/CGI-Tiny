@@ -135,6 +135,41 @@ right to provide it as an XSUB or keyword for performance reasons. You should
 not rely on C<@_> to be set, and you should not use C<return> to exit the
 block; use C<exit> to end a CGI script early after rendering a response.
 
+=head1 DATA SAFETY
+
+CGI::Tiny does not provide any special affordances for
+L<taint mode|perlsec/"Taint mode"> as it is overeager, imprecise, and can
+significantly impact performance. Web developers should instead proactively
+take care not to use any request data (including request headers, form fields,
+or other request content) directly in an unsafe manner, as it can make the
+program vulnerable to injections that cause undesired or dangerous behavior.
+The most common risks to watch out for include:
+
+=over
+
+=item * System commands
+
+Do not interpolate arbitrary data into a shell command, such as with C<system>
+or backticks. Data can be safely passed as command arguments using methods that
+bypass the shell, such as the list form of C<system>, or modules like
+L<IPC::System::Simple>, L<IPC::ReadpipeX>, and L<IPC::Run3>. If shell features
+are needed, data can be escaped for bourne-style shells with
+L<String::ShellQuote>.
+
+=item * Database queries
+
+Do not interpolate arbitrary data into database queries. Data can be safely
+passed to database queries using
+L<placeholders|https://metacpan.org/pod/DBI#Placeholders-and-Bind-Values>.
+
+=item * HTML
+
+Do not interpolate arbitrary data into HTML. Data can be safely included in
+HTML by escaping it with L</"escape_html">, or passing it to an HTML template
+engine with an auto-escape feature; see L</"Templating">.
+
+=back
+
 =head1 EXTENDING
 
 CGI::Tiny is a minimal interface to the CGI protocol, but can be extended with
