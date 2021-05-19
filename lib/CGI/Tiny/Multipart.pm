@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Exporter 'import';
 
-our $VERSION = '0.017';
+our $VERSION = '0.018';
 
 our @EXPORT_OK = qw(extract_multipart_boundary parse_multipart_form_data);
 
