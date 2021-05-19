@@ -1,6 +1,10 @@
 package CGI::Tiny;
 # ABSTRACT: Common Gateway Interface, with no frills
 
+# This file is part of CGI::Tiny which is released under:
+#   The Artistic License 2.0 (GPL Compatible)
+# See the documentation for CGI::Tiny for full license details.
+
 use strict;
 use warnings;
 use Carp ();
