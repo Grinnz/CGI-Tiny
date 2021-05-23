@@ -320,6 +320,101 @@ characters, so non-ASCII filenames make things trickier.
     $cgi->set_response_disposition(attachment => $basename)->render(file => $filepath);
   };
 
+=head2 Sessions
+
+L<Basic authentication|https://en.wikipedia.org/wiki/Basic_access_authentication>
+has historically been used to provide a simplistic login session mechanism
+which relies on the client to send the credentials with every subsequent
+request in that browser session. However, it does not have a reliable logout or
+session expiration mechanism.
+
+  #!/usr/bin/perl
+  use strict;
+  use warnings;
+  use utf8;
+  use CGI::Tiny;
+  use MIME::Base64 qw(encode_base64 decode_base64);
+  use Unicode::UTF8 'decode_utf8';
+
+  cgi {
+    my $cgi = $_;
+
+    my $authed_user;
+    if (defined(my $auth = $cgi->header('Authorization'))) {
+      if (my ($hash) = $auth =~ m/^Basic (\S+)/i) {
+        my ($user, $pass) = split /:/, decode_utf8(decode_base64($hash)), 2;
+        $authed_user = $user if verify_password($user, $pass);
+      }
+    }
+
+    unless (defined $authed_user) {
+      $cgi->add_response_header('WWW-Authenticate' => 'Basic realm="My Website", charset="UTF-8"');
+      $cgi->set_response_status(401)->render;
+      exit;
+    }
+
+    # do authed stuff
+  };
+
+A more sophisticated login session mechanism is to store a session cookie in
+the client, associated with a server-side session stored in a file or database.
+Login credentials only need to be validated once per session, and subsequently
+the session ID stored in the cookie will be sent by the client with each
+request. This type of session can be ended by expiring the session cookie and
+invalidating the session data on the server.
+
+  #!/usr/bin/perl
+  use strict;
+  use warnings;
+  use utf8;
+  use CGI::Tiny;
+
+  cgi {
+    my $cgi = $_;
+
+    my ($authed_user, $session_id);
+    if ($cgi->path eq '/login') {
+      if ($cgi->method eq 'GET' or $cgi->method eq 'HEAD') {
+        $cgi->render(html => login_form_template(login_failed => 0));
+        exit;
+      } elsif ($cgi->method eq 'POST') {
+        my $user = $cgi->body_param('login_user');
+        my $pass = $cgi->body_param('login_pass');
+        if (verify_password($user, $pass)) {
+          $session_id = store_new_session($user);
+          $authed_user = $user;
+        } else {
+          $cgi->render(html => login_form_template(login_failed => 1));
+          exit;
+        }
+      }
+    } elsif (defined($session_id = $cgi->cookie('myapp_session'))) {
+      if ($cgi->path eq '/logout') {
+        invalidate_session($session_id);
+        # expire session cookie
+        $cgi->add_response_cookie(myapp_session => $session_id, 'Max-Age' => 0, Path => '/', HttpOnly => 1);
+        $cgi->render(redirect => $cgi->script_name . '/login');
+        exit;
+      } else {
+        $authed_user = get_session_user($session_id);
+      }
+    }
+
+    unless (defined $authed_user) {
+      $cgi->render(redirect => $cgi->script_name . '/login');
+      exit;
+    }
+
+    # set/refresh session cookie
+    $cgi->add_response_cookie(myapp_session => $session_id, 'Max-Age' => 3600, Path => '/', HttpOnly => 1);
+
+    # do authed stuff
+  };
+
+Regardless of the session mechanism, login credentials should only be sent over
+HTTPS, and passwords should be stored on the server using a secure one-way
+hash, such as with L<Crypt::Passphrase>.
+
 =head2 Logging
 
 CGI scripts can usually log errors directly to STDERR with the C<warn>
