@@ -751,36 +751,6 @@ The name and version of the CGI server.
 
 =head2 Request Parsing
 
-=head3 query_params
-
-  my $pairs = $cgi->query_params;
-
-Retrieve URL query string parameters as an ordered array reference of
-name/value pairs, represented as two-element array references. Names and values
-are decoded to Unicode characters.
-
-=head3 query_param_names
-
-  my $arrayref = $cgi->query_param_names;
-
-Retrieve URL query string parameter names, decoded to Unicode characters, as an
-ordered array reference.
-
-=head3 query_param
-
-  my $value = $cgi->query_param('foo');
-
-Retrieve value of a named URL query string parameter, decoded to Unicode
-characters. If the parameter name was passed multiple times, returns the last
-value. Use L</"query_param_array"> to get multiple values of a parameter.
-
-=head3 query_param_array
-
-  my $arrayref = $cgi->query_param_array('foo');
-
-Retrieve values of a named URL query string parameter, decoded to Unicode
-characters, as an ordered array reference.
-
 =head3 headers
 
   my $hashref = $cgi->headers;
@@ -822,6 +792,36 @@ multiple values of a cookie name.
   my $arrayref = $cgi->cookie_array('foo');
 
 Retrieve values of a request cookie name as an ordered array reference.
+
+=head3 query_params
+
+  my $pairs = $cgi->query_params;
+
+Retrieve URL query string parameters as an ordered array reference of
+name/value pairs, represented as two-element array references. Names and values
+are decoded to Unicode characters.
+
+=head3 query_param_names
+
+  my $arrayref = $cgi->query_param_names;
+
+Retrieve URL query string parameter names, decoded to Unicode characters, as an
+ordered array reference.
+
+=head3 query_param
+
+  my $value = $cgi->query_param('foo');
+
+Retrieve value of a named URL query string parameter, decoded to Unicode
+characters. If the parameter name was passed multiple times, returns the last
+value. Use L</"query_param_array"> to get multiple values of a parameter.
+
+=head3 query_param_array
+
+  my $arrayref = $cgi->query_param_array('foo');
+
+Retrieve values of a named URL query string parameter, decoded to Unicode
+characters, as an ordered array reference.
 
 =head3 body
 

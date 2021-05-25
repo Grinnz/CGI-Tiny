@@ -179,27 +179,6 @@ sub server_port       { defined $ENV{SERVER_PORT} ? $ENV{SERVER_PORT} : '' }
 sub server_protocol   { defined $ENV{SERVER_PROTOCOL} ? $ENV{SERVER_PROTOCOL} : '' }
 sub server_software   { defined $ENV{SERVER_SOFTWARE} ? $ENV{SERVER_SOFTWARE} : '' }
 
-sub query_params      { [map { [@$_] } @{$_[0]->_query_params->{ordered}}] }
-sub query_param_names { [@{$_[0]->_query_params->{names}}] }
-sub query_param       { my $p = $_[0]->_query_params->{keyed}; exists $p->{$_[1]} ? $p->{$_[1]}[-1] : undef }
-sub query_param_array { my $p = $_[0]->_query_params->{keyed}; exists $p->{$_[1]} ? [@{$p->{$_[1]}}] : [] }
-
-sub _query_params {
-  my ($self) = @_;
-  unless (exists $self->{query_params}) {
-    $self->{query_params} = {names => \my @names, ordered => \my @ordered, keyed => \my %keyed};
-    foreach my $pair (split /[&;]/, $self->query) {
-      my ($name, $value) = split /=/, $pair, 2;
-      $value = '' unless defined $value;
-      do { tr/+/ /; s/%([0-9a-fA-F]{2})/chr hex $1/ge; utf8::decode $_ } for $name, $value;
-      push @names, $name unless exists $keyed{$name};
-      push @ordered, [$name, $value];
-      push @{$keyed{$name}}, $value;
-    }
-  }
-  return $self->{query_params};
-}
-
 sub headers {
   my ($self) = @_;
   unless (exists $self->{request_headers}) {
@@ -238,6 +217,27 @@ sub _cookies {
     }
   }
   return $self->{request_cookies};
+}
+
+sub query_params      { [map { [@$_] } @{$_[0]->_query_params->{ordered}}] }
+sub query_param_names { [@{$_[0]->_query_params->{names}}] }
+sub query_param       { my $p = $_[0]->_query_params->{keyed}; exists $p->{$_[1]} ? $p->{$_[1]}[-1] : undef }
+sub query_param_array { my $p = $_[0]->_query_params->{keyed}; exists $p->{$_[1]} ? [@{$p->{$_[1]}}] : [] }
+
+sub _query_params {
+  my ($self) = @_;
+  unless (exists $self->{query_params}) {
+    $self->{query_params} = {names => \my @names, ordered => \my @ordered, keyed => \my %keyed};
+    foreach my $pair (split /[&;]/, $self->query) {
+      my ($name, $value) = split /=/, $pair, 2;
+      $value = '' unless defined $value;
+      do { tr/+/ /; s/%([0-9a-fA-F]{2})/chr hex $1/ge; utf8::decode $_ } for $name, $value;
+      push @names, $name unless exists $keyed{$name};
+      push @ordered, [$name, $value];
+      push @{$keyed{$name}}, $value;
+    }
+  }
+  return $self->{query_params};
 }
 
 sub body {
