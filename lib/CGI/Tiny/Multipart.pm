@@ -32,7 +32,7 @@ sub parse_multipart_form_data {
   my $end_boundary = "\r\n--$boundary--";
   my $buffer_size = 0 + ($options->{buffer_size} || DEFAULT_REQUEST_BODY_BUFFER);
   my $buffer = "\r\n";
-  my (%state, @parts);
+  my (%state, @parts, $current);
   READER: while ($remaining > 0) {
     if ($input_is_scalar) {
       $buffer .= substr $$input, 0, $remaining;
@@ -49,7 +49,7 @@ sub parse_multipart_form_data {
       if ($next_pos >= 0 and ($end_pos < 0 or $end_pos > $next_pos)) {
         substr $buffer, 0, $next_pos + length($next_boundary), '';
         $state{parsing_headers} = 1;
-        push @parts, $state{part} = {headers => {}, name => undef, filename => undef, size => 0};
+        push @parts, $current = {headers => {}, name => undef, filename => undef, size => 0};
       } elsif ($end_pos >= 0) {
         $state{done} = 1;
         last; # end of multipart data
@@ -73,13 +73,13 @@ sub parse_multipart_form_data {
           return undef unless defined $value;
           $value =~ s/\s*\z//;
 
-          $state{part}{headers}{lc $name} = $value;
+          $current->{headers}{lc $name} = $value;
           if (lc $name eq 'content-disposition') {
             while ($value =~ m/;\s*([^=\s]+)\s*=\s*(?:"((?:\\[\\"]|[^"])*)"|([^";]*))/ig) {
               my ($field_name, $field_quoted, $field_unquoted) = ($1, $2, $3);
               next unless lc $field_name eq 'name' or lc $field_name eq 'filename';
               $field_quoted =~ s/\\([\\"])/$1/g if defined $field_quoted;
-              $state{part}{lc $field_name} = defined $field_quoted ? $field_quoted : $field_unquoted;
+              $current->{lc $field_name} = defined $field_quoted ? $field_quoted : $field_unquoted;
             }
           }
         }
@@ -115,28 +115,28 @@ sub parse_multipart_form_data {
           $append = substr $buffer, 0, length($buffer) - length($next_boundary), '';
         }
 
-        $state{part}{size} += length $append;
-        unless (defined $state{part}{filename} and $options->{discard_files}) {
-          if ($options->{parse_as_files} or (defined $state{part}{filename} and !defined $options->{parse_as_files})) {
+        $current->{size} += length $append;
+        unless (defined $current->{filename} and $options->{discard_files}) {
+          if ($options->{parse_as_files} or (defined $current->{filename} and !defined $options->{parse_as_files})) {
             my $is_eof = !$state{parsing_body};
             if (defined $options->{on_file_buffer}) {
-              $options->{on_file_buffer}->($append, my $part = $state{part}, $is_eof);
+              $options->{on_file_buffer}->($append, my $dummy = $current, $is_eof);
             } else {
               # create temp file even if empty
-              unless (defined $state{part}{file}) {
+              unless (defined $current->{file}) {
                 require File::Temp;
-                $state{part}{file} = File::Temp->new(@{$options->{tempfile_args} || []});
-                binmode $state{part}{file};
+                $current->{file} = File::Temp->new(@{$options->{tempfile_args} || []});
+                binmode $current->{file};
               }
-              print {$state{part}{file}} $append;
+              print {$current->{file}} $append;
               if ($is_eof) { # finalize temp file
-                $state{part}{file}->flush;
-                seek $state{part}{file}, 0, 0;
+                $current->{file}->flush;
+                seek $current->{file}, 0, 0;
               }
             }
           } else {
-            $state{part}{content} = '' unless defined $state{part}{content};
-            $state{part}{content} .= $append;
+            $current->{content} = '' unless defined $current->{content};
+            $current->{content} .= $append;
           }
         }
 
@@ -144,7 +144,7 @@ sub parse_multipart_form_data {
         next READER if $state{parsing_body}; # read more to find end of part
 
         # new part started
-        push @parts, $state{part} = {headers => {}, name => undef, filename => undef, size => 0};
+        push @parts, $current = {headers => {}, name => undef, filename => undef, size => 0};
       }
     }
   }
