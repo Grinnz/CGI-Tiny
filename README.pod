@@ -42,7 +42,7 @@ CGI::Tiny - Common Gateway Interface, with no frills
     }
     die "Invalid fribble parameter" unless length $fribble;
 
-    if ($cgi->query_param('download')) {
+    if ($cgi->param('download')) {
       $cgi->set_response_disposition(attachment => 'fribble.json');
     }
     $cgi->render(json => {fribble => $fribble});
@@ -793,6 +793,69 @@ multiple values of a cookie name.
 
 Retrieve values of a request cookie name as an ordered array reference.
 
+=head3 params
+
+  my $pairs = $cgi->params;
+
+Retrieve URL query string parameters and C<application/x-www-form-urlencoded>
+or C<multipart/form-data> body parameters as an ordered array reference of
+name/value pairs, represented as two-element array references. Names and values
+are decoded to Unicode characters.
+
+Query parameters are returned first, followed by body parameters. Use
+L</"query_params"> or L</"body_params"> to retrieve query or body parameters
+separately.
+
+Note that this will read the text form fields into memory as in
+L</"body_params">.
+
+=head3 param_names
+
+  my $arrayref = $cgi->param_names;
+
+Retrieve URL query string parameter names and
+C<application/x-www-form-urlencoded> or C<multipart/form-data> body parameter
+names, decoded to Unicode characters, as an ordered array reference.
+
+Query parameter names are returned first, followed by body parameter names
+(without duplication). Use L</"query_param_names"> or L</"body_param_names"> to
+retrieve query or body parameter names separately.
+
+Note that this will read the text form fields into memory as in
+L</"body_params">.
+
+=head3 param
+
+  my $value = $cgi->param('foo');
+
+Retrieve value of a named URL query string parameter or
+C<application/x-www-form-urlencoded> or C<multipart/form-data> body parameter,
+decoded to Unicode characters.
+
+If the parameter name was passed multiple times, returns the last body
+parameter value if any, otherwise the last query parameter value. Use
+L</"param_array"> to get multiple values of a parameter, or L</"query_param">
+or L</"body_param"> to retrieve the last query or body parameter value
+specifically.
+
+Note that this will read the text form fields into memory as in
+L</"body_params">.
+
+=head3 param_array
+
+  my $arrayref = $cgi->param_array('foo');
+
+Retrieve values of a named URL query string parameter or
+C<application/x-www-form-urlencoded> or C<multipart/form-data> body parameter,
+decoded to Unicode characters, as an ordered array reference.
+
+Query parameter values will be returned first, followed by body parameter
+values. Use L</"query_param_array"> or L</"body_param_array"> to retrieve query
+or body parameter values separately.
+
+Note that this will read the text form fields into memory as in
+L</"body_params">.
+
 =head3 query_params
 
   my $pairs = $cgi->query_params;
@@ -813,8 +876,10 @@ ordered array reference.
   my $value = $cgi->query_param('foo');
 
 Retrieve value of a named URL query string parameter, decoded to Unicode
-characters. If the parameter name was passed multiple times, returns the last
-value. Use L</"query_param_array"> to get multiple values of a parameter.
+characters.
+
+If the parameter name was passed multiple times, returns the last value. Use
+L</"query_param_array"> to get multiple values of a parameter.
 
 =head3 query_param_array
 
@@ -867,24 +932,21 @@ Retrieve C<applicationE<sol>x-www-form-urlencoded> or
 C<multipartE<sol>form-data> body parameter names, decoded to Unicode
 characters, as an ordered array reference.
 
-Note that this will read the text form fields into memory, so make sure the
-L</"set_request_body_limit"> can fit well within the available memory.
-C<multipartE<sol>form-data> file uploads will be streamed to temporary files
-accessible via L</"uploads"> and related methods.
+Note that this will read the text form fields into memory as in
+L</"body_params">.
 
 =head3 body_param
 
   my $value = $cgi->body_param('foo');
 
 Retrieve value of a named C<applicationE<sol>x-www-form-urlencoded> or
-C<multipartE<sol>form-data> body parameter, decoded to Unicode characters. If
-the parameter name was passed multiple times, returns the last value. Use
+C<multipartE<sol>form-data> body parameter, decoded to Unicode characters.
+
+If the parameter name was passed multiple times, returns the last value. Use
 L</"body_param_array"> to get multiple values of a parameter.
 
-Note that this will read the text form fields into memory, so make sure the
-L</"set_request_body_limit"> can fit well within the available memory.
-C<multipartE<sol>form-data> file uploads will be streamed to temporary files
-accessible via L</"uploads"> and related methods.
+Note that this will read the text form fields into memory as in
+L</"body_params">.
 
 =head3 body_param_array
 
@@ -894,10 +956,8 @@ Retrieve values of a named C<applicationE<sol>x-www-form-urlencoded> or
 C<multipartE<sol>form-data> body parameter, decoded to Unicode characters, as
 an ordered array reference.
 
-Note that this will read the text form fields into memory, so make sure the
-L</"set_request_body_limit"> can fit well within the available memory.
-C<multipartE<sol>form-data> file uploads will be streamed to temporary files
-accessible via L</"uploads"> and related methods.
+Note that this will read the text form fields into memory as in
+L</"body_params">.
 
 =head3 body_parts
 
@@ -955,8 +1015,7 @@ with the C<seek> pointer at the start of the file for reading.
 Retrieve C<multipartE<sol>form-data> file upload names, decoded to Unicode
 characters, as an ordered array reference.
 
-Note that this will read the text form fields into memory, so make sure the
-L</"set_request_body_limit"> can fit well within the available memory.
+Note that this will read the text form fields into memory as in L</"uploads">.
 
 =head3 upload
 
@@ -968,8 +1027,7 @@ to get multiple uploads with the same name.
 
 See L</"uploads"> for details on the representation of the upload.
 
-Note that this will read the text form fields into memory, so make sure the
-L</"set_request_body_limit"> can fit well within the available memory.
+Note that this will read the text form fields into memory as in L</"uploads">.
 
 =head3 upload_array
 
@@ -980,8 +1038,7 @@ an ordered array reference.
 
 See L</"uploads"> for details on the representation of the uploads.
 
-Note that this will read the text form fields into memory, so make sure the
-L</"set_request_body_limit"> can fit well within the available memory.
+Note that this will read the text form fields into memory as in L</"uploads">.
 
 =head2 Response
 
@@ -1392,25 +1449,31 @@ L</"set_error_handler">.
 
 =item *
 
-Request query and body parameter accessors in CGI::Tiny are not context
-sensitive, as context sensitivity can lead to surprising behavior and
+Request parameter accessors in CGI::Tiny are not context sensitive, as context
+sensitivity can lead to surprising behavior and
 L<vulnerabilities|https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-1572>.
-L</"query_param">, L</"body_param">, and L</"upload"> always return a single
-value; L</"query_param_array">, L</"body_param_array">, and L</"upload_array">
-must be used to retrieve multi-value parameters.
+L</"param">, L</"query_param">, L</"body_param">, and L</"upload"> always
+return a single value; L</"param_array">, L</"query_param_array">,
+L</"body_param_array">, and L</"upload_array"> must be used to retrieve
+multi-value parameters.
 
 =item *
 
-CGI::Tiny does not have a method-sensitive C<param> accessor; query and body
-request parameters are accessed with L</"query_param"> and L</"body_param">
-respectively. Uploaded files and their metadata are accessed with L</"upload">
-and do not affect the text parameter accessors.
+CGI::Tiny's L</"param"> accessor is also not method-sensitive; it accesses
+either query or body request parameters with the same behavior regardless of
+request method, and query and body request parameters can be accessed
+separately with L</"query_param"> and L</"body_param"> respectively.
 
 =item *
 
-CGI::Tiny decodes request query and body parameters to Unicode characters
-automatically, and L</"render">/L</"render_chunk"> provide methods to encode
-response content from Unicode characters to UTF-8 by default.
+CGI::Tiny's L</"param"> accessor only retrieves text parameters; uploaded
+files and their metadata are accessed with L</"upload"> and related methods.
+
+=item *
+
+CGI::Tiny decodes request parameters to Unicode characters automatically, and
+L</"render">/L</"render_chunk"> provide methods to encode response content from
+Unicode characters to UTF-8 by default.
 
 =item *
 

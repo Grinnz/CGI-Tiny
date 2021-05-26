@@ -219,6 +219,17 @@ sub _cookies {
   return $self->{request_cookies};
 }
 
+sub params      { [map { [@$_] } @{$_[0]->_query_params->{ordered}}, @{$_[0]->_body_params->{ordered}}] }
+sub param_names { my $q = $_[0]->_query_params; [@{$q->{names}}, grep { !exists $q->{keyed}{$_} } @{$_[0]->_body_params->{names}}] }
+sub param       {
+  my ($self, $name) = @_;
+  my $p = $self->_body_params->{keyed};
+  return $p->{$name}[-1] if exists $p->{$name};
+  my $q = $self->_query_params->{keyed};
+  return exists $q->{$name} ? $q->{$name}[-1] : undef;
+}
+sub param_array { [map { exists $_->{$_[1]} ? @{$_->{$_[1]}} : () } $_[0]->_query_params->{keyed}, $_[0]->_body_params->{keyed}] }
+
 sub query_params      { [map { [@$_] } @{$_[0]->_query_params->{ordered}}] }
 sub query_param_names { [@{$_[0]->_query_params->{names}}] }
 sub query_param       { my $p = $_[0]->_query_params->{keyed}; exists $p->{$_[1]} ? $p->{$_[1]}[-1] : undef }

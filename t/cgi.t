@@ -1062,12 +1062,49 @@ subtest 'Body parameters' => sub {
   is_deeply $param_c_array, [42, 'foo'], 'right body param values array';
 };
 
+subtest 'Query and body parameters' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'POST';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  my @param_pairs = (['c', 43], ['☃', 'snowman'], ['c', 'foo'], ['d', 'bar'], ['c', 42], ['b', '1 2&'], ['☃', '%'], ['c', 'foo']);
+  my $query_string = 'c=43&%E2%98%83=snowman&c=foo&d=bar';
+  local $ENV{QUERY_STRING} = $query_string;
+  my $body_string = 'c=42&b=1+2%26&%E2%98%83=%25&c=foo';
+  local $ENV{CONTENT_TYPE} = 'application/x-www-form-urlencoded';
+  local $ENV{CONTENT_LENGTH} = length $body_string;
+  open my $in_fh, '<', \$body_string or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my ($params, $param_names, $param_snowman, $param_c_array);
+  cgi {
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $params = $_->params;
+    $param_names = $_->param_names;
+    $param_snowman = $_->param('☃');
+    $param_c_array = $_->param_array('c');
+    $_->render;
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{date}), 'Date set';
+  like $response->{status}, qr/^200\b/, '200 response status';
+  is_deeply $params, \@param_pairs, 'right param pairs';
+  is_deeply $param_names, ['c', '☃', 'd', 'b'], 'right param names';
+  is $param_snowman, '%', 'right param value';
+  is_deeply $param_c_array, [43, 'foo', 42, 'foo'], 'right param values array';
+};
+
 subtest 'Multipart body' => sub {
   local @ENV{@env_keys} = ('')x@env_keys;
   local $ENV{PATH_INFO} = '/';
   local $ENV{REQUEST_METHOD} = 'POST';
   local $ENV{SCRIPT_NAME} = '/';
   local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  local $ENV{QUERY_STRING} = 'query=foo&snowman=snow';
   my $utf8_snowman = encode 'UTF-8', '☃';
   my $utf16le_snowman = encode 'UTF-16LE', "☃...\n";
   my $body_string = <<"EOB";
@@ -1118,7 +1155,7 @@ EOB
   open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
 
   my $parts;
-  my ($params, $param_names, $param_snowman, $param_snowman_array);
+  my ($param_query, $params, $param_names, $param_snowman, $param_snowman_array);
   my ($uploads, $upload_names, $upload_file, $upload_file_array);
   cgi {
     $_->set_input_handle($in_fh);
@@ -1126,10 +1163,11 @@ EOB
     $_->set_discard_form_files(0);
     $_->set_multipart_form_charset('UTF-8');
     $parts = $_->body_parts;
+    $param_query = $_->param('query');
     $params = $_->body_params;
     $param_names = $_->body_param_names;
     $param_snowman = $_->body_param('snowman');
-    $param_snowman_array = $_->body_param_array('snowman');
+    $param_snowman_array = $_->param_array('snowman');
     $uploads = $_->uploads;
     $upload_names = $_->upload_names;
     $upload_file = $_->upload('file');
@@ -1168,10 +1206,11 @@ EOB
       name => 'snowman', filename => 'snowman\".txt', size => length($utf16le_snowman), file_contents => $utf16le_snowman},
   ], 'right multipart body parts';
 
+  is $param_query, 'foo', 'right generic param';
   is_deeply $params, [['snowman', '☃!'], ['snowman', "☃...\n"], ['newline\"', "\n"], ['empty', ''], ['empty', '']], 'right multipart body params';
   is_deeply $param_names, ['snowman', 'newline\"', 'empty'], 'right multipart body param names';
   is $param_snowman, "☃...\n", 'right multipart body param value';
-  is_deeply $param_snowman_array, ['☃!', "☃...\n"], 'right multipart body param values';
+  is_deeply $param_snowman_array, ['snow', '☃!', "☃...\n"], 'right multipart body param values';
   is $uploads->[-1][0], 'snowman', 'right upload name';
   my $upload_snowman = $uploads->[-1][1];
   ok defined $upload_snowman, 'last upload';
