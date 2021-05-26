@@ -4,7 +4,7 @@
 
 =head1 NAME
 
-CGI::Tiny::Multipart - Tiny multipart/form-data parser
+CGI::Tiny::Multipart - Tiny multipart/form-data form parser
 
 =head1 SYNOPSIS
 
@@ -54,30 +54,54 @@ Buffer size (number of bytes to read at once) for reading the request body from
 an input filehandle. Defaults to 262144 (256 KiB). A value of 0 will use the
 default value.
 
+=item parse_as_files
+
+  parse_as_files => 1
+  parse_as_files => 0
+
+If set to a true value, all form field values will be parsed as file uploads,
+calling C<on_file_buffer> or storing the contents in a tempfile. If set to a
+false (but defined) value, all form field values will be returned as
+C<content>, even file uploads. By default, text field values will be returned
+as C<content> and file uploads will be parsed by C<on_file_buffer> or stored in
+tempfiles.
+
+=item on_file_buffer
+
+  on_file_buffer => sub { my ($bytes, $hashref, $eof) = @_; }
+
+Callback for custom parsing of file upload form fields. If specified, it will
+be called with each (possibly empty) chunk of file contents that is read from
+the form as bytes. The hash reference representing this form field is passed as
+the second argument. The third argument will be true the last time the callback
+is called for a particular form field.
+
+The hash reference passed to the callback persists between calls for the same
+form field, and is the same hash reference that will ultimately be returned to
+represent the form field. It will contain the C<headers>, undecoded C<name> and
+C<filename>, and C<size> of contents read so far (including the bytes just
+passed to the callback). Modifying these values may result in unexpected
+behavior, but other modifications to the hash reference are allowed.
+
+If C<on_file_buffer> is not specified, file uploads will be stored in C<file>
+as a L<File::Temp> object created with C<tempfile_args>.
+
 =item tempfile_args
 
   tempfile_args => [TEMPLATE => 'tempXXXXX', SUFFIX => '.dat']
 
 Arguments to pass to the L<File::Temp> constructor when creating tempfiles for
-file uploads. By default no arguments are passed.
-
-=item tempfiles
-
-  tempfiles => 1
-  tempfiles => 0
-
-If set to a true value, all form field values will be stored in tempfiles
-instead of memory, not just file uploads. If set to a false (but defined)
-value, all form fields values will be stored in memory, even file uploads.
-By default, text field values will be stored in memory and file uploads will be
-stored in tempfiles.
+file uploads. By default no arguments are passed. Not used if a custom
+C<on_file_buffer> callback is passed.
 
 =item discard_files
 
   discard_files => 1
 
-If set to a true value, file upload field contents will be discarded, and
-neither C<content> nor C<file> will be provided for those form fields.
+If set to a true value, file upload field contents will be discarded without
+calling C<on_file_buffer>, and neither C<content> nor C<file> will be provided
+for those form fields. Note that this discards the contents of form fields with
+a defined C<filename> regardless of the C<parse_as_files> setting.
 
 =back
 
@@ -87,7 +111,8 @@ Form fields are represented as hash references containing:
 
 =item headers
 
-Hash reference of part headers. Header names are represented in lowercase.
+Hash reference of form field headers. Header names are represented in
+lowercase.
 
 =item name
 
@@ -99,19 +124,20 @@ Filename from C<Content-Disposition> header if present, undecoded.
 
 =item size
 
-Size of part contents in bytes.
+Size of form field contents in bytes.
 
 =item content
 
-Part contents as undecoded bytes, for parts without a defined C<filename>, or
-for all parts if the C<tempfiles> option was set to a false value. File uploads
-are stored in a temporary C<file> instead by default.
+Form field contents as undecoded bytes, for form fields without a defined
+C<filename>, or for all form fields if the C<parse_as_files> option was set to
+a false value. File uploads are stored in a temporary C<file> instead by
+default.
 
 =item file
 
-L<File::Temp> object referencing temporary file containing the part contents,
-for parts with a defined C<filename>, or for all parts if the C<tempfiles>
-option was set to a true value.
+L<File::Temp> object referencing temporary file containing the form field
+contents, for form fields with a defined C<filename>, or for all form fields if
+the C<parse_as_files> option was set to a true value.
 
 =back
 

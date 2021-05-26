@@ -1,5 +1,7 @@
 {{$NEXT}}
   - Add params, param_names, param, and param_array general request parameter accessors
+  - Add on_file_buffer callback option to CGI::Tiny::Multipart::parse_multipart_form_data for custom form parsing
+  - Rename tempfiles option to parse_as_files for CGI::Tiny::Multipart::parse_multipart_form_data
 
 0.018     2021-05-19 18:12:06 EDT
   - CGI::Tiny::Multipart::parse_multipart_form_data now takes a single tempfiles option instead of all_tempfiles and no_tempfiles

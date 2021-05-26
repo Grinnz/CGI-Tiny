@@ -1,5 +1,5 @@
 package CGI::Tiny::Multipart;
-# ABSTRACT: Tiny multipart/form-data parser
+# ABSTRACT: Tiny multipart/form-data form parser
 
 # This file is part of CGI::Tiny which is released under:
 #   The Artistic License 2.0 (GPL Compatible)
@@ -115,25 +115,30 @@ sub parse_multipart_form_data {
           $append = substr $buffer, 0, length($buffer) - length($next_boundary), '';
         }
 
+        $state{part}{size} += length $append;
         unless (defined $state{part}{filename} and $options->{discard_files}) {
-          if ($options->{tempfiles} or (defined $state{part}{filename} and !defined $options->{tempfiles})) {
-            # create temp file even if empty
-            unless (defined $state{part}{file}) {
-              require File::Temp;
-              $state{part}{file} = File::Temp->new(@{$options->{tempfile_args} || []});
-              binmode $state{part}{file};
-            }
-            print {$state{part}{file}} $append;
-            unless ($state{parsing_body}) { # finalize temp file
-              $state{part}{file}->flush;
-              seek $state{part}{file}, 0, 0;
+          if ($options->{parse_as_files} or (defined $state{part}{filename} and !defined $options->{parse_as_files})) {
+            my $is_eof = !$state{parsing_body};
+            if (defined $options->{on_file_buffer}) {
+              $options->{on_file_buffer}->($append, my $part = $state{part}, $is_eof);
+            } else {
+              # create temp file even if empty
+              unless (defined $state{part}{file}) {
+                require File::Temp;
+                $state{part}{file} = File::Temp->new(@{$options->{tempfile_args} || []});
+                binmode $state{part}{file};
+              }
+              print {$state{part}{file}} $append;
+              if ($is_eof) { # finalize temp file
+                $state{part}{file}->flush;
+                seek $state{part}{file}, 0, 0;
+              }
             }
           } else {
             $state{part}{content} = '' unless defined $state{part}{content};
             $state{part}{content} .= $append;
           }
         }
-        $state{part}{size} += length $append;
 
         last READER if $state{done};         # end of multipart data
         next READER if $state{parsing_body}; # read more to find end of part

@@ -164,8 +164,8 @@ subtest 'parse_multipart_form_data (discard files)' => sub {
   ], 'right multipart form data';
 };
 
-subtest 'parse_multipart_form_data (all tempfiles)' => sub {
-  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {tempfiles => 1});
+subtest 'parse_multipart_form_data (parse all as files)' => sub {
+  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {parse_as_files => 1});
 
   my @files;
   foreach my $i (0..$#$parts) {
@@ -194,8 +194,8 @@ subtest 'parse_multipart_form_data (all tempfiles)' => sub {
   ], 'right multipart form data';
 };
 
-subtest 'parse_multipart_form_data (no tempfiles)' => sub {
-  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {tempfiles => 0});
+subtest 'parse_multipart_form_data (parse none as files)' => sub {
+  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {parse_as_files => 0});
 
   is_deeply $parts, [
     {headers => {'content-disposition' => 'form-data; name="snowman"'},
@@ -217,8 +217,8 @@ subtest 'parse_multipart_form_data (no tempfiles)' => sub {
   ], 'right multipart form data';
 };
 
-subtest 'parse_multipart_form_data (all tempfiles, discard files)' => sub {
-  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {tempfiles => 1, discard_files => 1});
+subtest 'parse_multipart_form_data (parse all as files, discard files)' => sub {
+  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {parse_as_files => 1, discard_files => 1});
 
   my @files;
   foreach my $i (0..$#$parts) {
@@ -247,8 +247,124 @@ subtest 'parse_multipart_form_data (all tempfiles, discard files)' => sub {
   ], 'right multipart form data';
 };
 
-subtest 'parse_multipart_form_data (no tempfiles, discard files)' => sub {
-  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {tempfiles => 0, discard_files => 1});
+subtest 'parse_multipart_form_data (parse none as files, discard files)' => sub {
+  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {parse_as_files => 0, discard_files => 1});
+
+  is_deeply $parts, [
+    {headers => {'content-disposition' => 'form-data; name="snowman"'},
+      name => 'snowman', filename => undef, size => length($utf8_snowman) + 1, content => "$utf8_snowman!"},
+    {headers => {'content-disposition' => 'form-data; name=snowman', 'content-type' => 'text/plain;charset=UTF-16LE'},
+      name => 'snowman', filename => undef, size => length($utf16le_snowman), content => $utf16le_snowman},
+    {headers => {'content-disposition' => 'form-data; name="newline\\\\\\""'},
+      name => 'newline\"', filename => undef, size => 1, content => "\n"},
+    {headers => {'content-disposition' => 'form-data; name="empty"'},
+      name => 'empty', filename => undef, size => 0, content => ''},
+    {headers => {'content-disposition' => 'form-data; name="empty"'},
+      name => 'empty', filename => undef, size => 0, content => ''},
+    {headers => {'content-disposition' => 'form-data; name="file"; filename="test.dat"', 'content-type' => 'application/octet-stream'},
+      name => 'file', filename => 'test.dat', size => 18},
+    {headers => {'content-disposition' => 'form-data; name="file"; filename="test2.dat"', 'content-type' => 'application/json'},
+      name => 'file', filename => 'test2.dat', size => 11},
+    {headers => {'content-disposition' => 'form-data; name="snowman"; filename="snowman\\\\\\".txt"', 'content-type' => 'text/plain;charset=UTF-16LE'},
+      name => 'snowman', filename => 'snowman\".txt', size => length($utf16le_snowman)},
+  ], 'right multipart form data';
+};
+
+subtest 'parse_multipart_form_data (custom file parsing)' => sub {
+  my $on_file_buffer = sub {
+    my ($buffer, $part, $eof) = @_;
+    $part->{file_contents} = '' unless defined $part->{file_contents};
+    $part->{file_contents} .= $buffer;
+    $part->{eof}++ if $eof;
+  };
+  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {on_file_buffer => $on_file_buffer});
+
+  is_deeply $parts, [
+    {headers => {'content-disposition' => 'form-data; name="snowman"'},
+      name => 'snowman', filename => undef, size => length($utf8_snowman) + 1, content => "$utf8_snowman!"},
+    {headers => {'content-disposition' => 'form-data; name=snowman', 'content-type' => 'text/plain;charset=UTF-16LE'},
+      name => 'snowman', filename => undef, size => length($utf16le_snowman), content => $utf16le_snowman},
+    {headers => {'content-disposition' => 'form-data; name="newline\\\\\\""'},
+      name => 'newline\"', filename => undef, size => 1, content => "\n"},
+    {headers => {'content-disposition' => 'form-data; name="empty"'},
+      name => 'empty', filename => undef, size => 0, content => ''},
+    {headers => {'content-disposition' => 'form-data; name="empty"'},
+      name => 'empty', filename => undef, size => 0, content => ''},
+    {headers => {'content-disposition' => 'form-data; name="file"; filename="test.dat"', 'content-type' => 'application/octet-stream'},
+      name => 'file', filename => 'test.dat', size => 18, file_contents => "00000000\n11111111\0", eof => 1},
+    {headers => {'content-disposition' => 'form-data; name="file"; filename="test2.dat"', 'content-type' => 'application/json'},
+      name => 'file', filename => 'test2.dat', size => 11, file_contents => '{"test":42}', eof => 1},
+    {headers => {'content-disposition' => 'form-data; name="snowman"; filename="snowman\\\\\\".txt"', 'content-type' => 'text/plain;charset=UTF-16LE'},
+      name => 'snowman', filename => 'snowman\".txt', size => length($utf16le_snowman), file_contents => $utf16le_snowman, eof => 1},
+  ], 'right multipart form data';
+};
+
+subtest 'parse_multipart_form_data (custom file parsing, parse all as files)' => sub {
+  my $on_file_buffer = sub {
+    my ($buffer, $part, $eof) = @_;
+    $part->{file_contents} = '' unless defined $part->{file_contents};
+    $part->{file_contents} .= $buffer;
+    $part->{eof}++ if $eof;
+  };
+  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {on_file_buffer => $on_file_buffer, parse_as_files => 1});
+
+  is_deeply $parts, [
+    {headers => {'content-disposition' => 'form-data; name="snowman"'},
+      name => 'snowman', filename => undef, size => length($utf8_snowman) + 1, file_contents => "$utf8_snowman!", eof => 1},
+    {headers => {'content-disposition' => 'form-data; name=snowman', 'content-type' => 'text/plain;charset=UTF-16LE'},
+      name => 'snowman', filename => undef, size => length($utf16le_snowman), file_contents => $utf16le_snowman, eof => 1},
+    {headers => {'content-disposition' => 'form-data; name="newline\\\\\\""'},
+      name => 'newline\"', filename => undef, size => 1, file_contents => "\n", eof => 1},
+    {headers => {'content-disposition' => 'form-data; name="empty"'},
+      name => 'empty', filename => undef, size => 0, file_contents => '', eof => 1},
+    {headers => {'content-disposition' => 'form-data; name="empty"'},
+      name => 'empty', filename => undef, size => 0, file_contents => '', eof => 1},
+    {headers => {'content-disposition' => 'form-data; name="file"; filename="test.dat"', 'content-type' => 'application/octet-stream'},
+      name => 'file', filename => 'test.dat', size => 18, file_contents => "00000000\n11111111\0", eof => 1},
+    {headers => {'content-disposition' => 'form-data; name="file"; filename="test2.dat"', 'content-type' => 'application/json'},
+      name => 'file', filename => 'test2.dat', size => 11, file_contents => '{"test":42}', eof => 1},
+    {headers => {'content-disposition' => 'form-data; name="snowman"; filename="snowman\\\\\\".txt"', 'content-type' => 'text/plain;charset=UTF-16LE'},
+      name => 'snowman', filename => 'snowman\".txt', size => length($utf16le_snowman), file_contents => $utf16le_snowman, eof => 1},
+  ], 'right multipart form data';
+};
+
+subtest 'parse_multipart_form_data (custom file parsing, parse none as files)' => sub {
+  my $on_file_buffer = sub {
+    my ($buffer, $part, $eof) = @_;
+    $part->{file_contents} = '' unless defined $part->{file_contents};
+    $part->{file_contents} .= $buffer;
+    $part->{eof}++ if $eof;
+  };
+  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {on_file_buffer => $on_file_buffer, parse_as_files => 0});
+
+  is_deeply $parts, [
+    {headers => {'content-disposition' => 'form-data; name="snowman"'},
+      name => 'snowman', filename => undef, size => length($utf8_snowman) + 1, content => "$utf8_snowman!"},
+    {headers => {'content-disposition' => 'form-data; name=snowman', 'content-type' => 'text/plain;charset=UTF-16LE'},
+      name => 'snowman', filename => undef, size => length($utf16le_snowman), content => $utf16le_snowman},
+    {headers => {'content-disposition' => 'form-data; name="newline\\\\\\""'},
+      name => 'newline\"', filename => undef, size => 1, content => "\n"},
+    {headers => {'content-disposition' => 'form-data; name="empty"'},
+      name => 'empty', filename => undef, size => 0, content => ''},
+    {headers => {'content-disposition' => 'form-data; name="empty"'},
+      name => 'empty', filename => undef, size => 0, content => ''},
+    {headers => {'content-disposition' => 'form-data; name="file"; filename="test.dat"', 'content-type' => 'application/octet-stream'},
+      name => 'file', filename => 'test.dat', size => 18, content => "00000000\n11111111\0"},
+    {headers => {'content-disposition' => 'form-data; name="file"; filename="test2.dat"', 'content-type' => 'application/json'},
+      name => 'file', filename => 'test2.dat', size => 11, content => '{"test":42}'},
+    {headers => {'content-disposition' => 'form-data; name="snowman"; filename="snowman\\\\\\".txt"', 'content-type' => 'text/plain;charset=UTF-16LE'},
+      name => 'snowman', filename => 'snowman\".txt', size => length($utf16le_snowman), content => $utf16le_snowman},
+  ], 'right multipart form data';
+};
+
+subtest 'parse_multipart_form_data (custom file parsing, discard files)' => sub {
+  my $on_file_buffer = sub {
+    my ($buffer, $part, $eof) = @_;
+    $part->{file_contents} = '' unless defined $part->{file_contents};
+    $part->{file_contents} .= $buffer;
+    $part->{eof}++ if $eof;
+  };
+  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {on_file_buffer => $on_file_buffer, discard_files => 1});
 
   is_deeply $parts, [
     {headers => {'content-disposition' => 'form-data; name="snowman"'},
