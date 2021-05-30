@@ -153,7 +153,7 @@ sub _handle_error {
 sub set_error_handler          { $_[0]{on_error} = $_[1]; $_[0] }
 sub set_request_body_buffer    { $_[0]{request_body_buffer} = $_[1]; $_[0] }
 sub set_request_body_limit     { $_[0]{request_body_limit} = $_[1]; $_[0] }
-sub set_discard_form_files     { $_[0]{discard_form_files} = @_ < 2 ? 1 : $_[1]; $_[0] }
+sub set_multipart_form_options { $_[0]{multipart_form_options} = $_[1]; $_[0] }
 sub set_multipart_form_charset { $_[0]{multipart_form_charset} = $_[1]; $_[0] }
 sub set_input_handle           { $_[0]{input_handle} = $_[1]; $_[0] }
 sub set_output_handle          { $_[0]{output_handle} = $_[1]; $_[0] }
@@ -302,10 +302,19 @@ sub _body_params {
       $default_charset = 'UTF-8' unless defined $default_charset;
       foreach my $part (@{$self->_body_multipart}) {
         next if defined $part->{filename};
-        my ($name, $value, $headers) = @$part{'name','content','headers'};
+        my ($name, $headers, $content, $file) = @$part{'name','headers','content','file'};
         if (length $default_charset) {
           require Encode;
           $name = Encode::decode($default_charset, "$name");
+        }
+        my $value = '';
+        if (defined $content) {
+          $value = $content;
+        } elsif (defined $file) {
+          binmode $file;
+          seek $file, 0, 0;
+          $value = do { local $/; readline $file };
+          seek $file, 0, 0;
         }
         my $value_charset;
         if (defined $headers->{'content-type'}) {
@@ -351,7 +360,7 @@ sub _body_uploads {
       $default_charset = 'UTF-8' unless defined $default_charset;
       foreach my $part (@{$self->_body_multipart}) {
         next unless defined $part->{filename};
-        my ($name, $filename, $file, $size, $headers) = @$part{'name','filename','file','size','headers'};
+        my ($name, $filename, $size, $headers, $file, $content) = @$part{'name','filename','size','headers','file','content'};
         if (length $default_charset) {
           require Encode;
           $name = Encode::decode($default_charset, "$name");
@@ -359,10 +368,11 @@ sub _body_uploads {
         }
         my $upload = {
           filename     => $filename,
-          file         => $file,
           size         => $size,
           content_type => $headers->{'content-type'},
         };
+        $upload->{file} = $file if defined $file;
+        $upload->{content} = $content if defined $content;
         push @names, $name unless exists $keyed{$name};
         push @ordered, [$name, $upload];
         push @{$keyed{$name}}, $upload;
@@ -407,7 +417,7 @@ sub _body_multipart {
 
     my $parts = CGI::Tiny::Multipart::parse_multipart_form_data($input, $length, $boundary, {
       buffer_size => $self->{request_body_buffer} || $ENV{CGI_TINY_REQUEST_BODY_BUFFER},
-      discard_files => $self->{discard_form_files} || $ENV{CGI_TINY_DISCARD_FORM_FILES},
+      %{$self->{multipart_form_options} || {}},
     });
     unless (defined $parts) {
       $self->{response_status} = "400 $HTTP_STATUS{400}" unless $self->{headers_rendered};

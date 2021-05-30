@@ -676,7 +676,7 @@ EOB
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
-    $_->set_discard_form_files(0);
+    $_->set_multipart_form_options({discard_files => 0});
     $_->set_multipart_form_charset('UTF-8');
     $parts = $_->body_parts;
     $param_query = $_->param('query');
@@ -751,47 +751,19 @@ subtest 'Multipart body (discard files)' => sub {
   local $ENV{REQUEST_METHOD} = 'POST';
   local $ENV{SCRIPT_NAME} = '/';
   local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
-  my $utf8_snowman = encode 'UTF-8', '☃';
   my $utf16le_snowman = encode 'UTF-16LE', "☃...\n";
   my $body_string = <<"EOB";
-preamble\r
---delimiter\r
-Content-Disposition: form-data; name="snowman"\r
-\r
-$utf8_snowman!\r
 --delimiter\r
 Content-Disposition: form-data; name=snowman\r
 Content-Type: text/plain;charset=UTF-16LE\r
 \r
 $utf16le_snowman\r
 --delimiter\r
-Content-Disposition: form-data; name="newline\\\\\\""\r
-\r
-
-\r
---delimiter\r
-Content-Disposition: form-data; name="empty"\r
-\r
---delimiter\r
-Content-Disposition: form-data; name="empty"\r
-\r
-\r
---delimiter\r
 Content-Disposition: form-data; name="file"; filename="test.dat"\r
 Content-Type: application/octet-stream\r
 \r
 00000000
 11111111\0\r
---delimiter\r
-Content-Disposition: form-data; name="file"; filename="test2.dat"\r
-Content-Type: application/json\r
-\r
-{"test":42}\r
---delimiter\r
-Content-Disposition: form-data; name="snowman"; filename="snowman\\\\\\".txt"\r
-Content-Type: text/plain;charset=UTF-16LE\r
-\r
-$utf16le_snowman\r
 --delimiter--\r
 postamble
 EOB
@@ -806,7 +778,7 @@ EOB
   cgi {
     $_->set_input_handle($in_fh);
     $_->set_output_handle($out_fh);
-    $_->set_discard_form_files;
+    $_->set_multipart_form_options({discard_files => 1});
     $_->set_multipart_form_charset('UTF-8');
     $parts = $_->body_parts;
     $params = $_->body_params;
@@ -826,40 +798,243 @@ EOB
   like $response->{status}, qr/^200\b/, '200 response status';
 
   is_deeply $parts, [
-    {headers => {'content-disposition' => 'form-data; name="snowman"'},
-      name => 'snowman', filename => undef, size => length($utf8_snowman) + 1, content => "$utf8_snowman!"},
     {headers => {'content-disposition' => 'form-data; name=snowman', 'content-type' => 'text/plain;charset=UTF-16LE'},
       name => 'snowman', filename => undef, size => length($utf16le_snowman), content => $utf16le_snowman},
-    {headers => {'content-disposition' => 'form-data; name="newline\\\\\\""'},
-      name => 'newline\"', filename => undef, size => 1, content => "\n"},
-    {headers => {'content-disposition' => 'form-data; name="empty"'},
-      name => 'empty', filename => undef, size => 0, content => ''},
-    {headers => {'content-disposition' => 'form-data; name="empty"'},
-      name => 'empty', filename => undef, size => 0, content => ''},
     {headers => {'content-disposition' => 'form-data; name="file"; filename="test.dat"', 'content-type' => 'application/octet-stream'},
       name => 'file', filename => 'test.dat', size => 18},
-    {headers => {'content-disposition' => 'form-data; name="file"; filename="test2.dat"', 'content-type' => 'application/json'},
-      name => 'file', filename => 'test2.dat', size => 11},
-    {headers => {'content-disposition' => 'form-data; name="snowman"; filename="snowman\\\\\\".txt"', 'content-type' => 'text/plain;charset=UTF-16LE'},
-      name => 'snowman', filename => 'snowman\".txt', size => length($utf16le_snowman)},
   ], 'right multipart body parts';
 
-  is_deeply $params, [['snowman', '☃!'], ['snowman', "☃...\n"], ['newline\"', "\n"], ['empty', ''], ['empty', '']], 'right multipart body params';
-  is_deeply $param_names, ['snowman', 'newline\"', 'empty'], 'right multipart body param names';
+  is_deeply $params, [['snowman', "☃...\n"]], 'right multipart body params';
+  is_deeply $param_names, ['snowman'], 'right multipart body param names';
   is $param_snowman, "☃...\n", 'right multipart body param value';
-  is_deeply $param_snowman_array, ['☃!', "☃...\n"], 'right multipart body param values';
-  is $uploads->[-1][0], 'snowman', 'right upload name';
-  my $upload_snowman = $uploads->[-1][1];
-  ok defined $upload_snowman, 'last upload';
-  is $upload_snowman->{filename}, 'snowman\".txt', 'right upload filename';
-  is $upload_snowman->{size}, length $utf16le_snowman, 'right upload size';
-  is $upload_snowman->{content_type}, 'text/plain;charset=UTF-16LE', 'right upload Content-Type';
-  is $upload_snowman->{file}, undef, 'upload contents discarded';
-  is_deeply $upload_names, ['file', 'snowman'], 'right upload names';
-  is $upload_file->{filename}, 'test2.dat', 'right upload filename';
-  is $upload_file->{content_type}, 'application/json', 'right upload Content-Type';
+  is_deeply $param_snowman_array, ["☃...\n"], 'right multipart body param values';
+  is $uploads->[-1][0], 'file', 'right upload name';
+  is_deeply $upload_names, ['file'], 'right upload names';
+  is $upload_file->{filename}, 'test.dat', 'right upload filename';
+  is $upload_file->{content_type}, 'application/octet-stream', 'right upload Content-Type';
   is $upload_file_array->[0]{filename}, 'test.dat', 'right upload filename';
-  is $upload_file_array->[1]{filename}, 'test2.dat', 'right upload filename';
+};
+
+subtest 'Multipart body (parse all as files)' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'POST';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  my $utf16le_snowman = encode 'UTF-16LE', "☃...\n";
+  my $body_string = <<"EOB";
+--delimiter\r
+Content-Disposition: form-data; name=snowman\r
+Content-Type: text/plain;charset=UTF-16LE\r
+\r
+$utf16le_snowman\r
+--delimiter\r
+Content-Disposition: form-data; name="file"; filename="test.dat"\r
+Content-Type: application/octet-stream\r
+\r
+00000000
+11111111\0\r
+--delimiter--\r
+postamble
+EOB
+  local $ENV{CONTENT_TYPE} = 'multipart/form-data; boundary=delimiter';
+  local $ENV{CONTENT_LENGTH} = length $body_string;
+  open my $in_fh, '<', \$body_string or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my $parts;
+  my ($params, $param_names, $param_snowman, $param_snowman_array);
+  my ($uploads, $upload_names, $upload_file, $upload_file_array);
+  cgi {
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->set_multipart_form_options({parse_as_files => 1});
+    $_->set_multipart_form_charset('UTF-8');
+    $parts = $_->body_parts;
+    $params = $_->body_params;
+    $param_names = $_->body_param_names;
+    $param_snowman = $_->body_param('snowman');
+    $param_snowman_array = $_->body_param_array('snowman');
+    $uploads = $_->uploads;
+    $upload_names = $_->upload_names;
+    $upload_file = $_->upload('file');
+    $upload_file_array = $_->upload_array('file');
+    $_->render;
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{date}), 'Date set';
+  like $response->{status}, qr/^200\b/, '200 response status';
+
+  my @files;
+  foreach my $i (0..$#$parts) {
+    $files[$i] = delete $parts->[$i]{file};
+    if (defined $files[$i]) {
+      $parts->[$i]{file_contents} = do { local $/; readline $files[$i] };
+    }
+  }
+  is_deeply $parts, [
+    {headers => {'content-disposition' => 'form-data; name=snowman', 'content-type' => 'text/plain;charset=UTF-16LE'},
+      name => 'snowman', filename => undef, size => length($utf16le_snowman), file_contents => $utf16le_snowman},
+    {headers => {'content-disposition' => 'form-data; name="file"; filename="test.dat"', 'content-type' => 'application/octet-stream'},
+      name => 'file', filename => 'test.dat', size => 18, file_contents => "00000000\n11111111\0"},
+  ], 'right multipart body parts';
+
+  is_deeply $params, [['snowman', "☃...\n"]], 'right multipart body params';
+  is_deeply $param_names, ['snowman'], 'right multipart body param names';
+  is $param_snowman, "☃...\n", 'right multipart body param value';
+  is_deeply $param_snowman_array, ["☃...\n"], 'right multipart body param values';
+  is $uploads->[-1][0], 'file', 'right upload name';
+  is_deeply $upload_names, ['file'], 'right upload names';
+  is $upload_file->{filename}, 'test.dat', 'right upload filename';
+  is $upload_file->{content_type}, 'application/octet-stream', 'right upload Content-Type';
+  is $upload_file_array->[0]{filename}, 'test.dat', 'right upload filename';
+};
+
+subtest 'Multipart body (parse none as files)' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'POST';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  my $utf16le_snowman = encode 'UTF-16LE', "☃...\n";
+  my $body_string = <<"EOB";
+--delimiter\r
+Content-Disposition: form-data; name=snowman\r
+Content-Type: text/plain;charset=UTF-16LE\r
+\r
+$utf16le_snowman\r
+--delimiter\r
+Content-Disposition: form-data; name="file"; filename="test.dat"\r
+Content-Type: application/octet-stream\r
+\r
+00000000
+11111111\0\r
+--delimiter--\r
+postamble
+EOB
+  local $ENV{CONTENT_TYPE} = 'multipart/form-data; boundary=delimiter';
+  local $ENV{CONTENT_LENGTH} = length $body_string;
+  open my $in_fh, '<', \$body_string or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my $parts;
+  my ($params, $param_names, $param_snowman, $param_snowman_array);
+  my ($uploads, $upload_names, $upload_file, $upload_file_array);
+  cgi {
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->set_multipart_form_options({parse_as_files => 0});
+    $_->set_multipart_form_charset('UTF-8');
+    $parts = $_->body_parts;
+    $params = $_->body_params;
+    $param_names = $_->body_param_names;
+    $param_snowman = $_->body_param('snowman');
+    $param_snowman_array = $_->body_param_array('snowman');
+    $uploads = $_->uploads;
+    $upload_names = $_->upload_names;
+    $upload_file = $_->upload('file');
+    $upload_file_array = $_->upload_array('file');
+    $_->render;
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{date}), 'Date set';
+  like $response->{status}, qr/^200\b/, '200 response status';
+
+  is_deeply $parts, [
+    {headers => {'content-disposition' => 'form-data; name=snowman', 'content-type' => 'text/plain;charset=UTF-16LE'},
+      name => 'snowman', filename => undef, size => length($utf16le_snowman), content => $utf16le_snowman},
+    {headers => {'content-disposition' => 'form-data; name="file"; filename="test.dat"', 'content-type' => 'application/octet-stream'},
+      name => 'file', filename => 'test.dat', size => 18, content => "00000000\n11111111\0"},
+  ], 'right multipart body parts';
+
+  is_deeply $params, [['snowman', "☃...\n"]], 'right multipart body params';
+  is_deeply $param_names, ['snowman'], 'right multipart body param names';
+  is $param_snowman, "☃...\n", 'right multipart body param value';
+  is_deeply $param_snowman_array, ["☃...\n"], 'right multipart body param values';
+  is $uploads->[-1][0], 'file', 'right upload name';
+  is_deeply $upload_names, ['file'], 'right upload names';
+  is $upload_file->{filename}, 'test.dat', 'right upload filename';
+  is $upload_file->{content_type}, 'application/octet-stream', 'right upload Content-Type';
+  is $upload_file->{content}, "00000000\n11111111\0", 'upload contents in memory';
+  is $upload_file_array->[0]{filename}, 'test.dat', 'right upload filename';
+};
+
+subtest 'Multipart body (custom parsing)' => sub {
+  local @ENV{@env_keys} = ('')x@env_keys;
+  local $ENV{PATH_INFO} = '/';
+  local $ENV{REQUEST_METHOD} = 'POST';
+  local $ENV{SCRIPT_NAME} = '/';
+  local $ENV{SERVER_PROTOCOL} = 'HTTP/1.0';
+  my $utf16le_snowman = encode 'UTF-16LE', "☃...\n";
+  my $body_string = <<"EOB";
+--delimiter\r
+Content-Disposition: form-data; name=snowman\r
+Content-Type: text/plain;charset=UTF-16LE\r
+\r
+$utf16le_snowman\r
+--delimiter\r
+Content-Disposition: form-data; name="file"; filename="test.dat"\r
+Content-Type: application/octet-stream\r
+\r
+00000000
+11111111\0\r
+--delimiter--\r
+postamble
+EOB
+  local $ENV{CONTENT_TYPE} = 'multipart/form-data; boundary=delimiter';
+  local $ENV{CONTENT_LENGTH} = length $body_string;
+  open my $in_fh, '<', \$body_string or die "failed to open handle for input: $!";
+  open my $out_fh, '>', \my $out_data or die "failed to open handle for output: $!";
+
+  my $file_bytes = '';
+  my $parts;
+  my ($params, $param_names, $param_snowman, $param_snowman_array);
+  my ($uploads, $upload_names, $upload_file, $upload_file_array);
+  cgi {
+    $_->set_input_handle($in_fh);
+    $_->set_output_handle($out_fh);
+    $_->set_multipart_form_options({on_file_buffer => sub { $file_bytes .= $_[0] }});
+    $_->set_multipart_form_charset('UTF-8');
+    $parts = $_->body_parts;
+    $params = $_->body_params;
+    $param_names = $_->body_param_names;
+    $param_snowman = $_->body_param('snowman');
+    $param_snowman_array = $_->body_param_array('snowman');
+    $uploads = $_->uploads;
+    $upload_names = $_->upload_names;
+    $upload_file = $_->upload('file');
+    $upload_file_array = $_->upload_array('file');
+    $_->render;
+  };
+
+  ok length($out_data), 'response rendered';
+  my $response = _parse_response($out_data);
+  ok defined($response->{headers}{date}), 'Date set';
+  like $response->{status}, qr/^200\b/, '200 response status';
+
+  is_deeply $parts, [
+    {headers => {'content-disposition' => 'form-data; name=snowman', 'content-type' => 'text/plain;charset=UTF-16LE'},
+      name => 'snowman', filename => undef, size => length($utf16le_snowman), content => $utf16le_snowman},
+    {headers => {'content-disposition' => 'form-data; name="file"; filename="test.dat"', 'content-type' => 'application/octet-stream'},
+      name => 'file', filename => 'test.dat', size => 18},
+  ], 'right multipart body parts';
+
+  is_deeply $params, [['snowman', "☃...\n"]], 'right multipart body params';
+  is_deeply $param_names, ['snowman'], 'right multipart body param names';
+  is $param_snowman, "☃...\n", 'right multipart body param value';
+  is_deeply $param_snowman_array, ["☃...\n"], 'right multipart body param values';
+  is $uploads->[-1][0], 'file', 'right upload name';
+  is_deeply $upload_names, ['file'], 'right upload names';
+  is $upload_file->{filename}, 'test.dat', 'right upload filename';
+  is $upload_file->{content_type}, 'application/octet-stream', 'right upload Content-Type';
+  is $upload_file->{file}, undef, 'no upload file';
+  is $upload_file->{content}, undef, 'no upload content';
+  is $upload_file_array->[0]{filename}, 'test.dat', 'right upload filename';
+  is $file_bytes, "00000000\n11111111\0", 'parsed file contents';
 };
 
 subtest 'Multipart body read into memory' => sub {

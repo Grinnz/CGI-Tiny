@@ -574,15 +574,21 @@ the limit. Files uploaded through a C<multipartE<sol>form-data> request body
 also count toward this limit, though they are streamed to temporary files when
 parsed.
 
-=head3 set_discard_form_files
+=head3 set_multipart_form_options
 
-  $cgi = $cgi->set_discard_form_files;
-  $cgi = $cgi->set_discard_form_files(1);
+  $cgi = $cgi->set_multipart_form_options({discard_files => 1, tempfile_args => [SUFFIX => '.dat']});
 
-If set to a true value or called without a value before parsing a
-C<multipartE<sol>form-data> request body, file upload contents will be
-discarded and thus L</"uploads"> will not contain a C<file>. Defaults to the
-value of the C<CGI_TINY_DISCARD_FORM_FILES> environment variable.
+Set a hash reference of options to pass when parsing a
+C<multipartE<sol>form-data> request body with
+L<CGI::Tiny::Multipart/"parse_multipart_form_data">. No effect after the form
+data has been parsed such as by calling L</"body_params"> or L</"uploads"> for
+the first time.
+
+Note that options like C<parse_as_files> and C<on_file_buffer> can alter the
+C<content> and C<file> keys of the form field structure returned by
+L</"body_parts">. Thus L</"uploads"> may not contain C<file> and may instead
+contain C<content>, and L</"body_params"> text field values may be read from
+C<file>, which will be expected to be a seekable filehandle if present.
 
 =head3 set_multipart_form_charset
 

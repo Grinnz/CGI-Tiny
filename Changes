@@ -1,4 +1,6 @@
 {{$NEXT}}
+  - Replace set_discard_form_files method with more generic set_multipart_form_options
+  - Improved test coverage
 
 0.019     2021-05-25 23:52:51 EDT
   - Add params, param_names, param, and param_array general request parameter accessors
