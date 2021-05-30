@@ -323,11 +323,24 @@ characters, so non-ASCII filenames make things trickier.
 
 =head2 Sessions
 
+Regardless of the session mechanism, login credentials should only be sent over
+HTTPS, and passwords should be stored on the server using a secure one-way
+hash, such as with L<Crypt::Passphrase>.
+
 L<Basic authentication|https://en.wikipedia.org/wiki/Basic_access_authentication>
 has historically been used to provide a simplistic login session mechanism
 which relies on the client to send the credentials with every subsequent
 request in that browser session. However, it does not have a reliable logout or
 session expiration mechanism.
+
+Basic authentication can be handled by the CGI server itself (e.g.
+L<Apache|https://httpd.apache.org/docs/2.4/howto/auth.html>), passing only
+L</"auth_type"> and L</"remote_user"> to the CGI script.
+
+If you want to handle Basic authentication directly in the CGI script, you may
+need to configure the CGI server to forward the C<Authorization> header (e.g.
+L<Apache|https://stackoverflow.com/q/17018586/5848200>), as it is commonly
+stripped from the CGI request.
 
   #!/usr/bin/perl
   use strict;
@@ -357,12 +370,12 @@ session expiration mechanism.
     # do authed stuff
   };
 
-A more sophisticated login session mechanism is to store a session cookie in
-the client, associated with a server-side session stored in a file or database.
-Login credentials only need to be validated once per session, and subsequently
-the session ID stored in the cookie will be sent by the client with each
-request. This type of session can be ended by expiring the session cookie and
-invalidating the session data on the server.
+A more sophisticated and modern login session mechanism is to store a session
+cookie in the client, associated with a server-side session stored in a file or
+database. Login credentials only need to be validated once per session, and
+subsequently the session ID stored in the cookie will be sent by the client
+with each request. This type of session can be ended by expiring the session
+cookie and invalidating the session data on the server.
 
   #!/usr/bin/perl
   use strict;
@@ -411,10 +424,6 @@ invalidating the session data on the server.
 
     # do authed stuff
   };
-
-Regardless of the session mechanism, login credentials should only be sent over
-HTTPS, and passwords should be stored on the server using a secure one-way
-hash, such as with L<Crypt::Passphrase>.
 
 =head2 Logging
 
