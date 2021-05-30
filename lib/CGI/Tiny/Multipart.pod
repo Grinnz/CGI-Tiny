@@ -86,6 +86,17 @@ behavior, but other modifications to the hash reference are allowed.
 If C<on_file_buffer> is not specified, file uploads will be stored in C<file>
 as a L<File::Temp> object created with C<tempfile_args>.
 
+  # approximate the default behavior
+  on_file_buffer => sub {
+    my ($bytes, $hashref, $eof) = @_;
+    $hashref->{file} //= File::Temp->new;
+    print {$hashref->{file}} $bytes;
+    if ($eof) {
+      $hashref->{file}->flush;
+      seek $hashref->{file}, 0, 0;
+    }
+  }
+
 =item tempfile_args
 
   tempfile_args => [TEMPLATE => 'tempXXXXX', SUFFIX => '.dat']
