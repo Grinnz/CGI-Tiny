@@ -93,6 +93,36 @@ subtest 'parse_multipart_form_data' => sub {
   ], 'right multipart form data';
 };
 
+subtest 'parse_multipart_form_data (small buffer)' => sub {
+  my $parts = parse_multipart_form_data(\$multipart_form, length($multipart_form), 'delimiter', {buffer_size => 5});
+
+  my @files;
+  foreach my $i (0..$#$parts) {
+    $files[$i] = delete $parts->[$i]{file};
+    if (defined $files[$i]) {
+      $parts->[$i]{file_contents} = do { local $/; readline $files[$i] };
+    }
+  }
+  is_deeply $parts, [
+    {headers => {'content-disposition' => 'form-data; name="snowman"'},
+      name => 'snowman', filename => undef, size => length($utf8_snowman) + 1, content => "$utf8_snowman!"},
+    {headers => {'content-disposition' => 'form-data; name=snowman', 'content-type' => 'text/plain;charset=UTF-16LE'},
+      name => 'snowman', filename => undef, size => length($utf16le_snowman), content => $utf16le_snowman},
+    {headers => {'content-disposition' => 'form-data; name="newline\\\\\\""'},
+      name => 'newline\"', filename => undef, size => 1, content => "\n"},
+    {headers => {'content-disposition' => 'form-data; name="empty"'},
+      name => 'empty', filename => undef, size => 0, content => ''},
+    {headers => {'content-disposition' => 'form-data; name="empty"'},
+      name => 'empty', filename => undef, size => 0, content => ''},
+    {headers => {'content-disposition' => 'form-data; name="file"; filename="test.dat"', 'content-type' => 'application/octet-stream'},
+      name => 'file', filename => 'test.dat', size => 18, file_contents => "00000000\n11111111\0"},
+    {headers => {'content-disposition' => 'form-data; name="file"; filename="test2.dat"', 'content-type' => 'application/json'},
+      name => 'file', filename => 'test2.dat', size => 11, file_contents => '{"test":42}'},
+    {headers => {'content-disposition' => 'form-data; name="snowman"; filename="snowman\\\\\\".txt"', 'content-type' => 'text/plain;charset=UTF-16LE'},
+      name => 'snowman', filename => 'snowman\".txt', size => length($utf16le_snowman), file_contents => $utf16le_snowman},
+  ], 'right multipart form data';
+};
+
 subtest 'parse_multipart_form_data (restricted length)' => sub {
   is parse_multipart_form_data(\$multipart_form, 10, 'delimiter'), undef, 'malformed form data';
 };
