@@ -793,7 +793,8 @@ represented as two-element array references.
 
   my $arrayref = $cgi->cookie_names;
 
-Retrieve request cookie names as an ordered array reference.
+Retrieve request cookie names as an ordered array reference, without
+duplication.
 
 =head3 cookie
 
@@ -831,11 +832,12 @@ L</"body_params">.
 
 Retrieve URL query string parameter names and
 C<application/x-www-form-urlencoded> or C<multipart/form-data> body parameter
-names, decoded to Unicode characters, as an ordered array reference.
+names, decoded to Unicode characters, as an ordered array reference, without
+duplication.
 
-Query parameter names are returned first, followed by body parameter names
-(without duplication). Use L</"query_param_names"> or L</"body_param_names"> to
-retrieve query or body parameter names separately.
+Query parameter names are returned first, followed by body parameter names. Use
+L</"query_param_names"> or L</"body_param_names"> to retrieve query or body
+parameter names separately.
 
 Note that this will read the text form fields into memory as in
 L</"body_params">.
@@ -885,7 +887,7 @@ are decoded to Unicode characters.
   my $arrayref = $cgi->query_param_names;
 
 Retrieve URL query string parameter names, decoded to Unicode characters, as an
-ordered array reference.
+ordered array reference, without duplication.
 
 =head3 query_param
 
@@ -946,7 +948,7 @@ accessible via L</"uploads"> and related methods.
 
 Retrieve C<applicationE<sol>x-www-form-urlencoded> or
 C<multipartE<sol>form-data> body parameter names, decoded to Unicode
-characters, as an ordered array reference.
+characters, as an ordered array reference, without duplication.
 
 Note that this will read the text form fields into memory as in
 L</"body_params">.
@@ -1029,7 +1031,7 @@ with the C<seek> pointer at the start of the file for reading.
   my $arrayref = $cgi->upload_names;
 
 Retrieve C<multipartE<sol>form-data> file upload names, decoded to Unicode
-characters, as an ordered array reference.
+characters, as an ordered array reference, without duplication.
 
 Note that this will read the text form fields into memory as in L</"uploads">.
 
