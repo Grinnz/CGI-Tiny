@@ -100,9 +100,6 @@ applications that don't need to scale.
 
 See L</"COMPARISON TO CGI.PM">.
 
-This module's interface is currently I<EXPERIMENTAL> and may be changed
-incompatibly if needed.
-
 =head1 USAGE
 
 =for Pod::Coverage cgi
