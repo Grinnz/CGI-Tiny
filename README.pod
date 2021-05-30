@@ -118,16 +118,16 @@ CGI::Tiny's interface is the C<cgi> block.
     # render response with $cgi->render or $cgi->render_chunk
   };
 
-The code block is immediately run with C<$_> set to a CGI::Tiny object, which
+The block is immediately run with C<$_> set to a CGI::Tiny object, which
 L</"METHODS"> can be called on to read request information and render a
 response.
 
-If an exception is thrown within the code block, or the code block does not
-render a response, it will run the handler set by L</"set_error_handler"> if
-any, or by default emit the error as a warning and (if nothing has been
-rendered yet) render a 500 Internal Server Error. The default server error
-will also be rendered if the process ends abnormally between importing from
-CGI::Tiny and the start of the C<cgi> block.
+If an exception is thrown within the block, or the block does not render a
+response, it will run the handler set by L</"set_error_handler"> if any, or by
+default emit the error as a warning and (if nothing has been rendered yet)
+render a 500 Internal Server Error. The default server error will also be
+rendered if the process ends abnormally between importing from CGI::Tiny and
+the start of the C<cgi> block.
 
 Note that the C<cgi> block's current implementation as a regular exported
 subroutine is an implementation detail, and future implementations reserve the
@@ -524,7 +524,7 @@ name).
 =head1 METHODS
 
 The following methods can be called on the CGI::Tiny object provided to the
-C<cgi> code block.
+C<cgi> block.
 
 =head2 Setup
 
