@@ -8,7 +8,7 @@ CGI::Tiny - Common Gateway Interface, with no frills
 
 =head1 SYNOPSIS
 
-  #!/usr/bin/perl
+  #!/usr/bin/env perl
   use strict;
   use warnings;
   use utf8;
@@ -218,7 +218,7 @@ CPAN modules provide this capability.
 
 L<Text::Xslate> is an efficient template engine designed for HTML/XML.
 
-  #!/usr/bin/perl
+  #!/usr/bin/env perl
   use strict;
   use warnings;
   use utf8;
@@ -246,7 +246,7 @@ L<Text::Xslate> is an efficient template engine designed for HTML/XML.
 L<Mojo::Template> is a lightweight HTML/XML template engine in the L<Mojo>
 toolkit.
 
-  #!/usr/bin/perl
+  #!/usr/bin/env perl
   use strict;
   use warnings;
   use utf8;
@@ -280,7 +280,7 @@ aware that Perl and some operating systems work with filenames in encoded
 bytes (usually UTF-8), but this module works with parameters in Unicode
 characters, so non-ASCII filenames make things trickier.
 
-  #!/usr/bin/perl
+  #!/usr/bin/env perl
   use strict;
   use warnings;
   use utf8;
@@ -342,7 +342,7 @@ need to configure the CGI server to forward the C<Authorization> header (e.g.
 L<Apache|https://stackoverflow.com/q/17018586/5848200>), as it is commonly
 stripped from the CGI request.
 
-  #!/usr/bin/perl
+  #!/usr/bin/env perl
   use strict;
   use warnings;
   use utf8;
@@ -377,7 +377,7 @@ subsequently the session ID stored in the cookie will be sent by the client
 with each request. This type of session can be ended by expiring the session
 cookie and invalidating the session data on the server.
 
-  #!/usr/bin/perl
+  #!/usr/bin/env perl
   use strict;
   use warnings;
   use utf8;
@@ -437,7 +437,7 @@ encode them to bytes automatically, and also log debugging information when the
 log level is set to C<debug>. Just make sure the CGI server has permission to
 create and write to the logging target.
 
-  #!/usr/bin/perl
+  #!/usr/bin/env perl
   use strict;
   use warnings;
   use utf8;
@@ -479,7 +479,7 @@ application. L<Routes::Tiny> can be used to organize this with CGI::Tiny, using
 C<REQUEST_METHOD> and C<PATH_INFO> (which is the URL path after the CGI script
 name).
 
-  #!/usr/bin/perl
+  #!/usr/bin/env perl
   use strict;
   use warnings;
   use utf8;
