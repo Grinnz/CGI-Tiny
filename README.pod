@@ -588,7 +588,7 @@ Note that options like C<parse_as_files> and C<on_file_buffer> can alter the
 C<content> and C<file> keys of the form field structure returned by
 L</"body_parts">. Thus L</"uploads"> may not contain C<file> and may instead
 contain C<content>, and L</"body_params"> text field values may be read from
-C<file>, which will be expected to be a seekable filehandle.
+C<file>, which will be expected to be a seekable filehandle if present.
 
 =head3 set_multipart_form_charset
 
