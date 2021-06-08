@@ -17,8 +17,8 @@ be simplified with the use of other CPAN modules and techniques.
 
 CGI scripts which have dependencies, including CGI::Tiny itself, must be run
 using the F<perl> which those dependencies have been installed to, and with
-access to the library installation location, if installed outside the standard
-sitelib for that F<perl> (such as with L<local::lib> or L<Carton>).
+access to any nonstandard library installation locations (such as L<local::lib>
+or L<Carton>).
 
 Since CGI scripts run in the CGI server's environment, which is usually
 different from your user's environment, this means that:
@@ -40,7 +40,7 @@ executable.
 
 Nonstandard library locations where dependencies are installed must either be
 added to the C<PERL5LIB> environment variable in the CGI server's environment,
-or added in the CGI script such as with L<lib> or L<lib::relative>.
+or added within the CGI script such as with L<lib> or L<lib::relative>.
 
   # Apache
   SetEnv PERL5LIB /home/youruser/perl5/lib/perl5
@@ -88,7 +88,7 @@ CPAN modules provide this capability.
 
 L<Text::Xslate> is an efficient template engine designed for HTML/XML.
 
-  #!/usr/bin/env perl
+  #!/usr/bin/perl
   use strict;
   use warnings;
   use utf8;
@@ -120,7 +120,7 @@ L<Text::Xslate> is an efficient template engine designed for HTML/XML.
 L<Mojo::Template> is a lightweight HTML/XML template engine in the L<Mojo>
 toolkit.
 
-  #!/usr/bin/env perl
+  #!/usr/bin/perl
   use strict;
   use warnings;
   use utf8;
@@ -158,7 +158,7 @@ aware that Perl and some operating systems work with filenames in encoded
 bytes (usually UTF-8), but this module works with parameters in Unicode
 characters, so non-ASCII filenames make things trickier.
 
-  #!/usr/bin/env perl
+  #!/usr/bin/perl
   use strict;
   use warnings;
   use utf8;
@@ -220,7 +220,7 @@ need to configure the CGI server to forward the C<Authorization> header (e.g.
 L<Apache|https://stackoverflow.com/q/17018586/5848200>), as it is commonly
 stripped from the CGI request.
 
-  #!/usr/bin/env perl
+  #!/usr/bin/perl
   use strict;
   use warnings;
   use utf8;
@@ -255,7 +255,7 @@ subsequently the session ID stored in the cookie will be sent by the client
 with each request. This type of session can be ended by expiring the session
 cookie and invalidating the session data on the server.
 
-  #!/usr/bin/env perl
+  #!/usr/bin/perl
   use strict;
   use warnings;
   use utf8;
@@ -315,7 +315,7 @@ encode them to bytes automatically, and also log debugging information when the
 log level is set to C<debug>. Just make sure the CGI server has permission to
 create and write to the logging target.
 
-  #!/usr/bin/env perl
+  #!/usr/bin/perl
   use strict;
   use warnings;
   use utf8;
@@ -360,7 +360,7 @@ application. L<Routes::Tiny> can be used to organize this with CGI::Tiny, using
 C<REQUEST_METHOD> and C<PATH_INFO> (which is the URL path after the CGI script
 name).
 
-  #!/usr/bin/env perl
+  #!/usr/bin/perl
   use strict;
   use warnings;
   use utf8;

@@ -8,7 +8,7 @@ CGI::Tiny - Common Gateway Interface, with no frills
 
 =head1 SYNOPSIS
 
-  #!/usr/bin/env perl
+  #!/usr/bin/perl
   use strict;
   use warnings;
   use utf8;
