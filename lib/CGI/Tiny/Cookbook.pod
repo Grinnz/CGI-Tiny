@@ -86,7 +86,8 @@ and decoding, which will be used automatically if available.
 HTML and XML responses are most easily managed with templating. A number of
 CPAN modules provide this capability.
 
-L<Text::Xslate> is an efficient template engine designed for HTML/XML.
+L<Text::Xslate> is an efficient template engine designed for HTML/XML with
+built-in disk caching.
 
   #!/usr/bin/perl
   use strict;
@@ -96,21 +97,17 @@ L<Text::Xslate> is an efficient template engine designed for HTML/XML.
   use Text::Xslate;
   use Data::Section::Simple 'get_data_section';
 
-  use constant TEMPLATES_FROM_DIR => $ENV{MYCGI_TEMPLATES_FROM_DIR};
-
   cgi {
     my $cgi = $_;
-    my $foo = $cgi->query_param('foo');
-    my $tx = Text::Xslate->new(path => ['templates'], cache => 0);
 
-    if (TEMPLATES_FROM_DIR) {
-      # from templates/
-      $cgi->render(html => $tx->render('index.tx', {foo => $foo}));
-    } else {
-      # or from __DATA__
-      my $template = get_data_section 'index.tx';
-      $cgi->render(html => $tx->render_string($template, {foo => $foo}));
-    }
+    # from templates/
+    my $tx = Text::Xslate->new(path => ['templates']);
+
+    # or from __DATA__
+    my $tx = Text::Xslate->new(path => [get_data_section]);
+
+    my $foo = $cgi->query_param('foo');
+    $cgi->render(html => $tx->render('index.tx', {foo => $foo}));
   };
 
   __DATA__
@@ -129,22 +126,22 @@ toolkit.
   use Mojo::File 'curfile';
   use Mojo::Loader 'data_section';
 
-  use constant TEMPLATES_FROM_DIR => $ENV{MYCGI_TEMPLATES_FROM_DIR};
-
   cgi {
     my $cgi = $_;
-    my $foo = $cgi->query_param('foo');
+
     my $mt = Mojo::Template->new(auto_escape => 1, vars => 1);
 
-    if (TEMPLATES_FROM_DIR) {
-      # from templates/
-      my $template_path = curfile->sibling('templates', 'index.html.ep');
-      $cgi->render(html => $mt->render_file($template_path, {foo => $foo}));
-    } else {
-      # or from __DATA__
-      my $template = data_section __PACKAGE__, 'index.html.ep';
-      $cgi->render(html => $mt->render($template, {foo => $foo}));
-    }
+    my $foo = $cgi->query_param('foo');
+
+    # from templates/
+    my $template_path = curfile->sibling('templates', 'index.html.ep');
+    my $output = $mt->render_file($template_path, {foo => $foo});
+
+    # or from __DATA__
+    my $template = data_section __PACKAGE__, 'index.html.ep';
+    my $output = $mt->render($template, {foo => $foo});
+
+    $cgi->render(html => $output);
   };
 
   __DATA__
@@ -260,14 +257,18 @@ cookie and invalidating the session data on the server.
   use warnings;
   use utf8;
   use CGI::Tiny;
+  use Text::Xslate;
+  use Data::Section::Simple 'get_data_section';
 
   cgi {
     my $cgi = $_;
 
+    my $tx = Text::Xslate->new(path => [get_data_section]);
+
     my ($authed_user, $session_id);
     if ($cgi->path eq '/login') {
       if ($cgi->method eq 'GET' or $cgi->method eq 'HEAD') {
-        $cgi->render(html => login_form_template(login_failed => 0));
+        $cgi->render(html => $tx->render('login.tx', {login_failed => 0}));
         exit;
       } elsif ($cgi->method eq 'POST') {
         my $user = $cgi->body_param('login_user');
@@ -276,7 +277,7 @@ cookie and invalidating the session data on the server.
           $session_id = store_new_session($user);
           $authed_user = $user;
         } else {
-          $cgi->render(html => login_form_template(login_failed => 1));
+          $cgi->render(html => $tx->render('login.tx', {login_failed => 1}));
           exit;
         }
       }
@@ -302,6 +303,24 @@ cookie and invalidating the session data on the server.
 
     $cgi->render(text => "Welcome, $authed_user!");
   };
+
+  __DATA__
+  @@ login.tx
+  <html>
+  <head>
+    <title>Login</title>
+  </head>
+  <body>
+    <form method="post">
+      <input type="text" name="login_user" placeholder="Username">
+      <input type="password" name="login_pass" placeholder="Password">
+      <button type="submit">Login</button>
+    </form>
+    : if $login_failed {
+      <p>Login failed</p>
+    : }
+  </body>
+  </html>
 
 =head2 Logging
 

@@ -3,14 +3,18 @@ use strict;
 use warnings;
 use utf8;
 use CGI::Tiny;
+use Text::Xslate;
+use Data::Section::Simple 'get_data_section';
 
 cgi {
   my $cgi = $_;
 
+  my $tx = Text::Xslate->new(path => [get_data_section]);
+
   my ($authed_user, $session_id);
   if ($cgi->path eq '/login') {
     if ($cgi->method eq 'GET' or $cgi->method eq 'HEAD') {
-      $cgi->render(html => login_form_template(login_failed => 0));
+      $cgi->render(html => $tx->render('login.tx', {login_failed => 0}));
       exit;
     } elsif ($cgi->method eq 'POST') {
       my $user = $cgi->body_param('login_user');
@@ -19,7 +23,7 @@ cgi {
         $session_id = store_new_session($user);
         $authed_user = $user;
       } else {
-        $cgi->render(html => login_form_template(login_failed => 1));
+        $cgi->render(html => $tx->render('login.tx', {login_failed => 1}));
         exit;
       }
     }
@@ -45,3 +49,21 @@ cgi {
 
   $cgi->render(text => "Welcome, $authed_user!");
 };
+
+__DATA__
+@@ login.tx
+<html>
+<head>
+  <title>Login</title>
+</head>
+<body>
+  <form method="post">
+    <input type="text" name="login_user" placeholder="Username">
+    <input type="password" name="login_pass" placeholder="Password">
+    <button type="submit">Login</button>
+  </form>
+  : if $login_failed {
+    <p>Login failed</p>
+  : }
+</body>
+</html>
