@@ -6,10 +6,10 @@ use CGI::Tiny;
 use Text::Xslate;
 use Data::Section::Simple 'get_data_section';
 
-sub verify_password { ... }
-sub store_new_session { ... }
-sub get_session_user { ... }
-sub invalidate_session { ... }
+sub verify_password { my ($user, $pass) = @_; ... }
+sub store_new_session { my ($user) = @_; ... }
+sub get_session_user { my ($session_id) = @_; ... }
+sub invalidate_session { my ($session_id) = @_; ... }
 
 cgi {
   my $cgi = $_;

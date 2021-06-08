@@ -6,7 +6,7 @@ use CGI::Tiny;
 use MIME::Base64 qw(encode_base64 decode_base64);
 use Unicode::UTF8 'decode_utf8';
 
-sub verify_password { ... }
+sub verify_password { my ($user, $pass) = @_; ... }
 
 cgi {
   my $cgi = $_;

@@ -227,7 +227,7 @@ commonly stripped from the CGI request.
   use MIME::Base64 qw(encode_base64 decode_base64);
   use Unicode::UTF8 'decode_utf8';
 
-  sub verify_password { ... }
+  sub verify_password { my ($user, $pass) = @_; ... }
 
   cgi {
     my $cgi = $_;
@@ -256,6 +256,11 @@ subsequently the session ID stored in the cookie will be sent by the client
 with each request. This type of session can be ended by expiring the session
 cookie and invalidating the session data on the server.
 
+Some HTTP session management modules exist on CPAN, but the author has not yet
+discovered any that are suitable for use with CGI::Tiny. In lieu of a
+generalized mechanism, you can store and retrieve session data to your database
+of choice manually.
+
   #!/usr/bin/perl
   use strict;
   use warnings;
@@ -264,10 +269,10 @@ cookie and invalidating the session data on the server.
   use Text::Xslate;
   use Data::Section::Simple 'get_data_section';
 
-  sub verify_password { ... }
-  sub store_new_session { ... }
-  sub get_session_user { ... }
-  sub invalidate_session { ... }
+  sub verify_password { my ($user, $pass) = @_; ... }
+  sub store_new_session { my ($user) = @_; ... }
+  sub get_session_user { my ($session_id) = @_; ... }
+  sub invalidate_session { my ($session_id) = @_; ... }
 
   cgi {
     my $cgi = $_;
