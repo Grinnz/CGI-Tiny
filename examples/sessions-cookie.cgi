@@ -6,6 +6,11 @@ use CGI::Tiny;
 use Text::Xslate;
 use Data::Section::Simple 'get_data_section';
 
+sub verify_password { ... }
+sub store_new_session { ... }
+sub get_session_user { ... }
+sub invalidate_session { ... }
+
 cgi {
   my $cgi = $_;
 

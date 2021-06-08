@@ -225,6 +225,8 @@ stripped from the CGI request.
   use MIME::Base64 qw(encode_base64 decode_base64);
   use Unicode::UTF8 'decode_utf8';
 
+  sub verify_password { ... }
+
   cgi {
     my $cgi = $_;
 
@@ -259,6 +261,11 @@ cookie and invalidating the session data on the server.
   use CGI::Tiny;
   use Text::Xslate;
   use Data::Section::Simple 'get_data_section';
+
+  sub verify_password { ... }
+  sub store_new_session { ... }
+  sub get_session_user { ... }
+  sub invalidate_session { ... }
 
   cgi {
     my $cgi = $_;
