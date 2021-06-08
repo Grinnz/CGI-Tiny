@@ -209,10 +209,10 @@ request in that browser session. However, it does not have a reliable logout or
 session expiration mechanism.
 
 Basic authentication can be handled by the CGI server itself (e.g.
-L<Apache|https://httpd.apache.org/docs/2.4/howto/auth.html>), restricting
-access to the CGI scripts entirely until authentication succeeds, and passing
+L<Apache|https://httpd.apache.org/docs/2.4/howto/auth.html>), which restricts
+access to a directory or location to authenticated users, and passes
 L<AUTH_TYPE|CGI::Tiny/"auth_type"> and L<REMOTE_USER|CGI::Tiny/"remote_user">
-to the CGI script.
+with the authenticated CGI requests.
 
 If you want to instead handle Basic authentication directly in the CGI script,
 you may need to configure the CGI server to forward the C<Authorization> header
