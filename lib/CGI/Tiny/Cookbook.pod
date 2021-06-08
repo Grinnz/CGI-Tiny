@@ -258,8 +258,8 @@ cookie and invalidating the session data on the server.
 
 Some HTTP session management modules exist on CPAN, but the author has not yet
 discovered any that are suitable for use with CGI::Tiny. In lieu of a
-generalized mechanism, you can store and retrieve session data to your database
-of choice manually.
+generalized mechanism, session data can be stored to and retrieved from your
+database of choice manually.
 
   #!/usr/bin/perl
   use strict;
