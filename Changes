@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+1.001     2021-06-07 23:16:34 EDT
   - Move "EXTENDING" examples to CGI::Tiny::Cookbook and examples/
 
 1.000     2021-05-30 17:09:42 EDT
