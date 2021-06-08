@@ -1,4 +1,5 @@
 {{$NEXT}}
+  - Move "EXTENDING" examples to CGI::Tiny::Cookbook and examples/
 
 1.000     2021-05-30 17:09:42 EDT
   - Remove experimental status
