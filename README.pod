@@ -122,9 +122,13 @@ response.
 If an exception is thrown within the block, or the block does not render a
 response, it will run the handler set by L</"set_error_handler"> if any, or by
 default emit the error as a warning and (if nothing has been rendered yet)
-render a 500 Internal Server Error. The default server error will also be
-rendered if the process ends abnormally between importing from CGI::Tiny and
-the start of the C<cgi> block.
+render a 500 Internal Server Error.
+
+The default server error will also be rendered if the process ends abnormally
+between importing from CGI::Tiny and the start of the C<cgi> block. To load
+CGI::Tiny without triggering this cleanup mechanism or making the C<cgi> block
+available (such as to use convenience L</"FUNCTIONS"> in non-CGI code), load
+the module with C<use CGI::Tiny ();> or C<require CGI::Tiny;>.
 
 Note that the C<cgi> block's current implementation as a regular exported
 subroutine is an implementation detail, and future implementations reserve the
