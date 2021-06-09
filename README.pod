@@ -822,12 +822,14 @@ name and value. Cookie attribute names are case-insensitive.
 
 =item Domain
 
-Domain for which cookie is valid.
+Domain for which cookie is valid. Defaults to the host of the current document
+URL, not including subdomains.
 
 =item Expires
 
-Expiration date string for cookie. L</"epoch_to_date"> can be used to generate
-the appropriate date string format.
+Expiration date string for cookie. Defaults to persisting for the current
+browser session. L</"epoch_to_date"> can be used to generate the appropriate
+date string format.
 
 =item HttpOnly
 
