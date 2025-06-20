@@ -148,6 +148,24 @@ toolkit.
   @@ index.html.ep
   <html><body><h1><%= $foo %></h1></body></html>
 
+L<HTML::Blitz::Builder> provides, instead of a templating system, HTML
+generation functions with safe escaping mechanisms, so HTML can be built
+programmatically in a similar fashion as with the old L<CGI>.pm HTML functions.
+
+  #!/usr/bin/perl
+  use strict;
+  use warnings;
+  use utf8;
+  use CGI::Tiny;
+  use HTML::Blitz::Builder qw(mk_elem to_html);
+
+  cgi {
+    my $cgi = $_;
+    my $foo = $cgi->query_param('foo');
+    my $doc = mk_elem(html => mk_elem(body => mk_elem(h1 => $foo)));
+    $cgi->render(html => to_html $doc);
+  };
+
 =head2 Files
 
 Modules like L<Path::Tiny> and L<MIME::Types> can help with file responses. Be
